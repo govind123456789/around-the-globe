@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Downloads{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/data/">Data</a></p>
+<div class="page-head">
+  <h1>Downloads</h1>
+  <p class="lede">The full release as bulk tables. Every observation row has <span class="mono">source</span>, <span class="mono">source_licence</span>, <span class="mono">source_url</span>, <span class="mono">retrieved_at</span> and <span class="mono">modified</span> columns, so attribution travels with the data.</p>
+</div>
+<div class="table-wrap"><table>
+  <thead><tr><th>File</th><th class="num">Size</th></tr></thead>
+  <tbody>
+    {% for f in files %}<tr><td><a href="/v1/releases/{{ release }}/bulk/{{ f.name }}" download>{{ f.name }}</a></td><td class="num">{{ '{:,.0f}'.format(f.bytes / 1024) }} KB</td></tr>{% endfor %}
+    <tr><td><a href="/v1/releases/{{ release }}/LICENSE.txt">LICENSE.txt</a></td><td></td></tr>
+    <tr><td><a href="/v1/releases/{{ release }}/ATTRIBUTION.md">ATTRIBUTION.md</a></td><td></td></tr>
+    <tr><td><a href="/v1/releases/{{ release }}/manifest.json">manifest.json</a> <span class="muted small">(file checksums and source retrieval dates)</span></td><td></td></tr>
+  </tbody>
+</table></div>
+<p class="small muted" style="margin-top:8px">CSV files are gzip-compressed (<span class="mono">.csv.gz</span>); most spreadsheet tools, pandas and R read them directly, or unzip them first.</p>
+<h2>Query the Parquet files directly</h2>
+<div class="prose"><pre><code>-- DuckDB
+SELECT entity_id, year, value
+FROM '{{ site.base_url }}/v1/releases/{{ release }}/bulk/observations.parquet'
+WHERE indicator_id = 'life-expectancy' AND entity_id IN ('IND', 'CHN')
+ORDER BY year;</code></pre>
+<p>How to cite: “{{ site.name }}, data release {{ release }}, CC BY 4.0, {{ site.base_url }}/data/downloads/”. Please also credit the original sources listed in ATTRIBUTION.md.</p></div>
+{% endblock %}

@@ -1,0 +1,15 @@
+// Cloudflare Workers static-assets deployment for the built site in dist/.
+// Deploy: npx wrangler@4 deploy   (needs `wrangler login`, or CLOUDFLARE_API_TOKEN in CI)
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "around-the-globe",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page",   // serves dist/404.html
+    "html_handling": "auto-trailing-slash"
+  }
+  // When the domain is ready, add it in the Cloudflare dashboard (Workers → around-the-globe →
+  // Domains & Routes) or here:
+  // "routes": [{ "pattern": "zmetaboard.com", "custom_domain": true }]
+}

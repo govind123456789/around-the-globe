@@ -1,0 +1,7 @@
+# Manual decisions for the historical timeline (pipeline/history.py).
+#
+# keep: overlaps the automatic consistency check would hide, but which are real history.
+#   Each entry: [ISO3, Cliopatria polity name, reason]
+keep:
+  - [JPN, "United States of America", "Allied (US-led) occupation of Japan, 1945–1952."]
+  - [LUX, "Netherlands", "Personal union of Luxembourg with the Dutch crown, 1815–1890."]

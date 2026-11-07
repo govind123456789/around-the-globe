@@ -1,0 +1,39 @@
+# Manual corrections to country facts from Wikidata (pipeline/facts.py).
+# Each value replaces that field for that country. Add a reason for every entry.
+overrides:
+  USA:
+    languages: [English]          # Wikidata's list has only territorial languages. English was designated official in 2025.
+    highest_point: { name: Denali, elevation_m: 6190 }     # label missing in English on Wikidata
+  URY:
+    languages: [Spanish]          # de facto official; missing on Wikidata
+  CHN:
+    languages: [Standard Chinese (Mandarin)]               # Wikidata's label "Putonghua" is unfamiliar
+  AFG:
+    languages: [Pashto, Dari]     # official nationally; the others are regional
+  ARG:
+    drives_on: right              # "left" is historical (until 1945)
+    highest_point: { name: Aconcagua, elevation_m: 6961 }  # label missing in English on Wikidata
+  TUR:
+    calling_code: ["+90"]         # +36 is Hungary's
+  FRA:
+    currency: [{ name: euro, code: EUR }]                  # CFP franc is used only in Pacific territories
+  NLD:
+    currency: [{ name: euro, code: EUR }]                  # the others are Caribbean constituent countries
+  POL:
+    currency: [{ name: złoty, code: PLN }]                 # a replaced currency code is also listed
+  CZE:
+    currency: [{ name: Czech koruna, code: CZK }]          # the former koruna is also listed
+  BIH:
+    currency: [{ name: convertible mark, code: BAM }]      # the dinar is historical
+  KOR:
+    currency: [{ name: won, code: KRW }]                   # the mun is a subunit of the won, no longer in use
+  ZWE:
+    currency: [{ name: Zimbabwe Gold (ZiG), code: ZWG }, { name: United States dollar, code: USD }]   # the rest are retired or informal
+  TLS:
+    currency: [{ name: United States dollar, code: USD }]  # centavo coins are only small change
+  MHL:
+    currency: [{ name: United States dollar, code: USD }]  # the SOV was never issued as legal tender
+  SLV:
+    currency: [{ name: United States dollar, code: USD }]  # Bitcoin stopped being compulsory legal tender in 2025
+  MAC:
+    currency: [{ name: Macanese pataca, code: MOP }]       # the Hong Kong dollar circulates but isn't the official currency

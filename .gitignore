@@ -1,0 +1,22 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Pipeline outputs (rebuilt from sources)
+raw/
+build/
+dist/
+
+# Node / Cloudflare
+node_modules/
+.wrangler/
+
+# Local editor and OS files
+.DS_Store
+Thumbs.db
+
+# Local Claude Code and test caches
+.claude/settings.local.json
+.env*

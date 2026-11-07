@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block main %}
+<div class="two-col">
+  <nav class="side-nav" aria-label="About">
+    {% for slug, t in about_nav.items() %}{% set href = '/about/' if slug == 'about' else '/about/' ~ slug ~ '/' %}<a href="{{ href }}"{% if url == href %} aria-current="page"{% endif %}>{{ t }}</a>{% endfor %}
+  </nav>
+  <article class="prose"><h1>{{ title }}</h1>{{ body|safe }}</article>
+</div>
+{% endblock %}

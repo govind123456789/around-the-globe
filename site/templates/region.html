@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% block title %}{{ g.name }}{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/countries/">Countries</a> › {{ 'Region' if g.group_kind == 'region' else 'Income group' }}</p>
+<div class="page-head">
+  <h1>{{ g.name }}</h1>
+  <p class="lede">{{ rows|length }} countries · World Bank {{ 'region' if g.group_kind == 'region' else 'income classification' }}.</p>
+</div>
+{{ m.map("region-map", map_values, g.name, height=320) }}
+<div class="table-wrap" style="margin-top:16px">
+  <table data-sortable id="region-table">
+    <thead><tr><th class="sortable" data-type="text">Country</th><th class="num sortable" data-type="num">Population</th><th class="num sortable" data-type="num">GDP per capita, PPP</th><th class="num sortable" data-type="num">HDI</th><th class="num sortable" data-type="num">Life expectancy</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td>{{ flag(r.e.entity_id) }}<a href="/countries/{{ r.e.slug }}/">{{ r.e.name }}</a></td>
+        {% for k, d in [('population', 0), ('gdp-per-capita-ppp', 0), ('hdi', 3), ('life-expectancy', 1)] %}
+          {% set v = r[k] %}
+          <td class="num" data-v="{{ v[1] if v else '' }}">{% if v %}{{ v[1]|fmt(d) }} <span class="muted small">{{ v[0] }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="small muted" style="margin-top:8px">Sources: World Bank WDI (population, GDP per capita, life expectancy); UNDP HDR 2025 (HDI). The small number after each value is its data year.</p>
+{% endblock %}

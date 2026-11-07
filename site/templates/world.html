@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% block title %}The world in numbers{% endblock %}
+{% block description %}World population, GDP, life expectancy, emissions and more, with a live population estimate and the source and year of every figure.{% endblock %}
+{% block band %}
+<section class="band hero-band">
+  <canvas class="globe" data-globe data-lon="20" aria-hidden="true"></canvas>
+  <div class="wrap">
+  <div class="hero-copy" style="padding-bottom:34px">
+    <span class="eyebrow">Global totals</span>
+    <h1>The world in numbers</h1>
+    <p class="lede">Global totals and averages from the World Bank and UNDP, with a live estimate built from them.</p>
+  </div>
+  {{ m.live(live) }}
+  </div>
+</section>
+{% endblock %}
+{% block main %}
+<div class="section-head"><h2>Latest published figures</h2></div>
+<div class="stats">
+  {% for x in key %}
+  <div class="card stat">
+    <span class="l"><a href="/data/indicators/{{ x.ind.id }}/">{{ x.label }}</a></span>
+    <span class="v">{{ x.value|fmt(x.ind.decimals, x.ind.unit) }}{% if x.ind.unit.startswith('%') %}%{% endif %}</span>
+    {{ m.chip(x.chip) }}
+  </div>
+  {% endfor %}
+</div>
+
+<div class="section-head"><h2>Population and GDP by region</h2><a href="/countries/">All countries →</a></div>
+<div class="table-wrap">
+  <table data-sortable>
+    <thead><tr><th class="sortable" data-type="text">Region</th><th class="num sortable" data-type="num">Countries</th><th class="num sortable" data-type="num">Population</th><th class="num sortable" data-type="num">Share of world</th><th class="num sortable" data-type="num">GDP (current US$)</th><th class="num sortable" data-type="num">Share of world</th></tr></thead>
+    <tbody>
+    {% for r in regions %}
+      <tr>
+        <td><a href="/regions/{{ r.g.slug }}/">{{ r.g.name }}</a></td>
+        <td class="num" data-v="{{ r.n }}">{{ r.n }}</td>
+        <td class="num" data-v="{{ r.people }}">{{ r.people|fmt(0) }}</td>
+        <td class="num" data-v="{{ r.pop_share }}">{{ '%.1f'|format(r.pop_share) }}%</td>
+        <td class="num" data-v="{{ r.gdp }}">{{ r.gdp|fmt(0, 'current US$') }}</td>
+        <td class="num" data-v="{{ r.gdp_share }}">{{ '%.1f'|format(r.gdp_share) }}%</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="small muted" style="margin-top:6px">Sums of each country’s latest World Bank value, so years can differ slightly and countries without data are left out. Shares are of the World Bank’s world total.</p>
+
+<div class="section-head"><h2>Long-term trends</h2></div>
+<div class="grid g2">
+  {% for title, chart in charts %}<div class="card"><h3>{{ title }}</h3>{{ chart|safe }}</div>{% endfor %}
+</div>
+
+<nav class="tabs" aria-label="Topics">{% for d in dims %}<a href="#{{ d.dim.id }}">{{ d.dim.name }}</a>{% endfor %}</nav>
+{% for d in dims %}
+<section id="{{ d.dim.id }}">
+  <h2>{{ d.dim.name }}</h2>
+  <div class="ind-grid">
+    {% for it in d['items'] %}
+    <div class="ind">
+      <a class="name" href="/data/indicators/{{ it.ind.id }}/">{{ it.ind.name }}</a>
+      <div class="val">{{ it.value|fmt(it.ind.decimals, it.ind.unit) }}<small>{{ it.ind.unit|unit_short }}</small></div>
+      {{ it.spark|safe }}
+      <div class="meta">{{ m.chip(it.chip) }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endfor %}
+{% endblock %}
+{% block scripts %}<script src="/static/js/live.js?v={{ asset_v }}" defer></script><script src="/static/js/globe.js?v={{ asset_v }}" defer></script>{% endblock %}

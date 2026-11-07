@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Insights{% endblock %}
+{% block main %}
+<div class="page-head">
+  <h1>Insights</h1>
+  <p class="lede">Data stories and release notes. Every figure in a story links to the value it comes from.</p>
+</div>
+<h2>Release notes</h2>
+<div class="grid g3">
+  <a class="card link" href="/insights/releases/{{ release }}/" style="color:inherit;text-decoration:none"><h3>Release {{ release }}</h3><p class="small muted" style="margin:0">Sources, validation results and ranking checks for this release.</p></a>
+</div>
+<h2>Data stories</h2>
+<div class="grid g3">
+  {% for s in stories %}
+  <a class="card link" href="/insights/{{ s.slug }}/" style="color:inherit;text-decoration:none">
+    {% if s.status != 'published' %}<span class="badge">Draft · awaiting review</span>{% endif %}
+    <h3 style="margin-top:8px">{{ s.title }}</h3>
+    <p class="small muted" style="margin:0">{{ s.dek }}</p>
+  </a>
+  {% endfor %}
+</div>
+<p class="small muted" style="margin-top:10px">Stories are generated from the data release, so every figure is calculated rather than typed. A person reviews each one before it is published, under the <a href="/about/editorial-policy/">editorial policy</a>.</p>
+{% endblock %}

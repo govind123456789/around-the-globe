@@ -1,0 +1,34 @@
+# Brand: "Around the Globe" (chosen 2026-10-24). Trademark and domain still to be checked.
+name: Around the Globe
+short_name: Around the Globe
+tagline: Measure anything. Compare everything. Understand why.
+base_url: https://zmetaboard.com
+contact_email: hello@zmetaboard.com
+repo_url: https://github.com/govind123456789/around-the-globe
+data_licence: CC BY 4.0
+code_licence: AGPL-3.0
+
+# Popular pairs that get indexable /compare/a-vs-b/ pages. Other combinations are client-only.
+curated_pairs:
+  - [IND, CHN]
+  - [USA, CHN]
+  - [IND, PAK]
+  - [IND, BGD]
+  - [IND, USA]
+  - [JPN, KOR]
+  - [DEU, FRA]
+  - [GBR, FRA]
+  - [BRA, ARG]
+  - [IND, IDN]
+  - [CHN, JPN]
+  - [USA, CAN]
+  - [VNM, THA]
+  - [NGA, ZAF]
+  - [MEX, BRA]
+  - [AUS, NZL]
+  - [RUS, CHN]
+  - [IND, LKA]
+  - [IND, NPL]
+  - [SAU, ARE]
+
+featured_rankings: [human-development-index, capability-index, gdp-per-capita-ppp, life-expectancy]

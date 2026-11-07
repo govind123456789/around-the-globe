@@ -1,0 +1,7 @@
+# Editorial status of generated data stories (pipeline/stories.py).
+# draft: shown with a "draft" banner, noindex, not in the sitemap.
+# published: set only after an editor has reviewed the text and figures (editorial policy).
+status:
+  the-great-divergence: draft
+  how-much-to-trust-a-ranking: draft
+  who-the-news-is-about: draft

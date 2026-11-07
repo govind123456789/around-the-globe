@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Ask the data{% endblock %}
+{% block main %}
+<div class="page-head">
+  <h1>Ask the data <span class="badge ai">Coming months 5–6</span></h1>
+  <p class="lede">An AI assistant that answers questions using only this site’s data. Every figure it gives will come from a lookup against the published release, with a citation. It will never make up numbers.</p>
+</div>
+<div class="grid g2">
+  <div class="card"><h3>Until then</h3><p class="small">Use <a href="/compare/">Compare</a> for side-by-side questions, the <a href="/index-builder/">Index Builder</a> for “which country is best for…” questions, and <a href="/explore/">Explore</a> for “where is X highest” questions.</p></div>
+  <div class="card"><h3>How it will work</h3><p class="small">It will use a short daily question allowance, with a bot check and a daily spending cap. Repeat questions will be answered from a cache. You will be able to use your own API key for more questions; the key will stay in your browser.</p></div>
+</div>
+{% endblock %}

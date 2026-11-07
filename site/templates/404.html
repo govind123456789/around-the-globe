@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Page not found{% endblock %}
+{% block robots %}<meta name="robots" content="noindex">{% endblock %}
+{% block main %}
+<div class="page-head narrow">
+  <h1>Page not found</h1>
+  <p class="lede">That page doesn’t exist, or it has moved. Try searching:</p>
+  <div class="search" style="max-width:520px">
+    <svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="search" data-search placeholder="Search countries, indicators, rankings…" aria-label="Search" autocomplete="off">
+    <div class="search-results" role="listbox"></div>
+  </div>
+  <p style="margin-top:16px"><a href="/">← Home</a></p>
+</div>
+{% endblock %}

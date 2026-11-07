@@ -1,0 +1,147 @@
+# data/licences.yaml — starting draft for the launch sources.
+# Every entry must be re-checked against the publisher's licence page before
+# launch; set licence_checked_on to the date you read it. Terms below are
+# taken from the research report (20 Oct 2026) and are not legal advice.
+
+sources:
+  - source_id: wikidata
+    publisher: Wikimedia Foundation
+    title: Wikidata
+    url: https://www.wikidata.org/
+    licence: CC0-1.0
+    licence_url: https://www.wikidata.org/wiki/Wikidata:Licensing
+    tier: green
+    commercial_ok: true
+    derivatives_ok: true
+    share_alike: false
+    no_modification: false
+    attribution_text: "Entity identifiers from Wikidata (CC0)."
+    licence_checked_on: null   # fill when verified
+    notes: Identity/cross-reference only; verify facts against primary sources.
+
+  - source_id: natural-earth
+    publisher: Natural Earth
+    title: Natural Earth vector data
+    url: https://www.naturalearthdata.com/
+    licence: PD
+    licence_url: https://www.naturalearthdata.com/about/terms-of-use/
+    tier: green
+    commercial_ok: true
+    derivatives_ok: true
+    share_alike: false
+    no_modification: false
+    attribution_text: "Made with Natural Earth."
+    licence_checked_on: null
+    notes: Choose India-facing boundary depiction deliberately.
+
+  - source_id: wb-wdi
+    publisher: World Bank
+    title: World Development Indicators
+    url: https://datacatalog.worldbank.org/
+    licence: CC-BY-4.0
+    licence_url: https://datacatalog.worldbank.org/public-licenses
+    tier: green
+    commercial_ok: true
+    derivatives_ok: true
+    share_alike: false
+    no_modification: false
+    attribution_text: "World Bank, World Development Indicators (CC BY 4.0)."
+    licence_checked_on: null
+    notes: Some series carry ODbL or 'License Specified Externally' — adapter reads per-series licence and overrides tier.
+
+  - source_id: undp-hdr
+    publisher: UNDP Human Development Report Office
+    title: Human Development Reports data
+    url: https://hdr.undp.org/data-center
+    licence: CC-BY-3.0-IGO
+    licence_url: https://hdr.undp.org/terms-use
+    tier: green
+    commercial_ok: true
+    derivatives_ok: true
+    share_alike: false
+    no_modification: false
+    attribution_text: "UNDP Human Development Report Office (CC BY 3.0 IGO)."
+    licence_checked_on: null
+
+  - source_id: oecd
+    publisher: OECD
+    title: OECD Data Explorer
+    url: https://data-explorer.oecd.org/
+    licence: CC-BY-4.0
+    licence_url: https://www.oecd.org/en/about/terms-conditions.html
+    tier: green
+    commercial_ok: true
+    derivatives_ok: true
+    share_alike: false
+    no_modification: false
+    attribution_text: "OECD (CC BY 4.0)."
+    licence_checked_on: null
+
+  - source_id: ti-cpi
+    publisher: Transparency International
+    title: Corruption Perceptions Index
+    url: https://www.transparency.org/en/cpi
+    licence: CC-BY-4.0
+    licence_url: https://www.transparency.org/en/copyright-enquiries
+    tier: green
+    commercial_ok: true
+    derivatives_ok: true
+    share_alike: false
+    no_modification: true      # TI asks that data be "not changed" — display raw only
+    attribution_text: "Corruption Perceptions Index, Transparency International (CC BY 4.0)."
+    licence_checked_on: null
+
+  - source_id: gdelt
+    publisher: The GDELT Project
+    title: GDELT
+    url: https://www.gdeltproject.org/
+    licence: GDELT-open
+    licence_url: https://www.gdeltproject.org/about.html
+    tier: green
+    commercial_ok: true
+    derivatives_ok: true
+    share_alike: false
+    no_modification: false
+    attribution_text: "Data from The GDELT Project (https://www.gdeltproject.org/)."
+    licence_checked_on: null
+    notes: Citation plus link required wherever shown.
+
+  # --- Not ingested; listed so the gate recognises them -----------------------
+  - source_id: imf
+    publisher: International Monetary Fund
+    title: IMF data
+    url: https://www.imf.org/en/Data
+    licence: permission-required
+    licence_url: https://www.imf.org/en/About/copyright-and-terms
+    tier: amber
+    commercial_ok: false
+    derivatives_ok: false
+    share_alike: false
+    attribution_text: ""
+    licence_checked_on: null
+    notes: Permission email sent? date → ; reply →
+
+  - source_id: sipri
+    publisher: SIPRI
+    title: SIPRI databases
+    url: https://www.sipri.org/databases
+    licence: permission-required
+    licence_url: https://www.sipri.org/about/terms-and-conditions
+    tier: red
+    commercial_ok: false
+    derivatives_ok: false
+    share_alike: false
+    attribution_text: ""
+    licence_checked_on: null
+
+  - source_id: v-dem
+    publisher: V-Dem Institute
+    title: V-Dem dataset
+    url: https://www.v-dem.net/data/the-v-dem-dataset/
+    licence: CC-BY-SA-4.0
+    tier: green
+    commercial_ok: true
+    derivatives_ok: true
+    share_alike: true          # separate SA layer only (M7-12)
+    attribution_text: "V-Dem Institute (CC BY-SA 4.0)."
+    licence_checked_on: null

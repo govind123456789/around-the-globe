@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Index Builder{% endblock %}
+{% block robots %}{% endblock %}
+{% block main %}
+<div class="page-head">
+  <h1>Index Builder</h1>
+  <p class="lede">Make your own ranking. Choose indicators, set their weights and see the result straight away. Everything runs in your browser and nothing is sent to a server. The page address stores your index, so copy it to save or share it.</p>
+</div>
+<div class="builder">
+  <div class="card panel" id="ib-panel">
+    <h3>Start from</h3>
+    <div class="btns" id="ib-templates">
+      {% for x in composites %}<button class="btn ghost sm" data-tpl="{{ x.ranking_id }}">{{ x.name }}</button>
+      {% endfor %}
+      <button class="btn ghost sm" data-tpl="study">Study abroad</button>
+      <button class="btn ghost sm" data-tpl="relocation">Relocation</button>
+      <button class="btn ghost sm" data-tpl="market">Market entry</button>
+      <button class="btn ghost sm" data-tpl="green">Green economy</button>
+      <button class="btn ghost sm" data-tpl="clear">Blank</button>
+    </div>
+    <h3 style="margin-top:16px">Indicators &amp; weights</h3>
+    <div id="ib-weights"><p class="small muted">Loading data…</p></div>
+    <p class="small muted" id="ib-sum"></p>
+    <details style="margin-top:8px"><summary class="small" style="cursor:pointer">+ Add indicators</summary><div class="picker" id="ib-picker"></div></details>
+    <h3 style="margin-top:16px">Settings</h3>
+    <div class="toolbar" style="margin:6px 0">
+      <label class="field">Normalise<select id="ib-norm"><option value="min_max">Min–max</option><option value="z_score">Z-score</option></select></label>
+      <label class="field">Aggregate<select id="ib-agg"><option value="arithmetic">Arithmetic mean</option><option value="geometric">Geometric mean</option></select></label>
+      <label class="field">Min coverage<select id="ib-cov"><option value="0.5">50%</option><option value="0.6">60%</option><option value="0.7" selected>70%</option><option value="0.8">80%</option><option value="1">100%</option></select></label>
+      <label class="field">Min population<select id="ib-pop"><option value="0">Any</option><option value="500000" selected>500,000</option><option value="5000000">5 million</option><option value="20000000">20 million</option></select></label>
+    </div>
+    <div class="btns" style="margin-top:10px"><button class="btn sm" id="ib-copy">Copy link</button><button class="btn ghost sm" id="ib-csv">Export CSV</button></div>
+    <p class="small muted" style="margin-top:12px">Your index inherits the licences of its sources (World Bank and OECD CC BY 4.0, UNDP CC BY 3.0 IGO). It is not an official ranking. Indicators that may not be modified (Transparency International’s CPI) or are share-alike are not offered here, nor are news-coverage indicators, which describe only the last three months.</p>
+  </div>
+  <div>
+    <div class="card" style="margin-bottom:12px"><div id="ib-summary" class="small">Loading…</div></div>
+    <div class="table-wrap">
+      <table id="ib-table" data-sortable>
+        <thead><tr><th class="num sortable" data-type="num">Rank</th><th class="sortable" data-type="text">Country</th><th class="num sortable" data-type="num">Score</th><th class="num sortable" data-type="num">Coverage</th><th class="small">vs {{ cap.name }}</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script type="application/json" id="ib-cap">{{ {"pillars": cap.definition.pillars, "ranks": cap.results|selectattr("rank")|map(attribute="entity_id")|list}|tojson_safe }}</script>
+<script type="application/json" id="ib-composites">{{ composites|map(attribute="definition")|map(attribute="pillars")|list|tojson_safe }}</script>
+<script type="application/json" id="ib-composite-ids">{{ composites|map(attribute="ranking_id")|list|tojson_safe }}</script>
+<script type="application/json" id="ib-dims">{{ dims|tojson_safe }}</script>
+{% endblock %}
+{% block scripts %}<script src="/static/js/engine.js?v={{ asset_v }}" defer></script><script src="/static/js/builder.js?v={{ asset_v }}" defer></script>{% endblock %}

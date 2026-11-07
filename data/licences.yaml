@@ -1,0 +1,188 @@
+# Licence registry. The build refuses to publish any indicator whose source is not
+# tier: green, and refuses share-alike / no-modification inputs to CC BY composites.
+# licence_checked_on: set this to the date you read the publisher's licence page.
+# `python -m pipeline.build --strict` (used in CI releases) fails if it is null.
+# Terms below come from the research report (20 Oct 2026); this is not legal advice.
+
+sources:
+  - source_id: wb-wdi
+    publisher: World Bank
+    title: World Development Indicators
+    url: https://datacatalog.worldbank.org/search/dataset/0037712
+    licence: CC BY 4.0
+    licence_url: https://datacatalog.worldbank.org/public-licenses
+    tier: green
+    commercial_ok: true
+    derivatives_ok: true
+    share_alike: false
+    no_modification: false
+    attribution_text: "World Bank, World Development Indicators. Licensed under CC BY 4.0."
+    licence_checked_on: 2026-10-24
+    notes: >-
+      Read 2026-10-24: WDI dataset record states 'License: Creative Commons Attribution 4.0'; CC BY 4.0 is the World Bank default. Re-check individual series added later.
+
+  - source_id: wb-wgi
+    publisher: World Bank
+    title: Worldwide Governance Indicators
+    url: https://datacatalog.worldbank.org/search/dataset/0038026/Worldwide-Governance-Indicators
+    licence: CC BY 4.0
+    licence_url: https://datacatalog.worldbank.org/public-licenses#cc-by
+    tier: green
+    commercial_ok: true
+    derivatives_ok: true
+    share_alike: false
+    no_modification: false
+    attribution_text: "World Bank, Worldwide Governance Indicators (2026 release). Licensed under CC BY 4.0."
+    licence_checked_on: 2026-10-29
+    notes: >-
+      Dataset record states 'License: Creative Commons Attribution 4.0' (read 2026-10-29). Estimates are
+      built from perception data from 35 sources; the 2026 release recalculated history back to 1996.
+
+  - source_id: undp-hdr
+    publisher: UNDP Human Development Report Office
+    title: Human Development Report 2025 — composite indices time series
+    url: https://hdr.undp.org/data-center/documentation-and-downloads
+    licence: CC BY 3.0 IGO
+    licence_url: https://hdr.undp.org/terms-use
+    tier: green
+    commercial_ok: true
+    derivatives_ok: true
+    share_alike: false
+    no_modification: false
+    attribution_text: "UNDP Human Development Report Office, Human Development Report 2025. Licensed under CC BY 3.0 IGO."
+    licence_checked_on: 2026-10-24
+    notes: >-
+      Read 2026-10-24 on hdr.undp.org/terms-use: CC BY 3.0 IGO, adaptation 'for any purpose, even commercially'; credit, link the licence, indicate changes, no implied endorsement.
+
+  - source_id: natural-earth
+    publisher: Natural Earth
+    title: Admin 0 countries, 1:10m, India point of view (simplified)
+    url: https://www.naturalearthdata.com/
+    licence: Public domain
+    licence_url: https://www.naturalearthdata.com/about/terms-of-use/
+    tier: green
+    commercial_ok: true
+    derivatives_ok: true
+    share_alike: false
+    no_modification: false
+    attribution_text: "Made with Natural Earth."
+    licence_checked_on: 2026-10-24
+    notes: >-
+      Read 2026-10-24: 'All versions of Natural Earth raster + vector map data ... are in the public domain.' Uses the India point-of-view edition, simplified with mapshaper.
+
+  - source_id: ti-cpi
+    publisher: Transparency International
+    title: Corruption Perceptions Index (2012–2024)
+    url: https://www.transparency.org/en/cpi
+    licence: CC BY 4.0
+    licence_url: https://www.transparency.org/en/copyright-enquiries
+    tier: green
+    commercial_ok: true
+    derivatives_ok: true
+    share_alike: false
+    no_modification: true      # TI asks that CPI data "should not be changed": shown raw, never in composites
+    attribution_text: "Corruption Perceptions Index (2024) by Transparency International is licensed under CC BY 4.0. Source: Transparency International."
+    licence_checked_on: 2026-10-21
+    notes: >-
+      Licence read on transparency.org/en/copyright-enquiries on 2026-10-21. Data downloaded from
+      Our World in Data's republication of the TI series, because transparency.org downloads timed out.
+
+  - source_id: oecd
+    publisher: OECD
+    title: OECD Data Explorer (Global Revenue Statistics; Average annual wages)
+    url: https://data-explorer.oecd.org/
+    licence: OECD Terms (open, attribution)
+    licence_url: https://www.oecd.org/en/about/terms-conditions.html
+    tier: green
+    commercial_ok: true
+    derivatives_ok: true
+    share_alike: false
+    no_modification: false
+    attribution_text: "OECD (2026), OECD Data Explorer. Licensed under CC BY 4.0."
+    licence_checked_on: 2026-10-24
+    notes: >-
+      Read 2026-10-24 on oecd.org terms: Data may be used 'for any purpose, even for commercial use' with the OECD citation, and the same acknowledgement requirement must be passed on in sub-licences (ATTRIBUTION.md does this). Third-party-owned series are excluded; both series used are OECD-compiled.
+
+  - source_id: gdelt
+    publisher: The GDELT Project
+    title: GDELT 1.0 daily event files (news volume and tone)
+    url: https://www.gdeltproject.org/
+    licence: Open (citation and link required)
+    licence_url: https://www.gdeltproject.org/about.html
+    tier: green
+    commercial_ok: true
+    derivatives_ok: true
+    share_alike: false
+    no_modification: false
+    attribution_text: "Data from The GDELT Project (https://www.gdeltproject.org/)."
+    licence_checked_on: 2026-10-24
+    notes: >-
+      Read 2026-10-24 on gdeltproject.org/about: 'unlimited and unrestricted use for any academic, commercial, or governmental use'; redistribution allowed with citation and a link.
+
+  - source_id: wikidata
+    publisher: Wikimedia Foundation
+    title: Wikidata (country facts, event data and country code mapping)
+    url: https://www.wikidata.org/
+    licence: CC0
+    licence_url: https://www.wikidata.org/wiki/Wikidata:Licensing
+    tier: green
+    commercial_ok: true
+    derivatives_ok: true
+    share_alike: false
+    no_modification: false
+    attribution_text: "Country facts, events and code mapping from Wikidata (CC0)."
+    licence_checked_on: 2026-10-24
+    notes: >-
+      Read 2026-10-24: structured data is CC0. Supplies country facts (languages, currency, borders and so on, corrected in data/country_facts_overrides.yaml), event dates and names, and the GDELT FIPS-to-ISO code mapping. Community-maintained, so not used for rankings.
+
+  # ---- Historical timeline sources ----
+  - source_id: cliopatria
+    publisher: Seshat Global History Databank
+    title: Cliopatria v0.2.1 — polity borders 3400 BCE–2024 CE
+    url: https://github.com/Seshat-Global-History-Databank/cliopatria
+    licence: CC BY 4.0
+    licence_url: https://github.com/Seshat-Global-History-Databank/cliopatria/blob/main/LICENSE.md
+    tier: green
+    commercial_ok: true
+    derivatives_ok: true
+    share_alike: false
+    no_modification: false
+    attribution_text: "Cliopatria, Seshat Global History Databank (CC BY 4.0). Borders simplified and overlaid on modern borders by this site."
+    licence_checked_on: 2026-10-24
+    notes: Licence read in the repository's LICENSE.md on 2026-10-24. Cliopatria records one version of each polity's territory.
+
+  - source_id: maddison
+    publisher: Groningen Growth and Development Centre
+    title: Maddison Project Database 2023
+    url: https://www.rug.nl/ggdc/historicaldevelopment/maddison/releases/maddison-project-database-2023
+    licence: CC BY 4.0
+    licence_url: https://creativecommons.org/licenses/by/4.0/
+    tier: green
+    commercial_ok: true
+    derivatives_ok: true
+    share_alike: false
+    no_modification: false
+    attribution_text: "Maddison Project Database, version 2023, by Jutta Bolt and Jan Luiten van Zanden (CC BY 4.0). Bolt & van Zanden (2024), Journal of Economic Surveys, doi:10.1111/joes.12618."
+    licence_checked_on: 2026-10-24
+    notes: Licence CC-BY-4.0 per the DataverseNL record (doi:10.34894/INZBF2). Original papers must be cited when data is charted.
+
+  - source_id: ucdp
+    publisher: Uppsala Conflict Data Program
+    title: UCDP/PRIO Armed Conflict Dataset and Battle-Related Deaths Dataset v26.1
+    url: https://ucdp.uu.se/downloads/
+    licence: CC BY 4.0
+    licence_url: https://ucdp.uu.se/downloads/
+    tier: green
+    commercial_ok: true
+    derivatives_ok: true
+    share_alike: false
+    no_modification: false
+    attribution_text: "Uppsala Conflict Data Program (UCDP), v26.1 (CC BY 4.0). Cite the publications listed for each dataset."
+    licence_checked_on: 2026-10-24
+    notes: Download page states "All datasets are free of charge and licensed under CC BY 4.0".
+
+  # ---- Not ingested. Listed so the gate recognises them if someone adds an indicator. ----
+  - { source_id: imf,           publisher: International Monetary Fund, title: IMF data,          url: https://www.imf.org/en/Data,  licence: Permission required, tier: amber, commercial_ok: false, derivatives_ok: false, share_alike: false, no_modification: false, attribution_text: "", licence_checked_on: null }
+  - { source_id: who-gho,       publisher: World Health Organization,  title: Global Health Observatory, url: https://www.who.int/data/gho, licence: Restricted commercial use, tier: amber, commercial_ok: false, derivatives_ok: true, share_alike: false, no_modification: false, attribution_text: "", licence_checked_on: null }
+  - { source_id: sipri,         publisher: SIPRI,                      title: SIPRI databases,   url: https://www.sipri.org/databases, licence: Permission required, tier: red, commercial_ok: false, derivatives_ok: false, share_alike: false, no_modification: false, attribution_text: "", licence_checked_on: null }
+  - { source_id: v-dem,         publisher: V-Dem Institute,            title: V-Dem dataset,     url: https://www.v-dem.net/, licence: CC BY-SA 4.0, tier: green, commercial_ok: true, derivatives_ok: true, share_alike: true, no_modification: false, attribution_text: "V-Dem Institute. CC BY-SA 4.0.", licence_checked_on: null }

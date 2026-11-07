@@ -1,0 +1,43 @@
+# Plain display names, replacing World Bank catalogue names such as "Korea, Rep.".
+# The source name stays searchable, and aliases are extra search terms.
+# "West Bank and Gaza" deliberately keeps the World Bank's name.
+names:
+  BHS: { name: Bahamas }
+  BRN: { name: Brunei }
+  COD: { name: DR Congo, aliases: [Democratic Republic of the Congo, DRC, Zaire] }
+  COG: { name: Republic of the Congo, aliases: [Congo-Brazzaville] }
+  CIV: { name: Côte d'Ivoire, aliases: [Ivory Coast] }
+  CPV: { name: Cabo Verde, aliases: [Cape Verde] }
+  CZE: { name: Czechia, aliases: [Czech Republic] }
+  EGY: { name: Egypt }
+  FSM: { name: Micronesia }
+  GMB: { name: Gambia }
+  HKG: { name: Hong Kong }
+  IRN: { name: Iran }
+  KGZ: { name: Kyrgyzstan }
+  KNA: { name: Saint Kitts and Nevis }
+  KOR: { name: South Korea, aliases: [Korea] }
+  LAO: { name: Laos }
+  LCA: { name: Saint Lucia }
+  MAC: { name: Macao, aliases: [Macau] }
+  MAF: { name: Saint Martin }
+  MMR: { name: Myanmar, aliases: [Burma] }
+  NRU: { name: Nauru }
+  PRI: { name: Puerto Rico }
+  PRK: { name: North Korea, aliases: [DPRK] }
+  RUS: { name: Russia }
+  SOM: { name: Somalia }
+  SVK: { name: Slovakia }
+  SWZ: { name: Eswatini, aliases: [Swaziland] }
+  SXM: { name: Sint Maarten }
+  SYR: { name: Syria }
+  TLS: { name: Timor-Leste, aliases: [East Timor] }
+  TUR: { name: Türkiye, aliases: [Turkey] }
+  VCT: { name: Saint Vincent and the Grenadines }
+  VEN: { name: Venezuela }
+  VIR: { name: U.S. Virgin Islands }
+  VNM: { name: Vietnam }
+  YEM: { name: Yemen }
+  USA: { name: United States, aliases: [USA, America, US] }
+  GBR: { name: United Kingdom, aliases: [UK, Britain, Great Britain] }
+  ARE: { name: United Arab Emirates, aliases: [UAE] }

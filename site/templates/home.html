@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% block title %}{{ site.name }} — {{ site.tagline }}{% endblock %}
+{% block band %}
+<section class="band hero-band">
+  <canvas class="globe" data-globe data-lon="78" aria-hidden="true"></canvas>
+  <div class="wrap">
+  <div class="hero-copy">
+  <span class="eyebrow">Open data · {{ n_countries }} countries · 2,000 years of history</span>
+  <h1>{{ site.tagline|replace('. ', '.<br>')|safe }}</h1>
+  <p class="lede">Free, open rankings and comparisons of {{ n_countries }} countries. Every number shows its source, its year and how it was calculated, and every dataset can be downloaded and reused under {{ site.data_licence }}.</p>
+  <div class="search">
+    <svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="search" data-search placeholder="Search a country, indicator or ranking… try “india vs china”" aria-label="Search" autocomplete="off">
+    <div class="search-results" role="listbox"></div>
+  </div>
+  <p class="try">Try: <a href="/rankings/human-development-index/">Human Development Index</a><a href="/compare/china-vs-india/">China vs India</a><a href="/data/indicators/life-expectancy/">Life expectancy</a><a href="/index-builder/">Build your own index</a></p>
+  <div class="facts">
+    <div><b>{{ n_countries }}</b>countries</div>
+    <div><b>{{ n_indicators }}</b>indicators</div>
+    <div><b>{{ n_rankings }}</b>rankings</div>
+    <div><b>{{ hdi_check.exact_to_3dp }}/{{ hdi_check.compared }}</b>HDI values verified</div>
+    <div><b>{{ release }}</b>data release</div>
+  </div>
+  </div>
+  {{ m.live(live) }}
+  </div>
+</section>
+{% endblock %}
+{% block main %}
+<div class="section-head"><h2>Featured rankings</h2><a href="/rankings/">All rankings →</a></div>
+<div class="grid g4">
+  {% for f in featured %}
+  <a class="card link rank-card" href="/rankings/{{ f.r.ranking_id }}/" style="color:inherit;text-decoration:none">
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:start">
+      <h3 style="margin:0">{{ f.r.name }}</h3>{{ m.kind_badge(f.r) }}
+    </div>
+    <ol>
+      {% for row in f.rows %}<li><span><b>{{ m.rank_label(row) }}</b>{{ flag(row.iso3) }}{{ row.name }}</span><span class="mono">{{ m.score(f.r, row.score) }}</span></li>{% endfor %}
+    </ol>
+  </a>
+  {% endfor %}
+</div>
+
+<div class="section-head"><h2>{{ map_label }} around the world</h2><a href="/explore/">Explore any indicator on the map →</a></div>
+<div class="split">
+  <div>{{ m.map("home-map", map_values, map_label) }}</div>
+  <div class="grid" style="align-content:start">
+    <div class="card">
+      <h3>Compare anything</h3>
+      <form class="compare-box" action="/compare/" data-compare-form>
+        <select name="a" aria-label="First country">{% for c in countries %}<option value="{{ c.entity_id }}"{% if c.entity_id == 'IND' %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+        <span class="muted">vs</span>
+        <select name="b" aria-label="Second country">{% for c in countries %}<option value="{{ c.entity_id }}"{% if c.entity_id == 'CHN' %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+        <button class="btn" type="submit">Compare</button>
+      </form>
+      <p class="small muted" style="margin:10px 0 0">Popular:
+        {% for a, b in pairs %}{% set s = [a, b]|sort(attribute='slug') %}<a href="/compare/{{ s[0].slug }}-vs-{{ s[1].slug }}/">{{ s[0].name }} vs {{ s[1].name }}</a>{% if not loop.last %} · {% endif %}{% endfor %}
+      </p>
+    </div>
+    <div class="card">
+      <h3>Build your own index</h3>
+      <p class="small">Pick the indicators that matter to you, set the weights and see the ranking change. Everything runs in your browser, and the link saves your index.</p>
+      <a class="btn ghost sm" href="/index-builder/">Open the Index Builder →</a>
+    </div>
+    <div class="card">
+      <h3>What’s new</h3>
+      <p class="small">Release <a href="/insights/releases/{{ release }}/">{{ release }}</a>: World Bank, UNDP, OECD, Transparency International and GDELT data, with the recomputed HDI checked against UNDP’s published values.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section-head"><h2>How to read this site</h2></div>
+<div class="grid g3">
+  <div class="card"><h3><span class="chip">World Bank · 2024</span> Observed</h3><p class="small">A value published by a source. The chip names the source and the year the data describes. <span class="chip"><span class="st">EST</span></span> marks modelled estimates.</p></div>
+  <div class="card"><h3><span class="badge original">Original index</span> Calculated</h3><p class="small">A score this platform calculates with a published formula. Every one links to its methodology, its weights and how sensitive its ranks are to those weights.</p></div>
+  <div class="card"><h3><span class="badge official">Official</span> Reproduced</h3><p class="small">An official index (such as UNDP’s HDI) shown exactly as its owner publishes it. The platform also recomputes it from its components to check it.</p></div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/js/live.js?v={{ asset_v }}" defer></script><script src="/static/js/globe.js?v={{ asset_v }}" defer></script>{% endblock %}

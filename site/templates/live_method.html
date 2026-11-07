@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}How the live estimates work{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/methodology/">Methodology</a></p>
+<article class="prose">
+  <h1>How the live estimates work</h1>
+  <p class="lede" style="color:var(--text-2)">The ticking numbers are simple calculations from published annual figures. Nobody is counting births, deaths or emissions in real time.</p>
+  <h2>The inputs</h2>
+  <table>
+    <thead><tr><th>Input</th><th class="num">Value</th><th>Data year</th><th>Source</th></tr></thead>
+    <tbody>
+      <tr><td>World population (mid-year)</td><td class="num">{{ '{:,.0f}'.format(b.population) }}</td><td>{{ b.population_year }}</td><td>World Bank WDI</td></tr>
+      <tr><td>Births per 1,000 people</td><td class="num">{{ '%.2f'|format(b.birth_rate) }}</td><td>{{ b.birth_year }}</td><td>World Bank WDI</td></tr>
+      <tr><td>Deaths per 1,000 people</td><td class="num">{{ '%.2f'|format(b.death_rate) }}</td><td>{{ b.death_year }}</td><td>World Bank WDI</td></tr>
+      {% if b.co2_pc is not none %}<tr><td>CO₂ per person (tonnes of CO₂ equivalent)</td><td class="num">{{ '%.2f'|format(b.co2_pc) }}</td><td>{{ b.co2_year }}</td><td>World Bank WDI</td></tr>{% endif %}
+    </tbody>
+  </table>
+  <h2>The calculation</h2>
+  <ul>
+    <li><b>Population now</b> = the latest mid-year population, grown continuously at (birth rate − death rate) from 1 July of that year.</li>
+    <li><b>Births and deaths this year</b> = annual rate × population now × the share of the calendar year that has passed (UTC).</li>
+    <li><b>Net growth this year</b> = births − deaths.</li>
+    <li><b>CO₂ this year</b> = CO₂ per person × population now × the share of the year that has passed. This assumes emissions stay at their latest known level per person, and excludes land-use change.</li>
+  </ul>
+  <h2>What this means</h2>
+  <ul>
+    <li>These are <b>estimates, not measurements</b>. Precision to the last digit is only an effect of the arithmetic.</li>
+    <li>They assume recent rates simply continue, and don’t capture shocks such as a pandemic or a war.</li>
+    <li>Year-to-date counts reset each 1 January and assume events are spread evenly through the year.</li>
+    <li>For anything you plan to cite, use the <a href="/world/">published annual figures</a>, not the live numbers.</li>
+  </ul>
+</article>
+{% endblock %}

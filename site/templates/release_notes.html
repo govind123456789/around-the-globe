@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Release {{ release }}{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/insights/">Insights</a> › Release notes</p>
+<div class="page-head">
+  <h1>Release {{ release }}</h1>
+  <p class="lede">{{ '{:,}'.format(rel.n_obs) }} observations published. {{ rel.n_rejects }} rows failed validation and were left out. This is the first release, so there is no earlier edition to compare with.</p>
+</div>
+<div class="prose">
+<h2>Checks</h2>
+<ul>
+  <li>Licence check: <b>passed</b>. Only sources whose licence allows reuse and changes are published.{% for w in warnings %} <span class="stale">Note: {{ w }}.</span>{% endfor %}</li>
+  <li>HDI reproduction: <b>{{ hdi_check.exact_to_3dp }}/{{ hdi_check.compared }}</b> match UNDP to 3 decimal places.</li>
+  <li>Weights: every ranking’s weights add up to 100%.</li>
+</ul>
+<h2>Source downloads</h2>
+<table><thead><tr><th>Source file</th><th>Retrieved</th><th>SHA-256</th></tr></thead><tbody>
+{% for s in rel.source_releases %}<tr><td class="small">{{ s.source_id }} · {{ s.release_label }}</td><td class="small">{{ s.retrieved_at[:10] }}</td><td class="small mono">{{ s.checksum_sha256[:16] }}…</td></tr>{% endfor %}
+</tbody></table>
+<h2>Validation rejects</h2>
+{% if rel.rejects_by_rule %}
+<p>{% for k, v in rel.rejects_by_rule.items() %}{{ k|replace('_', ' ') }}: {{ v }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+<table><thead><tr><th>Indicator</th><th>Country</th><th class="num">Year</th><th class="num">Value</th><th>Rule</th></tr></thead><tbody>
+{% for r in rejects %}<tr><td class="small">{{ r.indicator_id }}</td><td class="small">{{ by_id[r.entity].name if r.entity in by_id else r.entity }}</td><td class="num small">{{ r.year }}</td><td class="num small">{{ r.value }}</td><td class="small">{{ r.rule|replace('_', ' ') }}</td></tr>{% endfor %}
+</tbody></table>
+{% else %}<p>None.</p>{% endif %}
+<h2>Rankings in this release</h2>
+<ul>{% for r in rankings.values() %}<li><a href="/rankings/{{ r.ranking_id }}/">{{ r.name }}</a> v{{ r.version }}: {{ r.ranked_count }} ranked</li>{% endfor %}</ul>
+</div>
+{% endblock %}

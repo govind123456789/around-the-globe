@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% block title %}{{ c.name }}: history since 200 BCE{% endblock %}
+{% block description %}How the land that is now {{ c.name }} changed hands from 200 BCE to today: {{ h.polities|length }} states and empires, {{ h.events|length }} wars and upheavals, and long-run economic data.{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/countries/">Countries</a> › <a href="/countries/{{ c.slug }}/">{{ c.name }}</a> › History</p>
+<div class="page-head">
+  <h1>History of the land that is now {{ c.name }}</h1>
+  <p class="lede">Which states and empires held this territory from 200 BCE to {{ h.range[1] }}, the wars and upheavals fought here, and how its economy and population grew.</p>
+  <div class="btns"><a class="btn sm" href="/countries/{{ c.slug }}/">← {{ c.name }} today</a><a class="btn ghost sm" href="/history/country/{{ c.entity_id }}.json">JSON</a><button class="btn ghost sm" data-share>Copy link</button></div>
+</div>
+<div class="callout">Modern countries did not exist for most of this period, so this page follows the <b>land inside {{ c.name }}’s present borders</b> (India’s official depiction). Historical borders are approximate and come from <a href="https://github.com/Seshat-Global-History-Databank/cliopatria">Cliopatria</a>, which records “one version” of each polity’s territory; historians disagree on many of them. Shares are of today’s territory. The maps show who <b>held or controlled</b> the land in practice, including military occupation; they are not a judgement on legal sovereignty or on any present-day claim. Names in <i>italics</i> are umbrella entities, such as empires or federations that contain other polities listed here.{% if h.hidden_samples %} A consistency check hid {{ h.hidden_samples }} five-year sample{{ 's' if h.hidden_samples != 1 }} where Cliopatria showed another state holding most of this land after {{ c.name }}’s present-day state appears. These are usually records that outlive independence.{% endif %}</div>
+
+{% if h.polities %}
+<div class="section-head"><h2>The map through time</h2><span class="muted small">Every 50 years, plus {{ h.range[1] }}</span></div>
+<div class="map-box">
+  <div class="map" id="hist-map" style="height:480px" role="img" aria-label="Historical map around {{ c.name }}"></div>
+  <div class="map-tip" aria-hidden="true"></div>
+  <div class="map-legend" style="gap:12px">
+    <button class="btn sm" id="hist-play" aria-label="Play">▶</button>
+    <input type="range" id="hist-year" min="0" max="{{ h.map_years|length - 1 }}" value="{{ h.map_years|length - 1 }}" step="1" style="flex:1;accent-color:var(--accent)" aria-label="Year">
+    <b id="hist-label" style="min-width:90px;text-align:right;color:var(--text)"></b>
+  </div>
+</div>
+<p class="small muted" id="hist-now" style="margin-top:6px"></p>
+
+<div class="section-head"><h2>Who held this land</h2><span class="muted small">Darker = larger share of today’s territory · click a bar to show it on the map</span></div>
+<div class="card" style="overflow-x:auto;padding:10px">{{ strip|safe }}</div>
+{% else %}
+<div class="callout warn">Cliopatria has no mapped polities covering {{ c.name }}’s territory. That is common for small island states.</div>
+{% endif %}
+
+{% if longrun %}
+<div class="section-head"><h2>Two thousand years of growth</h2><span class="muted small">Maddison Project Database 2023</span></div>
+<div class="grid g2">
+  {% for title, chart in longrun %}<div class="card"><h3>{{ title }}</h3>{{ chart|safe }}</div>{% endfor %}
+</div>
+<p class="small muted" style="margin-top:6px">Log scale. Early values are scholarly estimates for sparse benchmark years; the line joins them. GDP per capita is in 2011 international dollars. Source: Bolt &amp; van Zanden (2024), Maddison Project Database 2023 (CC BY 4.0), and the original studies it compiles.</p>
+{% endif %}
+
+<div class="section-head"><h2>Wars and upheavals</h2><span class="muted small">{{ h.events|length }} from Wikidata</span></div>
+{% if h.events %}
+<div class="toolbar" style="margin-top:0">
+  {% for k, label in [('all', 'All'), ('war', 'Wars'), ('rebellion', 'Rebellions'), ('revolution', 'Revolutions'), ('coup', 'Coups')] %}<button class="btn {{ '' if k == 'all' else 'ghost' }} sm" data-ev-filter="{{ k }}">{{ label }} {% if k != 'all' %}<span class="muted">({{ h.events|selectattr('kind', 'equalto', k)|list|length }})</span>{% endif %}</button>{% endfor %}
+</div>
+<div class="table-wrap">
+<table id="ev-table">
+  <thead><tr><th class="num">Year</th><th>Event</th><th>Type</th><th>Also involved</th><th class="num">Deaths</th></tr></thead>
+  <tbody>
+  {% for centuryname, evs in events_by_century %}
+    <tr class="century"><th colspan="5" style="position:static">{{ centuryname }}</th></tr>
+    {% for e in evs %}
+    <tr data-kind="{{ e.kind }}">
+      <td class="num">{{ year_label(e.start) }}{% if e.end and e.end != e.start %}–{{ year_label(e.end) }}{% endif %}</td>
+      <td><a href="{{ e.url }}" target="_blank" rel="noopener">{{ e.name }}</a></td>
+      <td><span class="badge ev-{{ e.kind }}">{{ e.kind }}</span></td>
+      <td class="small">{% for o in e.countries if o != c.entity_id %}{% if o in by_id %}<a href="/countries/{{ by_id[o].slug }}/history/">{{ by_id[o].name }}</a>{% if not loop.last %}, {% endif %}{% endif %}{% endfor %}</td>
+      <td class="num small">{% if e.deaths %}{{ e.deaths|fmt(0) }}{% else %}<span class="muted">—</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="small muted" style="margin-top:6px">Events Wikidata places in {{ c.name }}’s present territory. Coverage is uneven: it is richer for well-documented regions and recent centuries. Death figures are given only where Wikidata records one and are often disputed. Names link to Wikipedia.</p>
+{% else %}
+<p class="muted">Wikidata records no wars, rebellions, revolutions or coups located here.</p>
+{% endif %}
+
+<div class="section-head"><h2>Armed conflicts since 1946</h2><span class="muted small">Uppsala Conflict Data Program (UCDP) v26.1</span></div>
+{% if h.conflicts %}
+<div class="table-wrap">
+<table>
+  <thead><tr><th class="num">Years</th><th>Sides</th><th>Type</th><th>Over</th><th class="num" title="Years with 1,000+ battle deaths">War years</th><th class="num">Battle deaths since 1989</th></tr></thead>
+  <tbody>
+  {% for x in h.conflicts %}
+    <tr>
+      <td class="num">{{ x.first }}{% if x.last != x.first %}–{{ x.last }}{% endif %}</td>
+      <td>{{ x.side_a }} <span class="muted">vs</span> {{ x.side_b|join(', ') }}</td>
+      <td class="small">{{ x.type }}</td>
+      <td class="small">{{ x.incompatibility }}{% if x.territory %}: {{ x.territory }}{% endif %}</td>
+      <td class="num">{{ x.war_years or '—' }}</td>
+      <td class="num small">{% if x.deaths_1989 %}{{ x.deaths_1989[1]|fmt(0) }} <span class="muted">({{ x.deaths_1989[0]|fmt(0) }}–{{ x.deaths_1989[2]|fmt(0) }})</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="small muted" style="margin-top:6px">UCDP counts a conflict when at least 25 battle deaths occur in a year between a government and another organised party. “War years” are years with at least 1,000. Battle deaths are the best estimate (low–high) summed over 1989 onward. They exclude deaths before 1989 and civilian deaths from one-sided violence. Listed under every country UCDP names as a location.</p>
+{% else %}
+<p class="muted">UCDP records no armed conflicts located here since 1946.</p>
+{% endif %}
+
+<div class="section-head"><h2>Sources</h2></div>
+<ul class="small">
+  <li>Historical borders: Cliopatria v0.2.1, Seshat Global History Databank, CC BY 4.0. Shares calculated by this site by overlaying those borders on today’s (modified).</li>
+  <li>Events: Wikidata (CC0): wars, rebellions, revolutions and coups with a start date and a location.</li>
+  <li>Armed conflicts: UCDP/PRIO Armed Conflict Dataset and UCDP Battle-Related Deaths Dataset v26.1 (CC BY 4.0). Please cite the publications <a href="https://ucdp.uu.se/downloads/">listed by UCDP</a> for each dataset.</li>
+  <li>Long-run economy: Maddison Project Database 2023, Bolt &amp; van Zanden (2024), CC BY 4.0.</li>
+</ul>
+<script type="application/json" id="hist-data">{{ {"iso3": c.entity_id, "years": h.map_years, "bbox": h.bbox}|tojson_safe }}</script>
+{% endblock %}
+{% block scripts %}<script src="/static/js/history.js?v={{ asset_v }}" defer></script>{% endblock %}

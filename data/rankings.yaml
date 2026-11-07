@@ -1,0 +1,261 @@
+# Ranking definitions. A version is immutable once published: change weights
+# => bump the version. reference_year: latest year allowed; max_data_age: years
+# back from reference_year a value may be.
+
+composites:
+  - id: capability-index
+    version: 1.0.0
+    name: Capability Index
+    kind: original_composite
+    entity_type: country
+    summary: >-
+      The platform's own index of a country's capacity for long-term prosperity, across
+      three pillars: economy, innovation and human capital. It is an original index, not an
+      official statistic, and the weights are a published judgement that you can change in
+      the Index Builder.
+    normalisation: min_max
+    aggregation: pillars
+    min_coverage: 0.7
+    reference_year: 2026
+    max_data_age: 8
+    mc: { runs: 1000, spread: 0.25, seed: 20261020 }
+    eligibility: { min_population: 500000 }
+    topics: [economy, innovation, human]
+    pillars:
+      - id: economy
+        name: Economy
+        weight: 0.35
+        indicators:
+          - { id: gdp-per-capita-ppp, weight: 0.6 }
+          - { id: unemployment,       weight: 0.2 }
+          - { id: electricity-access, weight: 0.2 }
+      - id: innovation
+        name: Innovation
+        weight: 0.35
+        indicators:
+          - { id: rd-spending,       weight: 0.3 }
+          - { id: researchers,       weight: 0.25 }
+          - { id: internet-users,    weight: 0.25 }
+          - { id: high-tech-exports, weight: 0.2 }
+      - id: human
+        name: Human capital
+        weight: 0.30
+        indicators:
+          - { id: life-expectancy,     weight: 0.35 }
+          - { id: expected-schooling,  weight: 0.25 }
+          - { id: mean-schooling,      weight: 0.25 }
+          - { id: tertiary-enrolment,  weight: 0.15 }
+
+  - id: digital-readiness-index
+    version: 1.0.0
+    name: Digital Readiness Index
+    kind: original_composite
+    entity_type: country
+    summary: >-
+      The platform’s own index of how ready a country is for a digital economy: how many people are
+      connected, whether they have the skills to use it, and how much digital output the economy exports.
+      An original index, not an official statistic.
+    normalisation: min_max
+    aggregation: pillars
+    min_coverage: 0.7
+    reference_year: 2026
+    max_data_age: 8
+    mc: { runs: 1000, spread: 0.25, seed: 20261029 }
+    eligibility: { min_population: 500000 }
+    topics: [innovation, education]
+    pillars:
+      - id: access
+        name: Access
+        weight: 0.40
+        indicators:
+          - { id: internet-users,  weight: 0.40 }
+          - { id: fixed-broadband, weight: 0.35 }
+          - { id: mobile-subs,     weight: 0.25 }
+      - id: skills
+        name: Skills
+        weight: 0.30
+        indicators:
+          - { id: tertiary-enrolment, weight: 0.5 }
+          - { id: mean-schooling,     weight: 0.5 }
+      - id: digital-economy
+        name: Digital economy
+        weight: 0.30
+        indicators:
+          - { id: ict-service-exports, weight: 0.5 }
+          - { id: high-tech-exports,   weight: 0.3 }
+          - { id: secure-servers,      weight: 0.2 }
+
+  - id: health-system-index
+    version: 1.0.0
+    name: Health System Index
+    kind: original_composite
+    entity_type: country
+    summary: >-
+      The platform’s own index of health outcomes, access to care and financial protection. It looks at how
+      long and how safely people live, whether basic care reaches them, and whether paying for it falls on
+      households. An original index, not an official statistic.
+    normalisation: min_max
+    aggregation: pillars
+    min_coverage: 0.7
+    reference_year: 2026
+    max_data_age: 8
+    mc: { runs: 1000, spread: 0.25, seed: 20261030 }
+    eligibility: { min_population: 500000 }
+    topics: [health]
+    pillars:
+      - id: outcomes
+        name: Outcomes
+        weight: 0.40
+        indicators:
+          - { id: life-expectancy,    weight: 0.35 }
+          - { id: under5-mortality,   weight: 0.35 }
+          - { id: maternal-mortality, weight: 0.30 }
+      - id: access
+        name: Access to care
+        weight: 0.35
+        indicators:
+          - { id: physicians,           weight: 0.30 }
+          - { id: measles-immunization, weight: 0.25 }
+          - { id: basic-sanitation,     weight: 0.25 }
+          - { id: hospital-beds,        weight: 0.20 }
+      - id: financing
+        name: Financial protection
+        weight: 0.25
+        indicators:
+          - { id: health-spending, weight: 0.5 }
+          - { id: out-of-pocket,   weight: 0.5 }
+
+  - id: green-transition-index
+    version: 1.0.0
+    name: Green Transition Index
+    kind: original_composite
+    entity_type: country
+    summary: >-
+      The platform’s own index of progress towards a low-carbon, low-pollution economy: clean energy,
+      emissions and resource use per person, and air quality and protected nature. An original index,
+      not an official statistic.
+    normalisation: min_max
+    aggregation: pillars
+    min_coverage: 0.7
+    reference_year: 2026
+    max_data_age: 8
+    mc: { runs: 1000, spread: 0.25, seed: 20261031 }
+    eligibility: { min_population: 500000 }
+    topics: [environment]
+    pillars:
+      - id: clean-energy
+        name: Clean energy
+        weight: 0.40
+        indicators:
+          - { id: renewable-share,       weight: 0.40 }
+          - { id: renewable-electricity, weight: 0.30 }
+          - { id: clean-cooking,         weight: 0.30 }
+      - id: emissions
+        name: Emissions & resource use
+        weight: 0.40
+        indicators:
+          - { id: ghg-per-capita,     weight: 0.50 }
+          - { id: energy-intensity,   weight: 0.25 }
+          - { id: material-footprint, weight: 0.25 }
+      - id: nature
+        name: Air & nature
+        weight: 0.20
+        indicators:
+          - { id: pm25,            weight: 0.5 }
+          - { id: protected-areas, weight: 0.5 }
+
+official:
+  - id: human-development-index
+    version: HDR-2025
+    name: Human Development Index
+    kind: official_reproduction
+    official_owner: UNDP
+    entity_type: country
+    indicator: hdi
+    year: 2023
+    summary: >-
+      UNDP's Human Development Index from the 2025 Human Development Report, covering 2023
+      data. Values and ranks are UNDP's own. The platform also recomputes the index from its
+      components to check it.
+    topics: [human]
+
+  - id: inequality-adjusted-hdi
+    version: HDR-2025
+    name: Inequality-adjusted Human Development Index
+    kind: official_reproduction
+    official_owner: UNDP
+    method: published
+    entity_type: country
+    indicator: ihdi
+    year: 2023
+    order: desc
+    summary: >-
+      UNDP’s IHDI from the Human Development Report 2025 (2023 data): the HDI discounted for inequality in
+      health, education and income. Values are UNDP’s own. UNDP does not publish IHDI ranks, so the order
+      shown is this site’s ranking of UNDP’s values.
+    topics: [human, society]
+
+  - id: gender-inequality-index
+    version: HDR-2025
+    name: Gender Inequality Index
+    kind: official_reproduction
+    official_owner: UNDP
+    method: published
+    entity_type: country
+    indicator: gii
+    year: 2023
+    order: asc
+    summary: >-
+      UNDP’s Gender Inequality Index from the Human Development Report 2025 (2023 data), covering
+      reproductive health, empowerment and the labour market. Lower is more equal. Values and ranks are
+      UNDP’s own.
+    topics: [society]
+
+  - id: planetary-pressures-adjusted-hdi
+    version: HDR-2025
+    name: Planetary pressures-adjusted HDI
+    kind: official_reproduction
+    official_owner: UNDP
+    method: published
+    entity_type: country
+    indicator: phdi
+    year: 2023
+    order: desc
+    summary: >-
+      UNDP’s PHDI from the Human Development Report 2025 (2023 data): the HDI adjusted for carbon dioxide
+      emissions and material footprint per person. Values are UNDP’s own; the order shown is this site’s
+      ranking of UNDP’s values.
+    topics: [human, environment]
+
+# Single-indicator rankings: rank by the latest value within max_data_age years.
+# order: desc ranks the highest value first; asc ranks the lowest first.
+single:
+  - { id: gdp,                indicator: gdp,                order: desc, name: "Largest economies (GDP)",       topics: [economy], value_label: GDP, columns: [{ id: world_share, label: Share of world }, { id: gdp-growth, label: Growth }, { id: gdp-per-capita-ppp, label: "Per person (PPP)" }, { id: gni-per-capita-atlas, label: GNI per person }, { id: population, label: Population }] }
+  - { id: gdp-per-capita-ppp, indicator: gdp-per-capita-ppp, order: desc, name: "GDP per capita, PPP",           topics: [economy], value_label: GDP per person, columns: [{ id: gdp-growth, label: Growth }, { id: gdp, label: GDP }, { id: gini, label: Gini }, { id: hdi, label: HDI }] }
+  - { id: population,         indicator: population,         order: desc, name: "Most populous countries",       topics: [demography], value_label: Population, columns: [{ id: world_share, label: Share of world }, { id: population-growth, label: Yearly change }, { id: population-density, label: "Density (/km²)" }, { id: fertility, label: Fertility }, { id: urban-share, label: Urban }, { id: aged-65, label: "Aged 65+" }, { id: net-migration, label: Net migration }] }
+  - { id: life-expectancy,    indicator: life-expectancy,    order: desc, name: "Life expectancy at birth",      topics: [health], value_label: Life expectancy, columns: [{ id: life-expectancy-female, label: Women }, { id: life-expectancy-male, label: Men }, { id: under5-mortality, label: Under-5 mortality }, { id: health-spending, label: Health spending }] }
+  - { id: infant-mortality,   indicator: infant-mortality,   order: asc,  name: "Lowest infant mortality",       topics: [health] }
+  - { id: internet-users,     indicator: internet-users,     order: desc, name: "Internet use",                  topics: [innovation], value_label: Internet users, columns: [{ id: fixed-broadband, label: Fixed broadband }, { id: mobile-subs, label: Mobile subs }] }
+  - { id: rd-spending,        indicator: rd-spending,        order: desc, name: "R&D spending (% of GDP)",       topics: [innovation] }
+  - { id: renewable-share,    indicator: renewable-share,    order: desc, name: "Renewable energy share",        topics: [environment] }
+  - { id: co2-per-capita,     indicator: co2-per-capita,     order: desc, name: "Highest CO₂ emissions per person", topics: [environment], value_label: CO₂ per person, columns: [{ id: ghg-per-capita, label: All GHG per person }, { id: renewable-share, label: Renewable share }, { id: population, label: Population }] }
+  - { id: electricity-access, indicator: electricity-access, order: desc, name: "Access to electricity",         topics: [environment] }
+  - { id: women-parliament,   indicator: women-parliament,   order: desc, name: "Women in parliament",           topics: [society] }
+  - { id: tertiary-enrolment, indicator: tertiary-enrolment, order: desc, name: "Tertiary enrolment",            topics: [education] }
+  - { id: corruption-perceptions, indicator: cpi,         order: desc, name: "Corruption Perceptions Index (least corrupt first)", topics: [governance] }
+  - { id: average-wage,       indicator: average-wage,       order: desc, name: "Average annual wages (OECD)",   topics: [economy] }
+  - { id: news-share,         indicator: news-share,         order: desc, name: "Most covered in world news (last 3 months)", topics: [media], reference_year: 2026, max_data_age: 0 }
+  - { id: gni-per-capita-atlas, indicator: gni-per-capita-atlas, order: desc, name: "GNI per capita (Atlas method)", topics: [economy] }
+  - { id: youth-unemployment, indicator: youth-unemployment, order: asc,  name: "Lowest youth unemployment",     topics: [economy] }
+  - { id: fixed-broadband,    indicator: fixed-broadband,    order: desc, name: "Fixed broadband subscriptions", topics: [innovation] }
+  - { id: under5-mortality,   indicator: under5-mortality,   order: asc,  name: "Lowest under-5 mortality",      topics: [health] }
+  - { id: renewable-electricity, indicator: renewable-electricity, order: desc, name: "Renewable electricity share", topics: [environment] }
+  - { id: ghg-per-capita,     indicator: ghg-per-capita,     order: desc, name: "Highest greenhouse gas emissions per person", topics: [environment] }
+  - { id: homicide-rate,      indicator: homicide-rate,      order: asc,  name: "Lowest homicide rate",          topics: [safety] }
+  - { id: road-deaths,        indicator: road-deaths,        order: asc,  name: "Safest roads (fewest road deaths)", topics: [safety] }
+  - { id: government-effectiveness, indicator: wgi-government-effectiveness, order: desc, name: "Government effectiveness (WGI)", topics: [governance] }
+  - { id: rule-of-law,        indicator: wgi-rule-of-law,    order: desc, name: "Rule of law (WGI)",             topics: [governance] }
+  - { id: women-secondary-education, indicator: women-secondary-education, order: desc, name: "Women with secondary education", topics: [society, education] }
+  - { id: surface-area,       indicator: surface-area,       order: desc, name: "Largest countries by area",     topics: [demography], value_label: Area (km²), columns: [{ id: world_share, label: Share of world }, { id: population, label: Population }, { id: population-density, label: "Density (/km²)" }] }
+
+single_defaults: { version: 1.0.0, reference_year: 2026, max_data_age: 8 }

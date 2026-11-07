@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Data{% endblock %}
+{% block main %}
+<div class="page-head">
+  <h1>Data</h1>
+  <p class="lede">Everything on this site is built from one open data release. You can browse it, download it in bulk, or read it from the static JSON API. No account or key is needed.</p>
+  <p class="small muted">Release {{ release }} · {{ '{:,}'.format(n_obs) }} observations · licence {{ site.data_licence }} (source values keep their source’s licence)</p>
+</div>
+<div class="grid g4">
+  <a class="card link" href="/data/indicators/" style="color:inherit;text-decoration:none"><h3>Indicators</h3><p class="small">Definitions, coverage, maps and full time series for every indicator.</p></a>
+  <a class="card link" href="/data/sources/" style="color:inherit;text-decoration:none"><h3>Sources &amp; licences</h3><p class="small">Who publishes each number, under what licence, and what we don’t use and why.</p></a>
+  <a class="card link" href="/data/downloads/" style="color:inherit;text-decoration:none"><h3>Downloads</h3><p class="small">Bulk CSV and Parquet tables with licence and attribution files.</p></a>
+  <a class="card link" href="/data/api/" style="color:inherit;text-decoration:none"><h3>Open API</h3><p class="small">Static JSON files at stable URLs. Free and unlimited.</p></a>
+</div>
+{% endblock %}

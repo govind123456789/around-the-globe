@@ -1,0 +1,548 @@
+openapi: 3.1.0
+info:
+  title: Free Global Rankings — Open Data API
+  version: 0.2.0
+  license:
+    name: CC BY 4.0 (data); individual sources keep their own licences, listed per value
+    url: https://creativecommons.org/licenses/by/4.0/
+  description: |
+    Two kinds of endpoint:
+
+    1. **Static files** (`/v1/...json`, `.parquet`, `.csv`) on Cloudflare R2. The
+       pipeline writes them once per release, and nothing computes on request. They are
+       free, unlimited and cacheable, and need no key. They are also the files the website
+       itself reads.
+    2. **Worker endpoints** (`/ai/*`, `/mcp`), which are the only dynamic code. They are
+       rate-limited, Turnstile-protected and capped by a daily budget breaker.
+
+    Conventions
+      * `releases/{date}/` paths are immutable. `latest/` is a pointer to the newest release.
+      * Missing data is omitted or returned as null with a reason, never 0.
+      * Every value carries `source`, `source_licence`, `year`, `status`, `retrieved_at`.
+      * Only green-tier sources appear (a CI licence gate enforces this).
+      * Cite as: "<Platform>, release <date>, CC BY 4.0, <url>".
+
+    Example: `GET https://data.example.com/v1/latest/entities/country/IND.json`
+servers:
+  - url: https://data.example.com/v1
+    description: Static files on R2 (placeholder domain until the brand is chosen)
+  - url: https://api.example.com
+    description: Cloudflare Worker (AI + MCP), M5-6
+tags:
+  - name: Release
+  - name: Entities
+  - name: Indicators
+  - name: Rankings
+  - name: Bulk
+  - name: AI
+    description: Worker, M5-6
+  - name: MCP
+    description: Worker, M5-6
+
+paths:
+  /releases.json:
+    get:
+      tags: [Release]
+      summary: All releases, newest first
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Release' } }
+
+  /{release}/manifest.json:
+    get:
+      tags: [Release]
+      summary: Release manifest — files, checksums, sources, engine version
+      parameters: [ { $ref: '#/components/parameters/Release' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Manifest' }
+
+  /{release}/sources.json:
+    get:
+      tags: [Release]
+      summary: Sources used in this release, with licence and attribution
+      parameters: [ { $ref: '#/components/parameters/Release' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Source' } }
+
+  /{release}/entities/{type}.json:
+    get:
+      tags: [Entities]
+      summary: Index of all entities of a type
+      parameters:
+        - $ref: '#/components/parameters/Release'
+        - { name: type, in: path, required: true, schema: { $ref: '#/components/schemas/EntityType' } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/EntityRef' } }
+
+  /{release}/entities/{type}/{entity_id}.json:
+    get:
+      tags: [Entities]
+      summary: Full entity file — profile, latest values, series, rankings
+      description: One file per entity, a few KB to tens of KB. The country profile page renders from this file alone.
+      parameters:
+        - $ref: '#/components/parameters/Release'
+        - { name: type, in: path, required: true, schema: { $ref: '#/components/schemas/EntityType' } }
+        - { name: entity_id, in: path, required: true, schema: { type: string, example: IND } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EntityFile' }
+        '404': { description: No such entity in this release }
+
+  /{release}/indicators.json:
+    get:
+      tags: [Indicators]
+      summary: Indicator catalogue
+      parameters: [ { $ref: '#/components/parameters/Release' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Indicator' } }
+
+  /{release}/indicators/{indicator_id}.json:
+    get:
+      tags: [Indicators]
+      summary: All observations for one indicator (all entities, all years) + coverage
+      parameters:
+        - $ref: '#/components/parameters/Release'
+        - { name: indicator_id, in: path, required: true, schema: { type: string, example: gdp-per-capita-ppp } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IndicatorFile' }
+
+  /{release}/rankings.json:
+    get:
+      tags: [Rankings]
+      summary: All rankings and their published versions
+      parameters: [ { $ref: '#/components/parameters/Release' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/RankingSummary' } }
+
+  /{release}/rankings/{ranking_id}/{version}.json:
+    get:
+      tags: [Rankings]
+      summary: Definition, weights and results of one ranking version (immutable)
+      parameters:
+        - $ref: '#/components/parameters/Release'
+        - { name: ranking_id, in: path, required: true, schema: { type: string, example: human-development-index } }
+        - { name: version, in: path, required: true, schema: { type: string, example: 1.0.0 } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RankingFile' }
+
+  /{release}/matrix.json:
+    get:
+      tags: [Bulk]
+      summary: Compact entity × indicator matrix (latest value per pair) for the Index Builder
+      description: |
+        A few MB, columnar layout. Only indicators eligible as engine inputs are included
+        (`display_only` and share-alike indicators are excluded).
+      parameters: [ { $ref: '#/components/parameters/Release' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Matrix' }
+
+  /{release}/bulk/{table}.{format}:
+    get:
+      tags: [Bulk]
+      summary: Bulk tables (observations, entities, indicators, sources, ranking_results)
+      description: Each release folder also includes `LICENSE.txt` and `ATTRIBUTION.md`. Parquet supports HTTP range requests, so DuckDB-WASM and DuckDB can query it remotely.
+      parameters:
+        - $ref: '#/components/parameters/Release'
+        - { name: table, in: path, required: true, schema: { type: string, enum: [observations, entities, indicators, sources, ranking_results, ranking_weights] } }
+        - { name: format, in: path, required: true, schema: { type: string, enum: [parquet, csv.gz] } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/vnd.apache.parquet: { schema: { type: string, format: binary } }
+            application/gzip: { schema: { type: string, format: binary }, description: gzip-compressed CSV }
+
+  # ---------------------------------------------------------------- Worker (M5-6)
+  /ai/ask:
+    servers: [ { url: https://api.example.com } ]
+    post:
+      tags: [AI]
+      summary: Ask a question; the answer is grounded in read-only tool calls over the release files
+      description: |
+        Request path: Turnstile → intent cache (D1) → free-tier router → paid fallback.
+        Limits: per-IP daily quota, tool-iteration cap, token ceiling, $3/day breaker.
+        With `X-User-Key`, the call uses the caller's own provider key and skips quota.
+        The key is not stored.
+      parameters:
+        - { name: X-User-Key, in: header, required: false, schema: { type: string } }
+        - { name: X-User-Provider, in: header, required: false, schema: { type: string, enum: [anthropic, openai, google, groq, openrouter] } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [question, turnstile_token]
+              properties:
+                question: { type: string, maxLength: 1000 }
+                turnstile_token: { type: string }
+                context_entities: { type: array, maxItems: 5, items: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AiAnswer' }
+        '403': { description: Turnstile failed }
+        '429':
+          description: Per-IP quota reached
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AiUnavailable' }
+        '503':
+          description: Daily budget breaker tripped or all providers unavailable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AiUnavailable' }
+
+  /ai/quota:
+    servers: [ { url: https://api.example.com } ]
+    get:
+      tags: [AI]
+      summary: Remaining questions for this IP today and breaker status
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  remaining_today: { type: integer }
+                  resets_at: { type: string, format: date-time }
+                  breaker_open: { type: boolean }
+
+  /mcp:
+    servers: [ { url: https://api.example.com } ]
+    post:
+      tags: [MCP]
+      summary: MCP server (Streamable HTTP) exposing search_indicators, get_values, rank, compare
+      description: The same typed read-only tools the assistant uses. Each tool result includes citation fields, so a calling assistant can cite the platform.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, description: JSON-RPC 2.0 message per the MCP specification }
+      responses:
+        '200': { description: JSON-RPC response or SSE stream }
+
+components:
+  parameters:
+    Release:
+      name: release
+      in: path
+      required: true
+      description: "`latest` or a release date folder such as `releases/2027-02-15`"
+      schema: { type: string, example: latest }
+
+  schemas:
+    EntityType:
+      type: string
+      enum: [country, country_group, city, university, company, industry]
+    ObsStatus:
+      type: string
+      enum: [measured, estimate, forecast]
+
+    Release:
+      type: object
+      properties:
+        release: { type: string, example: '2027-02-15' }
+        path: { type: string, example: releases/2027-02-15 }
+        created_at: { type: string, format: date-time }
+        notes_url: { type: string }
+
+    Manifest:
+      type: object
+      properties:
+        release: { type: string }
+        engine_version: { type: string, description: git SHA of pipeline }
+        source_releases:
+          type: array
+          items:
+            type: object
+            properties:
+              source_release_id: { type: string }
+              retrieved_at: { type: string, format: date-time }
+              checksum_sha256: { type: string }
+        files:
+          type: array
+          items:
+            type: object
+            properties:
+              path: { type: string }
+              bytes: { type: integer }
+              sha256: { type: string }
+
+    Source:
+      type: object
+      properties:
+        source_id: { type: string }
+        publisher: { type: string }
+        title: { type: string }
+        url: { type: string }
+        licence: { type: string }
+        licence_url: { type: string }
+        attribution_text: { type: string }
+        share_alike: { type: boolean }
+        no_modification: { type: boolean }
+
+    EntityRef:
+      type: object
+      required: [entity_id, type, slug, name]
+      properties:
+        entity_id: { type: string }
+        type: { $ref: '#/components/schemas/EntityType' }
+        slug: { type: string }
+        name: { type: string }
+        iso3: { type: [string, 'null'] }
+        wikidata_qid: { type: [string, 'null'] }
+
+    Value:
+      description: An observed value with its provenance
+      type: object
+      required: [value, year, status, source, source_licence, retrieved_at]
+      properties:
+        kind: { const: observed }
+        value: { type: number }
+        year: { type: integer }
+        status: { $ref: '#/components/schemas/ObsStatus' }
+        source: { type: string }
+        source_licence: { type: string }
+        source_url: { type: string }
+        retrieved_at: { type: string, format: date-time }
+        modified: { type: boolean, description: True if transformed from the source value }
+
+    EntityFile:
+      allOf:
+        - $ref: '#/components/schemas/EntityRef'
+        - type: object
+          properties:
+            groups: { type: array, items: { $ref: '#/components/schemas/EntityRef' } }
+            attributes: { type: object }
+            facts:
+              description: Basic country facts from Wikidata (CC0), cleaned and corrected. Empty for countries without data; any field may be absent.
+              type: object
+              properties:
+                languages: { type: array, items: { type: string } }
+                currency:
+                  type: array
+                  items: { type: object, properties: { name: { type: string }, code: { type: [string, 'null'] } } }
+                calling_code: { type: array, items: { type: string } }
+                internet_domain: { type: array, items: { type: string } }
+                drives_on: { type: string, enum: [left, right] }
+                highest_point: { type: object, properties: { name: { type: string }, elevation_m: { type: [integer, 'null'] } } }
+                borders:
+                  description: Land and sea borders, including those of overseas territories. Symmetric.
+                  type: array
+                  items: { type: object, properties: { entity_id: { type: string }, name: { type: string }, slug: { type: string } } }
+            latest:
+              description: Latest value per indicator
+              type: object
+              additionalProperties: { $ref: '#/components/schemas/Value' }
+            series:
+              description: "indicator_id → [[year, value], …] (provenance as in `latest`)"
+              type: object
+              additionalProperties:
+                type: array
+                items: { type: array, prefixItems: [ { type: integer }, { type: number } ] }
+            percentiles:
+              type: object
+              additionalProperties: { type: number }
+            rankings:
+              type: array
+              items:
+                type: object
+                properties:
+                  ranking_id: { type: string }
+                  version: { type: string }
+                  rank: { type: [integer, 'null'] }
+                  is_tied: { type: boolean }
+                  of: { type: integer }
+                  rank_low: { type: [integer, 'null'] }
+                  rank_high: { type: [integer, 'null'] }
+                  movement: { type: [integer, 'null'] }
+                  excluded_reason: { type: [string, 'null'] }
+            summary:
+              description: Batch-generated AI summary (M5-6); figures carry citation markers
+              type: [object, 'null']
+              properties:
+                kind: { const: interpretation }
+                text_md: { type: string }
+                model: { type: string }
+                generated_at: { type: string, format: date-time }
+
+    Indicator:
+      type: object
+      properties:
+        indicator_id: { type: string }
+        name: { type: string }
+        definition: { type: string }
+        unit: { type: string }
+        direction: { type: string, enum: [higher_better, lower_better, neutral] }
+        dimension: { type: string }
+        applies_to: { type: array, items: { $ref: '#/components/schemas/EntityType' } }
+        source: { type: string }
+        source_code: { type: [string, 'null'] }
+        source_licence: { type: string }
+        display_only: { type: boolean }
+        decimals: { type: integer }
+
+    IndicatorFile:
+      allOf:
+        - $ref: '#/components/schemas/Indicator'
+        - type: object
+          properties:
+            coverage_by_year:
+              type: object
+              additionalProperties: { type: integer }
+            data:
+              description: "entity_id → [[year, value, status], …]"
+              type: object
+              additionalProperties:
+                type: array
+                items: { type: array }
+
+    RankingSummary:
+      type: object
+      properties:
+        ranking_id: { type: string }
+        name: { type: string }
+        kind: { type: string, enum: [official_reproduction, original_composite, single_indicator] }
+        entity_type: { $ref: '#/components/schemas/EntityType' }
+        official_owner: { type: [string, 'null'] }
+        current_version: { type: string }
+        versions: { type: array, items: { type: string } }
+        output_licence: { type: string }
+
+    RankingFile:
+      type: object
+      properties:
+        definition:
+          type: object
+          properties:
+            ranking_id: { type: string }
+            version: { type: string }
+            kind: { type: string }
+            normalisation: { type: string }
+            aggregation: { type: string }
+            min_coverage: { type: number }
+            reference_year: { type: integer }
+            mc: { type: object, properties: { runs: { type: integer }, spread: { type: number }, seed: { type: integer } } }
+            weights:
+              type: array
+              items:
+                type: object
+                properties:
+                  pillar: { type: [string, 'null'] }
+                  pillar_weight: { type: [number, 'null'] }
+                  indicator_id: { type: string }
+                  weight: { type: number }
+            methodology_url: { type: string }
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              kind: { const: calculated }
+              entity_id: { type: string }
+              rank: { type: [integer, 'null'] }
+              is_tied: { type: boolean }
+              score: { type: [number, 'null'] }
+              rank_low: { type: [integer, 'null'] }
+              rank_high: { type: [integer, 'null'] }
+              movement: { type: [integer, 'null'] }
+              coverage: { type: number }
+              excluded_reason: { type: [string, 'null'] }
+              pillar_scores: { type: object, additionalProperties: { type: number } }
+
+    Matrix:
+      type: object
+      properties:
+        release: { type: string }
+        entities: { type: array, items: { type: string } }
+        indicators: { type: array, items: { $ref: '#/components/schemas/Indicator' } }
+        values:
+          description: "Row-major: values[e][i] (null = missing)"
+          type: array
+          items: { type: array, items: { type: [number, 'null'] } }
+        years:
+          description: Observation year for each cell
+          type: array
+          items: { type: array, items: { type: [integer, 'null'] } }
+
+    AiAnswer:
+      type: object
+      properties:
+        kind: { const: interpretation }
+        answer_md: { type: string, description: 'Figures carry [^n] citation markers' }
+        grounded: { type: boolean }
+        cached: { type: boolean }
+        unanswered: { type: array, items: { type: string } }
+        citations:
+          type: array
+          items:
+            type: object
+            properties:
+              marker: { type: string }
+              entity_id: { type: string }
+              indicator_id: { type: [string, 'null'] }
+              ranking: { type: [string, 'null'], example: 'flagship@1.0.0' }
+              year: { type: [integer, 'null'] }
+              url: { type: string }
+        tool_calls:
+          type: array
+          items:
+            type: object
+            properties:
+              tool: { type: string, enum: [search_indicators, get_values, rank, compare] }
+              arguments: { type: object }
+        model: { type: string }
+        remaining_today: { type: integer }
+
+    AiUnavailable:
+      type: object
+      properties:
+        reason: { type: string, enum: [ip_quota, daily_budget, providers_down] }
+        resets_at: { type: string, format: date-time }
+        fallback_links:
+          description: Precomputed summary pages for the entities in the question
+          type: array
+          items: { type: string }

@@ -1,0 +1,47 @@
+{% macro chip(c) -%}
+<a class="chip" href="{{ c.url }}" title="Source: {{ c.src }} · licence {{ c.licence }}{% if c.year %} · data year {{ c.year }}{% endif %}">{{ c.src }}{% if c.year %} · {{ c.year }}{% endif %}{% if c.status and c.status != 'measured' %} · <span class="st">{{ 'EST' if c.status == 'estimate' else c.status|upper }}</span>{% endif %}</a>
+{%- endmacro %}
+
+{% macro kind_badge(r) -%}
+{% if r.kind == 'official_reproduction' %}<span class="badge official">Official · {{ r.official_owner }}</span>
+{% elif r.kind == 'original_composite' %}<span class="badge original">Original index</span>
+{% else %}<span class="badge">Indicator ranking</span>{% endif %}
+{%- endmacro %}
+
+{% macro rank_label(row) -%}
+{% if row.rank %}{% if row.is_tied %}={% endif %}{{ row.rank }}{% else %}—{% endif %}
+{%- endmacro %}
+
+{% macro movement(m) -%}
+{% if m is none %}<span class="muted">·</span>{% elif m > 0 %}<span class="mv up" title="Up {{ m }}">▲{{ m }}</span>{% elif m < 0 %}<span class="mv down" title="Down {{ -m }}">▼{{ -m }}</span>{% else %}<span class="muted">=</span>{% endif %}
+{%- endmacro %}
+
+{% macro score(r, v) -%}
+{% if v is none %}—{% elif r.kind == 'original_composite' %}{{ '%.1f'|format(v) }}{% else %}{{ v|fmt(r.decimals, r.unit) }}{% endif %}
+{%- endmacro %}
+
+{% macro map(id, values, label, lower_better=False, height=None) -%}
+<div class="map-box">
+  <div class="map" id="{{ id }}" data-map data-label="{{ label }}"{% if lower_better %} data-lower-better{% endif %}{% if height %} style="height:{{ height }}px"{% endif %} role="img" aria-label="World map: {{ label }}"></div>
+  <div class="map-tip" aria-hidden="true"></div>
+  <div class="map-legend"><span data-lo></span><span class="ramp">{% for i in range(7) %}<i style="background:var(--map-{{ i }})"></i>{% endfor %}</span><span data-hi></span><span class="na"></span> No data</div>
+  <script type="application/json" data-map-values>{{ values|tojson_safe }}</script>
+</div>
+{%- endmacro %}
+
+{% macro live(l) -%}
+{% if l %}
+<section class="live" aria-label="Live world estimates">
+  <div class="live-head"><h2>The world right now <span class="badge">Estimate</span></h2><a class="small" href="/methodology/live-estimates/">How this is calculated</a></div>
+  <div class="live-grid">
+    <div><b data-live="population">{{ '{:,.0f}'.format(l.at.population) }}</b><span>World population</span></div>
+    <div><b data-live="births">{{ '{:,.0f}'.format(l.at.births) }}</b><span>Births this year</span></div>
+    <div><b data-live="deaths">{{ '{:,.0f}'.format(l.at.deaths) }}</b><span>Deaths this year</span></div>
+    <div><b data-live="growth">{{ '{:,.0f}'.format(l.at.growth) }}</b><span>Net growth this year</span></div>
+    {% if l.at.co2 is not none %}<div><b data-live="co2">{{ '{:,.0f}'.format(l.at.co2) }}</b><span>CO₂ this year (tonnes)</span></div>{% endif %}
+  </div>
+  <p class="small muted" style="margin:10px 0 0">Calculated from World Bank population ({{ l.base.population_year }}), birth and death rates ({{ l.base.birth_year }}){% if l.base.co2_year %} and CO₂ ({{ l.base.co2_year }}){% endif %}, assuming recent rates continue. These are not measurements.</p>
+  <script type="application/json" id="live-data">{{ l.base|tojson_safe }}</script>
+</section>
+{% endif %}
+{%- endmacro %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Sources & licences{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/data/">Data</a></p>
+<div class="page-head">
+  <h1>Sources &amp; licences</h1>
+  <p class="lede">This site only publishes data whose licence allows commercial reuse and changes. A check runs on every build and stops it if any other data would be published, or if share-alike data would feed an index licensed under CC BY.</p>
+</div>
+{% if warnings %}<div class="callout warn"><b>Before public launch:</b> {% for w in warnings %}{{ w }}. {% endfor %}The licence page of each source still needs to be read and the check date recorded in <span class="mono">data/licences.yaml</span>.</div>{% endif %}
+<h2>Sources in use</h2>
+<div class="grid g2">
+{% for s in used %}
+  <div class="card" id="{{ s.source_id }}">
+    <h3>{{ s.publisher }}</h3>
+    <p class="small" style="margin:0 0 6px">{{ s.title }}</p>
+    <p class="small" style="margin:0 0 6px">Licence: <a href="{{ s.licence_url }}">{{ s.licence }}</a>{% if counts.get(s.source_id) %} · {{ counts[s.source_id] }} indicators{% endif %}</p>
+    <p class="small muted" style="margin:0 0 6px">Attribution: “{{ s.attribution_text }}”</p>
+    {% if s.notes %}<p class="small muted" style="margin:0">{{ s.notes }}</p>{% endif %}
+    <p class="small" style="margin:6px 0 0"><a href="{{ s.url }}">{{ s.url }}</a></p>
+  </div>
+{% endfor %}
+</div>
+<h2>Sources we don’t publish (yet)</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>Source</th><th>Licence</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for s in excluded %}
+    <tr><td>{{ s.publisher }} — {{ s.title }}</td><td class="small">{{ s.licence }}</td>
+      <td class="small">{% if s.tier == 'red' %}Not ingested: no bulk reuse without a paid or written licence{% elif s.tier == 'amber' %}Waiting for written permission for a free site{% elif s.share_alike %}Share-alike: may appear only in a separately licensed layer, never inside CC BY indices{% elif s.no_modification %}Shown raw only, never rescaled into an index{% else %}Not yet added{% endif %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endblock %}

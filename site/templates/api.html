@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Open data API{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/data/">Data</a></p>
+<div class="page-head">
+  <h1>Open data API</h1>
+  <p class="lede">The API is a set of static JSON files at stable URLs: the same files this website reads. There is no key and no rate limit, and cross-origin requests are allowed.</p>
+</div>
+<div class="prose">
+<p>Use <code>/v1/latest/…</code> for the newest release, or <code>/v1/releases/{date}/…</code> for a fixed, unchanging release. <a href="/v1/releases.json">releases.json</a> lists all releases.</p>
+<table>
+  <thead><tr><th>Path</th><th>Contents</th></tr></thead>
+  <tbody>
+    <tr><td><code><a href="/v1/latest/manifest.json">/v1/latest/manifest.json</a></code></td><td>Files, checksums, source retrieval dates</td></tr>
+    <tr><td><code><a href="/v1/latest/sources.json">/v1/latest/sources.json</a></code></td><td>Sources, licences, attribution text</td></tr>
+    <tr><td><code><a href="/v1/latest/entities/country.json">/v1/latest/entities/country.json</a></code></td><td>All countries</td></tr>
+    <tr><td><code><a href="/v1/latest/entities/country/IND.json">/v1/latest/entities/country/{ISO3}.json</a></code></td><td>One country: latest values with provenance, full series, percentiles, rankings</td></tr>
+    <tr><td><code><a href="/v1/latest/indicators.json">/v1/latest/indicators.json</a></code></td><td>Indicator catalogue</td></tr>
+    <tr><td><code><a href="/v1/latest/indicators/life-expectancy.json">/v1/latest/indicators/{id}.json</a></code></td><td>One indicator, all countries and years</td></tr>
+    <tr><td><code><a href="/v1/latest/rankings.json">/v1/latest/rankings.json</a></code></td><td>All rankings and versions</td></tr>
+    <tr><td><code><a href="/v1/latest/rankings/capability-index/1.0.0.json">/v1/latest/rankings/{id}/{version}.json</a></code></td><td>Definition, weights and results (immutable per version)</td></tr>
+    <tr><td><code><a href="/v1/latest/matrix.json">/v1/latest/matrix.json</a></code></td><td>Compact country × indicator matrix (used by the Index Builder)</td></tr>
+    <tr><td><code><a href="/data/downloads/">/v1/latest/bulk/{table}.{csv.gz|parquet}</a></code></td><td>Bulk tables (CSV is gzip-compressed)</td></tr>
+  </tbody>
+</table>
+<h2>Example</h2>
+<pre><code>const r = await fetch("{{ site.base_url }}/v1/latest/entities/country/IND.json");
+const india = await r.json();
+india.latest["life-expectancy"];
+// → { kind: "observed", value: …, year: …, status: "measured",
+//     source: "wb-wdi", source_licence: "CC BY 4.0", retrieved_at: "…" }</code></pre>
+<p>Every observed value carries <code>value</code>, <code>year</code> (the year the data describes), <code>status</code> (<code>measured</code> or <code>estimate</code>), <code>source</code>, <code>source_licence</code>, <code>source_url</code> and <code>retrieved_at</code>. Missing data is left out, never returned as 0.</p>
+<p>The full OpenAPI description is in the project repository (<code>docs/05-openapi.yaml</code>). An AI assistant endpoint and an MCP server are planned for months 5–6.</p>
+</div>
+{% endblock %}

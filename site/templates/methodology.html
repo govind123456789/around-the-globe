@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% set composite = r.kind == 'original_composite' %}
+{% block title %}{{ r.name }} — methodology{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/methodology/">Methodology</a></p>
+<div class="page-head">
+  <div style="display:flex;gap:8px;flex-wrap:wrap">{{ m.kind_badge(r) }}<span class="badge">Version {{ r.version }}</span><span class="badge">Release {{ release }}</span></div>
+  <h1 style="margin-top:10px">{{ r.name }}: methodology</h1>
+  <p class="lede">{{ r.summary }}</p>
+  <div class="btns"><a class="btn sm" href="/rankings/{{ r.ranking_id }}/">View the ranking</a><a class="btn ghost sm" href="/v1/latest/rankings/{{ r.ranking_id }}/{{ r.version }}.json">Definition + results (JSON)</a></div>
+</div>
+<div class="prose">
+{% if body %}{{ body|safe }}{% endif %}
+
+{% if composite %}
+<h2>Indicators and weights (v{{ r.version }})</h2>
+<table>
+  <thead><tr><th>Pillar</th><th>Indicator</th><th class="num">Weight in pillar</th><th class="num">Effective weight</th><th>Direction</th><th>Transform</th><th>Source</th></tr></thead>
+  <tbody>
+  {% for p in r.definition.pillars %}{% for i in p.indicators %}
+    <tr><td>{% if loop.first %}<b>{{ p.name }}</b> ({{ (p.weight * 100)|round|int }}%){% endif %}</td>
+      <td><a href="/data/indicators/{{ i.id }}/">{{ indicators[i.id].name }}</a></td>
+      <td class="num">{{ (i.weight * 100)|round|int }}%</td><td class="num">{{ '%.1f'|format(p.weight * i.weight * 100) }}%</td>
+      <td class="small">{{ 'Lower is better' if i.direction == 'lower_better' else 'Higher is better' }}</td>
+      <td class="small">{{ 'log' if i.transform == 'log' else '—' }}</td>
+      <td class="small">{{ sources[indicators[i.id].source].publisher }}</td></tr>
+  {% endfor %}{% endfor %}
+  </tbody>
+</table>
+<h2>Calculation</h2>
+<ol>
+  <li><b>Eligibility.</b> Countries with a population of at least {{ '{:,}'.format(r.definition.eligibility.min_population) }}.</li>
+  <li><b>Data window.</b> For each indicator, the latest value from {{ r.definition.reference_year - r.definition.max_data_age }} to {{ r.definition.reference_year }}.</li>
+  <li><b>Normalisation.</b> Min–max across eligible countries, so 1 = best and 0 = worst. Indicators marked “log” are log-transformed first, and lower-is-better indicators are flipped.</li>
+  <li><b>Pillar score.</b> The weighted mean of the indicators a country has, re-weighted over the indicators with data.</li>
+  <li><b>Index score.</b> The weighted mean of the pillar scores × 100.</li>
+  <li><b>Coverage rule.</b> A country is ranked only if the indicators it has data for carry at least {{ (r.definition.min_coverage * 100)|int }}% of the total weight. Missing values are never treated as zero.</li>
+  <li><b>Ties.</b> Equal scores (to 6 decimal places) share a rank, shown as “=”.</li>
+  <li><b>Sensitivity.</b> {{ '{:,}'.format(r.definition.mc.runs) }} runs, each multiplying every pillar and indicator weight by a random factor between {{ 1 - r.definition.mc.spread }} and {{ 1 + r.definition.mc.spread }} (seed {{ r.definition.mc.seed }}). The published rank range is the 5th–95th percentile of each country’s rank. {{ r.sensitivity_note }}</li>
+</ol>
+<div class="formula">S<sub>i</sub> = 100 × Σ<sub>p</sub> w<sub>p</sub> · ( Σ<sub>j∈p</sub> w<sub>j</sub> z<sub>ij</sub> / Σ<sub>j∈p, z<sub>ij</sub> exists</sub> w<sub>j</sub> ) / Σ<sub>p with data</sub> w<sub>p</sub></div>
+<p>{{ r.ranked_count }} countries are ranked and {{ r.excluded_count }} are not (insufficient data or population under the threshold).</p>
+{% elif r.kind == 'official_reproduction' and r.ranking_id != 'human-development-index' %}
+<h2>Definition</h2>
+<p>{{ indicators[r.definition.indicator].definition }} Values for {{ r.definition.year }} are shown exactly as {{ r.official_owner }} publishes them in the Human Development Report 2025 and are not recalculated by this site. Ranks: {{ r.definition.ranks_by }}{% if r.definition.order == 'asc' %}; lower values rank higher{% endif %}.</p>
+<p>Source: {{ sources['undp-hdr'].attribution_text }}</p>
+{% elif r.kind == 'official_reproduction' %}
+<h2>Reproduction check (this release)</h2>
+<p>Recomputed from the four HDR 2025 components with UNDP’s goalposts. <b>{{ hdi_check.exact_to_3dp }} of {{ hdi_check.compared }}</b> countries match UNDP’s published HDI to 3 decimal places. The largest unrounded difference is {{ hdi_check.max_abs_diff }}.</p>
+{% if hdi_check.mismatches %}<table><thead><tr><th>Country</th><th class="num">Recomputed</th><th class="num">Published</th></tr></thead><tbody>{% for x in hdi_check.mismatches %}<tr><td>{{ by_id[x.entity_id].name }}</td><td class="num">{{ x.recomputed }}</td><td class="num">{{ x.published }}</td></tr>{% endfor %}</tbody></table>{% endif %}
+<table>
+  <thead><tr><th>Dimension</th><th>Indicator</th><th>Goalposts</th></tr></thead>
+  <tbody>
+    <tr><td>Health</td><td>Life expectancy at birth</td><td>20 – 85 years</td></tr>
+    <tr><td>Education</td><td>Expected years of schooling (capped at 18) and mean years of schooling (capped at 15), averaged</td><td>0 – 18 / 0 – 15 years</td></tr>
+    <tr><td>Income</td><td>GNI per capita (2021 PPP $), natural log</td><td>$100 – $75,000</td></tr>
+  </tbody>
+</table>
+<div class="formula">HDI = (I<sub>health</sub> · I<sub>education</sub> · I<sub>income</sub>)<sup>1/3</sup></div>
+{% else %}
+<h2>Definition</h2>
+<p>Countries are ordered by their latest value of <a href="/data/indicators/{{ r.definition.indicator }}/">{{ indicators[r.definition.indicator].name }}</a> from {{ r.definition.reference_year - r.definition.max_data_age }} to {{ r.definition.reference_year }}, {{ 'highest' if r.definition.order == 'desc' else 'lowest' }} first. No transformation is applied. Countries without a value in that window are not ranked. Because data years differ between countries, check the year next to each value.</p>
+<p>{{ indicators[r.definition.indicator].definition }} Source: {{ sources[indicators[r.definition.indicator].source].attribution_text }}</p>
+{% endif %}
+<h2>Change log</h2>
+<ul><li>v{{ r.version }} ({{ release }}): first published version.</li></ul>
+</div>
+{% endblock %}

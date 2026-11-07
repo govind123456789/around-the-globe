@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% set composite = r.kind == 'original_composite' %}
+{% set official = r.kind == 'official_reproduction' %}
+{% set is_hdi = r.ranking_id == 'human-development-index' %}
+{% block title %}{{ r.name }}{% endblock %}
+{% block description %}{{ r.name }}: {{ r.ranked_count }} countries ranked. {{ r.summary[:150] }}{% endblock %}
+{% block head %}
+<script type="application/ld+json">{{ {"@context":"https://schema.org","@type":"ItemList","name":r.name,"numberOfItems":r.ranked_count,"itemListElement":[]}|tojson_safe }}</script>
+{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/rankings/">Rankings</a> › {{ KIND_LABEL[r.kind] }}</p>
+<div class="page-head">
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">{{ m.kind_badge(r) }}<span class="badge">v{{ r.version }}</span>{% if chip %}{{ m.chip(chip) }}{% endif %}</div>
+  <h1 style="margin-top:10px">{{ r.name }}</h1>
+  <p class="lede">{{ r.summary }}</p>
+  <p class="small muted">{{ r.ranked_count }} countries ranked · {{ r.excluded_count }} not ranked · release {{ release }} · licence {{ r.output_licence }}</p>
+  <div class="btns">
+    <a class="btn ghost sm" href="/methodology/{{ r.ranking_id }}/">Methodology</a>
+    <a class="btn ghost sm" href="/v1/latest/rankings/{{ r.ranking_id }}/{{ r.version }}.json">JSON</a>
+    <button class="btn ghost sm" data-csv="ranking-table" data-csv-name="{{ r.ranking_id }}-{{ r.version }}.csv">Download CSV</button>
+    {% if composite %}<a class="btn ghost sm" href="/index-builder/#from={{ r.ranking_id }}">Change the weights →</a>{% endif %}
+    <button class="btn ghost sm" data-share>Copy link</button>
+  </div>
+</div>
+
+{% if composite %}
+<div class="callout"><b>This is an original index, not an official statistic.</b> Its weights are a published judgement. The <b>rank range</b> shows the 5th to 95th percentile of each country’s rank across {{ "{:,}".format(r.definition.mc.runs) }} random changes of up to ±{{ (r.definition.mc.spread * 100)|int }}% to every weight. {{ r.sensitivity_note.split(" in at least")[0] }} in at least 95% of those runs.</div>
+{% elif official and not is_hdi %}
+<div class="callout">Values are {{ r.official_owner }}’s own, from the Human Development Report 2025 (data for {{ r.definition.year }}), and are not recalculated here. Ranks: {{ r.definition.ranks_by }}.{% if r.order == 'asc' %} Lower values rank higher.{% endif %}</div>
+{% elif official %}
+<div class="callout">Values and ranks are UNDP’s own, from the Human Development Report 2025 (data for {{ r.definition.year }}). Recomputing the index from its four components gives the same value to 3 decimal places for <b>{{ hdi_check.exact_to_3dp }} of {{ hdi_check.compared }}</b> countries. Rank change compares with each country’s {{ r.definition.year - 1 }} value in the same HDR 2025 series.</div>
+{% endif %}
+
+  <div class="split" style="margin-bottom:8px">
+    {{ m.map("rank-map", map_values, r.name, lower_better=(r.order == 'asc'), height=320) }}
+    <div class="card">
+      <h3>How it’s calculated</h3>
+      {% if composite %}
+        <p class="small">Each indicator is rescaled 0–1 across eligible countries (min–max; log first for {{ pillars|map(attribute='indicators')|sum(start=[])|selectattr('transform', 'equalto', 'log')|map(attribute='id')|map('ename_ind')|join(', ') }}). Lower-is-better indicators are flipped. Indicators are averaged into pillars, and pillars into a 0–100 score:</p>
+        {% for p in pillars %}
+          <p class="small" style="margin:8px 0 2px"><b>{{ p.name }}</b> · {{ (p.weight * 100)|round|int }}%</p>
+          <ul class="small" style="margin:0 0 6px;padding-left:18px">{% for i in p.indicators %}<li><a href="/data/indicators/{{ i.id }}/">{{ indicators[i.id].name }}</a> · {{ (i.weight * 100)|round|int }}%{% if i.direction == 'lower_better' %} <span class="muted">(lower is better)</span>{% endif %}</li>{% endfor %}</ul>
+        {% endfor %}
+        <p class="small muted">A country is ranked only if it has data for at least {{ (r.definition.min_coverage * 100)|int }}% of the weight, from {{ r.definition.reference_year - r.definition.max_data_age }}–{{ r.definition.reference_year }}. Missing values are never treated as zero.</p>
+      {% elif official and not is_hdi %}
+        <p class="small">{{ ind.definition }}</p>
+        <p class="small muted">Shown exactly as {{ r.official_owner }} publishes it for {{ r.definition.year }}. See {{ r.official_owner }}’s technical notes for the formula.</p>
+      {% elif official %}
+        <div class="formula">HDI = (I<sub>health</sub> · I<sub>education</sub> · I<sub>income</sub>)<sup>1/3</sup></div>
+        <p class="small" style="margin-top:8px">Life expectancy (20–85 years), expected (0–18) and mean (0–15) years of schooling, and log GNI per capita ($100–$75,000 PPP).</p>
+      {% else %}
+        <p class="small">Countries ordered by their latest value of <a href="/data/indicators/{{ ind.id }}/">{{ ind.name }}</a> ({{ ind.unit }}) from {{ r.definition.reference_year - r.definition.max_data_age }} to {{ r.definition.reference_year }}, {{ 'highest' if r.order == 'desc' else 'lowest' }} first. Years differ between countries; check the Year column.</p>
+      {% endif %}
+      <a class="small" href="/methodology/{{ r.ranking_id }}/">Full methodology →</a>
+    </div>
+  </div>
+<div class="toolbar" data-filters="ranking-table">
+  <label class="field">Find<input type="search" data-f-text placeholder="Country…" aria-label="Filter countries"></label>
+  <label class="field">Region<select data-f-region><option value="">All regions</option>{% for x in regions %}<option>{{ x }}</option>{% endfor %}</select></label>
+  <label class="field">Income<select data-f-income><option value="">All income groups</option>{% for x in incomes %}<option>{{ x }}</option>{% endfor %}</select></label>
+  <label class="field" style="flex-direction:row;align-items:center;gap:6px;padding-bottom:6px"><input type="checkbox" data-f-ranked checked> Ranked only</label>
+  <span class="muted small" data-f-count style="padding-bottom:8px"></span>
+</div>
+
+  <div class="table-wrap">
+    <table id="ranking-table" data-sortable>
+      <thead><tr>
+        <th class="num sortable" data-type="num">Rank</th>
+        {% if is_hdi %}<th class="num sortable" data-type="num" title="Change in rank since {{ r.definition.year - 1 }}">Δ</th>{% endif %}
+        <th class="sortable" data-type="text">Country</th>
+        <th class="num sortable" data-type="num">{% if composite %}Score{% elif is_hdi %}HDI{% else %}{{ r.value_label or 'Value' }}{% endif %}</th>
+        {% if composite %}
+          <th title="5th–95th percentile rank under weight perturbation">Rank range</th>
+          {% for p in pillars %}<th class="num sortable" data-type="num">{{ p.name }}</th>{% endfor %}
+          <th class="num sortable" data-type="num" title="Share of the index weight with data">Coverage</th>
+        {% elif not official %}
+          <th class="num sortable" data-type="num">Year</th>
+          {% for col in r.columns or [] %}<th class="num sortable" data-type="num">{{ col.label }}</th>{% endfor %}
+        {% endif %}
+      </tr></thead>
+      <tbody>
+      {% for row in rows %}
+        <tr data-region="{{ row.region }}" data-income="{{ row.income }}" data-name="{{ row.name|lower }}"{% if not row.rank %} class="excluded" data-unranked hidden{% endif %}>
+          <td class="num rank" data-v="{{ row.rank or 9999 }}">{{ m.rank_label(row) }}</td>
+          {% if is_hdi %}<td class="num" data-v="{{ row.movement if row.movement is not none else -999 }}">{{ m.movement(row.movement) }}</td>{% endif %}
+          <td class="country-cell">{{ flag(row.iso3) }}<a href="/countries/{{ row.slug }}/">{{ row.name }}</a>{% if not row.rank %} <span class="muted small">· {{ EXCLUDED_LABEL.get(row.excluded_reason, row.excluded_reason) }}</span>{% endif %}</td>
+          <td class="num" data-v="{{ row.score if row.score is not none else '' }}"><b>{{ m.score(r, row.score) }}</b></td>
+          {% if composite %}
+            <td>{% if row.rank_low %}{% set n = r.ranked_count %}<span class="range" aria-hidden="true"><b style="left:{{ (row.rank_low - 1) / n * 100 }}%;width:{{ [((row.rank_high - row.rank_low) / n * 100), 1.5]|max }}%"></b><i style="left:calc({{ (row.rank - 1) / n * 100 }}% - 1px)"></i></span><span class="small muted">{{ row.rank_low }}–{{ row.rank_high }}</span>{% endif %}</td>
+            {% for p in pillars %}<td class="num" data-v="{{ row.pillar_scores.get(p.id, '') }}">{% if row.pillar_scores.get(p.id) is not none %}{{ '%.0f'|format(row.pillar_scores[p.id]) }}{% else %}<span class="muted">—</span>{% endif %}</td>{% endfor %}
+            <td class="num" data-v="{{ row.coverage }}"><span class="cov" aria-hidden="true"><b style="width:{{ row.coverage * 100 }}%"></b></span>{{ (row.coverage * 100)|round|int }}%</td>
+          {% elif not official %}
+            <td class="num" data-v="{{ row.year or '' }}">{% if row.year %}<span{% if row.year < 2019 %} class="stale" title="Older data"{% endif %}>{{ row.year }}</span>{% endif %}</td>
+            {% for cell in row.cells %}<td class="num" data-v="{{ cell.v if cell.v is not none else '' }}"{% if cell.year %} title="Data year {{ cell.year }}"{% endif %}>{% if cell.v is none %}<span class="muted">—</span>{% else %}<span{% if cell.stale %} class="stale"{% endif %}>{{ cell.text }}</span>{% endif %}</td>{% endfor %}
+          {% endif %}
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

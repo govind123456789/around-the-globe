@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Topics{% endblock %}
+{% block main %}
+<div class="page-head"><h1>Topics</h1><p class="lede">Indicators and rankings grouped by subject.</p></div>
+<div class="grid g3">
+  {% for c in cards %}
+  <a class="card link" href="/topics/{{ c.d.id }}/" style="color:inherit;text-decoration:none">
+    <h3>{{ c.d.name }}</h3>
+    <p class="small muted" style="margin:0 0 6px">{{ c.d.blurb }}</p>
+    <p class="small" style="margin:0">{{ c.inds|length }} indicators · {{ c.rks|length }} rankings</p>
+  </a>
+  {% endfor %}
+</div>
+<div class="callout" style="margin-top:22px">Not covered yet: military strength, cost of living, peace and democracy. Their best-known sources do not allow open republication, or allow it only under share-alike terms. They will be added only when the licences allow it. See <a href="/data/sources/">sources &amp; licences</a>.</div>
+{% endblock %}

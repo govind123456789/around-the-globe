@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% block title %}Explore the world map{% endblock %}
+{% block main %}
+<div class="page-head">
+  <h1>Explore</h1>
+  <p class="lede">Pick any indicator to see it on the map. Click a country to open its profile.</p>
+</div>
+<div class="toolbar">
+  <label class="field">Indicator
+    <select id="explore-ind">
+      {% for d in dims.values() %}<optgroup label="{{ d.name }}">
+        {% for i in indicators if i.dimension == d.id %}<option value="{{ i.id }}" data-unit="{{ i.unit }}" data-lower="{{ 1 if i.direction == 'lower_better' else 0 }}" data-log="{{ 1 if i.id in ['gdp','population','patents-residents','gdp-per-capita-ppp','health-spending','researchers'] else 0 }}"{% if i.id == 'life-expectancy' %} selected{% endif %}>{{ i.name }}</option>{% endfor %}
+      </optgroup>{% endfor %}
+    </select>
+  </label>
+  <label class="field">Year
+    <select id="explore-year"><option value="latest">Latest available</option></select>
+  </label>
+  <a class="btn ghost sm" id="explore-link" href="/data/indicators/life-expectancy/">Indicator details →</a>
+</div>
+{{ m.map("explore-map", {}, "Life expectancy at birth", height=520) }}
+<p class="small muted" id="explore-note" style="margin-top:8px"></p>
+{% endblock %}
+{% block scripts %}<script src="/static/js/explore.js?v={{ asset_v }}" defer></script>{% endblock %}

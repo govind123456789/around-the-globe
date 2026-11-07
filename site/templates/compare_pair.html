@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% set a, b = ents %}
+{% block title %}{{ a.name }} vs {{ b.name }}{% endblock %}
+{% block description %}{{ a.name }} vs {{ b.name }} compared across {{ rows|sum(attribute='items', start=[])|length }} indicators and {{ rankings|length }} rankings, with sources and data years.{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/compare/">Compare</a></p>
+<div class="page-head">
+  <h1>{{ a.name }} vs {{ b.name }}</h1>
+  <p class="lede">Side by side on every indicator, using each country’s latest available value. Where the data years differ, that is flagged.</p>
+  <div class="btns"><a class="btn sm" href="/compare/#c={{ a.entity_id }},{{ b.entity_id }}">Add more countries</a><button class="btn ghost sm" data-csv="pair-table" data-csv-name="{{ a.slug }}-vs-{{ b.slug }}.csv">Download CSV</button><button class="btn ghost sm" data-share>Copy link</button></div>
+</div>
+
+<h2>Rankings</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Ranking</th><th class="num">{{ flag(a.entity_id) }}{{ a.name }}</th><th class="num">{{ flag(b.entity_id) }}{{ b.name }}</th></tr></thead>
+  <tbody>
+  {% for rid, r in rankings.items() %}
+    <tr><td><a href="/rankings/{{ rid }}/">{{ r.name }}</a> {% if r.kind != 'single_indicator' %}{{ m.kind_badge(r) }}{% endif %}</td>
+    {% for p in pos %}{% set row = p[rid].row %}<td class="num">{% if row.rank %}<b>{{ m.rank_label(row) }}</b> <span class="muted small">of {{ r.ranked_count }}</span>{% else %}<span class="muted small">{{ EXCLUDED_LABEL.get(row.excluded_reason, 'Not ranked') }}</span>{% endif %}</td>{% endfor %}</tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<h2>Trends</h2>
+<div class="grid g2">
+  {% for ind, chart in charts %}<div class="card"><h3><a href="/data/indicators/{{ ind.id }}/">{{ ind.name }}</a> <span class="muted small">{{ ind.unit }}</span></h3>{{ chart|safe }}</div>{% endfor %}
+</div>
+
+<h2>All indicators</h2>
+<div class="table-wrap">
+<table id="pair-table">
+  <thead><tr><th>Indicator</th><th class="num">{{ flag(a.entity_id) }}{{ a.name }}</th><th class="num">{{ flag(b.entity_id) }}{{ b.name }}</th><th>Source</th></tr></thead>
+  {% for d in rows %}
+  <tbody>
+    <tr><th colspan="4" style="position:static">{{ d.dim.name }}</th></tr>
+    {% for it in d['items'] %}
+    <tr>
+      <td><a href="/data/indicators/{{ it.ind.id }}/">{{ it.ind.name }}</a> <span class="muted small">{{ it.ind.unit|unit_short }}</span>{% if it.years_differ %} <span class="small stale" title="The two values are from different years">⚠ years differ</span>{% endif %}</td>
+      {% for v in it.vals %}<td class="num">{% if v %}{{ v[1]|fmt(it.ind.decimals, it.ind.unit) }} <span class="muted small">{{ v[0] }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>{% endfor %}
+      <td>{{ m.chip(it.chip) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

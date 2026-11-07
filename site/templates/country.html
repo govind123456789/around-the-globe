@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% block title %}{{ c.name }}{% endblock %}
+{% block description %}{{ c.name }}: rankings, {{ dims|length }} topics of indicators and trends, with sources. {{ c.region }}, {{ c.income }}.{% endblock %}
+{% block band %}
+<section class="band country-band">
+  <canvas class="globe" data-globe data-lon="{{ c.lon if c.lon is not none else 0 }}" data-tilt="{{ [[c.lat if c.lat is not none else 15, 50]|min, -30]|max }}" data-highlight="{{ c.entity_id }}" aria-hidden="true"></canvas>
+  <div class="wrap">
+  <p class="crumbs"><a href="/countries/">Countries</a> › <a href="/regions/{{ region.slug }}/">{{ c.region }}</a></p>
+<div class="page-head" style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:end">
+  <div>
+    <h1>{{ flag(c.entity_id) }}{{ c.name }}</h1>
+    <p class="lede" style="margin:0">{{ c.region }}{% if income %} · <a href="/regions/{{ income.slug }}/">{{ c.income }}</a>{% endif %}{% if c.capital %} · Capital: {{ c.capital }}{% endif %} · <span class="mono">{{ c.entity_id }}</span></p>
+  </div>
+  <div class="btns">
+    <a class="btn sm" href="/compare/#c={{ c.entity_id }}">Compare with…</a>
+    <a class="btn ghost sm" href="/v1/latest/entities/country/{{ c.entity_id }}.json">JSON</a>
+    <button class="btn ghost sm" data-share>Copy link</button>
+  </div>
+</div>
+  </div>
+</section>
+{% endblock %}
+{% block main %}
+<div class="stats overlap">
+  {% set labels = {'population': 'Population', 'gdp': 'GDP (current US$)', 'gdp-per-capita-ppp': 'GDP per capita, PPP', 'hdi': 'Human Development Index', 'life-expectancy': 'Life expectancy'} %}
+  {% for k, v in key.items() if v %}
+  <div class="card stat">
+    <span class="l">{{ labels[k] }}</span>
+    <span class="v">{% if k == 'gdp' %}{{ v[1]|fmt(0, 'current US$') }}{% elif k == 'hdi' %}{{ '%.3f'|format(v[1]) }}{% elif k == 'life-expectancy' %}{{ '%.1f'|format(v[1]) }} yrs{% else %}{{ v[1]|fmt(0) }}{% endif %}</span>
+    {{ m.chip(chips[k]) }}
+  </div>
+  {% endfor %}
+</div>
+
+<div class="section-head"><h2>At a glance</h2><span class="muted small">Basic facts about {{ c.name }}</span></div>
+<section class="card facts-panel" aria-label="Basic facts about {{ c.name }}">
+  <dl class="facts-list">
+    {% if area %}<div><dt>Area</dt><dd>{{ '{:,.0f}'.format(area[1]) }} km²{% if area_row and area_row.rank %} <a class="small" href="/rankings/surface-area/">rank {{ area_row.rank }} of {{ area_of }}</a>{% endif %}</dd></div>{% endif %}
+    {% if facts.languages %}<div><dt>Official language{{ 's' if facts.languages|length > 1 }}</dt><dd>{{ facts.languages|join(', ') }}</dd></div>{% endif %}
+    {% if facts.currency %}<div><dt>Currency</dt><dd>{% for x in facts.currency %}{{ x.name[:1]|upper }}{{ x.name[1:] }}{% if x.code %} <span class="muted small">{{ x.code }}</span>{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}</dd></div>{% endif %}
+    {% if facts.highest_point %}<div><dt>Highest point</dt><dd>{{ facts.highest_point.name }}{% if facts.highest_point.elevation_m is not none %} <span class="muted small">{{ '{:,}'.format(facts.highest_point.elevation_m) }} m</span>{% endif %}</dd></div>{% endif %}
+    {% if facts.calling_code %}<div><dt>Calling code</dt><dd>{{ facts.calling_code|join(', ') }}</dd></div>{% endif %}
+    {% if facts.internet_domain %}<div><dt>Internet domain</dt><dd>{{ facts.internet_domain|join(', ') }}</dd></div>{% endif %}
+    {% if facts.drives_on %}<div><dt>Drives on the</dt><dd>{{ facts.drives_on|capitalize }}</dd></div>{% endif %}
+    {% if facts.borders %}<div class="facts-wide"><dt>Borders <span class="muted">(land and sea, including territories)</span></dt><dd class="peers">{% for b in facts.borders %}<a href="/countries/{{ b.slug }}/">{{ flag(b.entity_id) }}{{ b.name }}</a>{% endfor %}</dd></div>{% endif %}
+  </dl>
+  {% if not facts %}<p class="small muted" style="margin:0">{{ 'Other facts' if area else 'Basic facts' }} about {{ c.name }} aren’t available from our sources yet.</p>{% endif %}
+  <p class="small muted facts-note">{% if area %}Area: World Bank. {% endif %}{% if facts %}Other facts: <a href="/data/sources/#wikidata">Wikidata</a> (CC0), a community-maintained source; we correct errors we find. Borders can be disputed, and listing one isn’t a judgement on any claim.{% endif %}</p>
+</section>
+
+<div class="section-head"><h2>Quick answers</h2><span class="muted small">Compared with other countries, on published data</span></div>
+<div class="q-tabs" role="tablist" aria-label="Questions about {{ c.name }}" data-tabs>
+  {% for a in answers %}<button type="button" role="tab" id="qt-{{ a.q.id }}" aria-controls="qp-{{ a.q.id }}" aria-selected="{{ 'true' if loop.first else 'false' }}"{% if not loop.first %} tabindex="-1"{% endif %}>{{ a.q.tab }}</button>{% endfor %}
+</div>
+{% for a in answers %}
+<section class="card q-panel" role="tabpanel" id="qp-{{ a.q.id }}" aria-labelledby="qt-{{ a.q.id }}">
+  <h3 class="q-title">{{ a.q.tab }}</h3>
+  {% if a.verdict %}
+    <p class="q-verdict">{{ a.verdict }}</p>
+    <p class="small muted">On average, {{ c.name }} is ahead of {{ a.avg }}% of countries across these {{ a['items']|length }} measures.</p>
+  {% else %}
+    <p class="q-verdict muted">Not enough recent data to say</p>
+  {% endif %}
+  {% if a['items'] %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Measure</th><th class="num">Value</th><th>Ahead of</th><th>Source</th></tr></thead>
+    <tbody>
+    {% for it in a['items'] %}
+      <tr>
+        <td><a href="/data/indicators/{{ it.ind.id }}/">{{ it.ind.name }}</a>{% if it.ind.direction == 'lower_better' %} <span class="muted small">(lower is better)</span>{% endif %}</td>
+        <td class="num">{{ it.value|fmt(it.ind.decimals, it.ind.unit) }}{% if it.ind.unit.startswith('%') %}%{% endif %} <span class="muted small">{{ it.ind.unit|unit_short if not it.ind.unit.startswith('%') else '' }}</span></td>
+        <td style="white-space:nowrap"><span class="cov" aria-hidden="true"><b style="width:{{ it.pct }}%"></b></span>{{ it.pct }}% of countries</td>
+        <td>{{ m.chip(it.chip) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% endif %}
+  {% if a.missing %}<p class="small muted" style="margin:8px 0 0">No recent data: {{ a.missing|join(', ') }}.</p>{% endif %}
+  <p class="small muted" style="margin:8px 0 0">{{ a.q.caveat }}</p>
+</section>
+{% endfor %}
+
+<div class="section-head"><h2>Where {{ c.name }} ranks</h2><a href="/rankings/">All rankings →</a></div>
+<div class="pos-grid">
+  {% for p in positions %}
+  <a class="pos" href="/rankings/{{ p.r.ranking_id }}/">
+    <div class="nm">{{ p.r.name }}</div>
+    {% if p.row.rank %}
+      <div class="rk">{% if p.row.is_tied %}={% endif %}{{ p.row.rank }}<small> of {{ p.r.ranked_count }}</small></div>
+      <div class="small muted">{% if p.r.kind == 'original_composite' %}<span class="badge original">Original</span> range {{ p.row.rank_low }}–{{ p.row.rank_high }}{% elif p.r.kind == 'official_reproduction' %}<span class="badge official">UNDP</span>{% if p.row.movement is not none %} {{ m.movement(p.row.movement) }}{% endif %}{% else %}{{ m.score(p.r, p.row.score) }}{% if p.row.year %} · {{ p.row.year }}{% endif %}{% endif %}</div>
+    {% else %}
+      <div class="rk muted">—</div>
+      <div class="small muted">{{ EXCLUDED_LABEL.get(p.row.excluded_reason, 'Not ranked') }}</div>
+    {% endif %}
+  </a>
+  {% endfor %}
+</div>
+
+<div class="section-head"><h2>History</h2><a href="/countries/{{ c.slug }}/history/">Full timeline since 200 BCE →</a></div>
+<a class="card link history-teaser" href="/countries/{{ c.slug }}/history/" style="display:block;color:inherit;text-decoration:none">
+  {% if chain %}<div class="chain">{% for n in chain[-7:] %}<span>{{ n }}</span>{% if not loop.last %}→{% endif %}{% endfor %}</div>{% endif %}
+  <p class="small muted" style="margin:0">{{ hist.polities|length }} states and empires held this land since 200 BCE · {{ hist.events|length }} wars and upheavals · {{ hist.conflicts|length }} armed conflicts since 1946{% if hist.longrun.gdppc %} · GDP per capita since {{ year_label(hist.longrun.gdppc[0][0]) }}{% endif %}</p>
+</a>
+
+{% if composites %}
+<div class="section-head"><h2>Our indices, pillar by pillar</h2><a href="/methodology/">How they’re calculated →</a></div>
+<div class="grid g3">
+  {% for x in composites %}
+  <div class="card">
+    <h3><a href="/rankings/{{ x.r.ranking_id }}/">{{ x.r.name }}</a></h3>
+    {% if x.row.rank %}
+      {{ x.bars|safe }}
+      <p class="small muted" style="margin:10px 0 0">Score {{ '%.1f'|format(x.row.score) }} · rank {{ x.row.rank }} of {{ x.r.ranked_count }} (range {{ x.row.rank_low }}–{{ x.row.rank_high }}) · coverage {{ (x.row.coverage * 100)|round|int }}%</p>
+    {% else %}
+      <p class="small muted">Not ranked: {{ EXCLUDED_LABEL.get(x.row.excluded_reason, x.row.excluded_reason) }}{% if x.row.coverage %} (data for {{ (x.row.coverage * 100)|round|int }}% of the weight){% endif %}.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+<p class="small muted" style="margin-top:6px">Pillar scores are 0–100 relative to other ranked countries. These are original indices, not official statistics.</p>
+{% endif %}
+
+{% if charts %}
+<div class="section-head"><h2>Trends</h2></div>
+<div class="grid g2">
+  {% for title, chart, ch in charts %}<div class="card"><h3>{{ title }}</h3>{{ chart|safe }}<div style="margin-top:6px">{{ m.chip(ch) }}</div></div>{% endfor %}
+</div>
+{% endif %}
+
+<nav class="tabs" aria-label="Topics">{% for d in dims %}<a href="#{{ d.dim.id }}">{{ d.dim.name }}</a>{% endfor %}</nav>
+{% for d in dims %}
+<section id="{{ d.dim.id }}">
+  <h2>{{ d.dim.name }}</h2>
+  <div class="ind-grid">
+    {% for it in d['items'] %}
+    <div class="ind">
+      <a class="name" href="/data/indicators/{{ it.ind.id }}/">{{ it.ind.name }}</a>
+      <div class="val">{{ it.value|fmt(it.ind.decimals, it.ind.unit) }}<small>{{ it.ind.unit|unit_short }}</small></div>
+      {{ it.spark|safe }}
+      <div class="meta">
+        {{ m.chip(it.chip) }}
+        {% if it.pct is not none %}<span title="Share of countries with data that {{ c.name }} {{ 'does better than' if it.ind.direction != 'neutral' else 'is higher than' }}">{{ 'Better' if it.ind.direction != 'neutral' else 'Higher' }} than {{ it.pct }}%</span>{% endif %}
+      </div>
+      {% if it.stale %}<span class="small stale">Latest data is from {{ it.year }}</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endfor %}
+
+<div class="section-head"><h2>Related</h2></div>
+<div class="grid g2">
+  <div class="card"><h3>Other countries in {{ c.region }}</h3><div class="peers">{% for p in peers %}<a href="/countries/{{ p.slug }}/">{{ p.name }}</a>{% endfor %}</div></div>
+  <div class="card"><h3>Compare {{ c.name }}</h3>
+    <div class="peers">{% for a, b in pair_links %}{% set s = [a, b]|sort(attribute='slug') %}<a href="/compare/{{ s[0].slug }}-vs-{{ s[1].slug }}/">{{ s[0].name }} vs {{ s[1].name }}</a>{% endfor %}
+    <a href="/compare/#c={{ c.entity_id }}">Pick countries…</a></div>
+  </div>
+</div>
+<p class="small muted" style="margin-top:24px">Spotted a problem with a value? <a href="mailto:{{ site.contact_email }}?subject=Data%20issue%3A%20{{ c.name|urlencode }}">Report a data issue</a>. Corrections are logged on the <a href="/about/errata/">errata page</a>.</p>
+{% endblock %}
+{% block scripts %}<script src="/static/js/globe.js?v={{ asset_v }}" defer></script>{% endblock %}

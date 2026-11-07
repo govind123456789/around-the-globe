@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Countries{% endblock %}
+{% block main %}
+<div class="page-head">
+  <h1>Countries</h1>
+  <p class="lede">{{ countries|length }} countries and territories, grouped by World Bank region.</p>
+  <input type="search" data-filter-list="#country-list" placeholder="Filter countries…" aria-label="Filter countries" style="max-width:340px;width:100%">
+</div>
+<div id="country-list">
+{% for region, cs in by_region.items() %}
+  <section data-group>
+    <h2>{{ region }} <span class="muted small">({{ cs|length }})</span></h2>
+    <div class="peers">{% for c in cs %}<a href="/countries/{{ c.slug }}/" data-item="{{ c.name|lower }} {{ c.entity_id|lower }} {{ c.source_name|lower }} {{ c.aliases|join(' ')|lower }}">{{ flag(c.entity_id) }}{{ c.name }}</a>{% endfor %}</div>
+  </section>
+{% endfor %}
+</div>
+{% endblock %}

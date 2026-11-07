@@ -1,0 +1,61 @@
+# Question tabs on country pages. Each answer averages how a country compares with others on the
+# listed indicators (percentiles among countries with data from the last few years). An answer
+# needs at least two measures; otherwise the page says there isn't enough data.
+# Every indicator must have a direction (higher_better or lower_better), not neutral.
+questions:
+  - id: safe
+    tab: Is it safe?
+    high: Safer than most countries
+    mid: About average for safety
+    low: Less safe than most countries
+    caveat: National averages on violence, road deaths and stability. Risks vary widely within a country. This is not travel advice, so check your government's travel advisory.
+    indicators: [homicide-rate, road-deaths, wgi-political-stability, wgi-rule-of-law]
+  - id: rich
+    tab: Rich or poor?
+    high: Richer than most countries
+    mid: Around the middle for income
+    low: Poorer than most countries
+    caveat: Averages hide inequality. Poverty lines are survey-based, and survey years differ between countries.
+    indicators: [gdp-per-capita-ppp, gni-per-capita-atlas, extreme-poverty, poverty-lmic, electricity-access]
+  - id: healthy
+    tab: How healthy?
+    high: Healthier than most countries
+    mid: About average for health
+    low: Less healthy than most countries
+    caveat: Several mortality figures are modelled estimates. These measure survival and basic access, not the quality of care.
+    indicators: [life-expectancy, under5-mortality, maternal-mortality, physicians, basic-sanitation, undernourishment]
+  - id: educated
+    tab: How educated?
+    high: More educated than most countries
+    mid: About average for education
+    low: Less educated than most countries
+    caveat: These count years and enrolment, not what students learn.
+    indicators: [mean-schooling, expected-schooling, tertiary-enrolment, literacy, primary-completion]
+  - id: connected
+    tab: How connected?
+    high: More connected than most countries
+    mid: About average for connectivity
+    low: Less connected than most countries
+    caveat: These count access and subscriptions, not speed or price.
+    indicators: [internet-users, fixed-broadband, mobile-subs]
+  - id: green
+    tab: How green?
+    high: Greener than most countries
+    mid: About average on these green measures
+    low: Less green than most countries
+    caveat: Poorer countries often score well because they consume little, and a high renewable share can reflect traditional wood fuel. Read the individual measures.
+    indicators: [ghg-per-capita, renewable-share, renewable-electricity, pm25, protected-areas]
+  - id: governed
+    tab: How well governed?
+    high: Rated better than most countries
+    mid: Rated around the middle
+    low: Rated worse than most countries
+    caveat: These rest on perceptions from surveys and expert assessments, which can reflect the views of those asked.
+    indicators: [wgi-government-effectiveness, wgi-rule-of-law, wgi-control-of-corruption, cpi]
+  - id: equal
+    tab: How equal?
+    high: More equal than most countries
+    mid: About average for equality
+    low: Less equal than most countries
+    caveat: Income inequality surveys are infrequent, and gender measures cover only part of women's lives.
+    indicators: [gini, top10-income-share, gii, women-parliament, female-male-labour]

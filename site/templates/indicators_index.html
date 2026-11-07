@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Indicators{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/data/">Data</a></p>
+<div class="page-head"><h1>Indicators</h1><p class="lede">{{ inds|length }} indicators from {{ inds|map(attribute='source')|unique|list|length }} open sources.</p>
+<input type="search" data-filter-list="#ind-list" placeholder="Filter indicators…" aria-label="Filter indicators" style="max-width:340px;width:100%"></div>
+<div id="ind-list">
+{% for d in dims %}
+<section data-group>
+  <h2>{{ d.name }}</h2>
+  <div class="table-wrap"><table>
+    <tbody>{% for i in inds if i.dimension == d.id %}<tr data-item="{{ i.name|lower }} {{ i.code|lower }}"><td style="width:40%"><a href="/data/indicators/{{ i.id }}/">{{ i.name }}</a></td><td class="small muted">{{ i.unit }}</td><td class="small mono muted">{{ i.code }}</td><td class="small">{{ sources[i.source].publisher }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endfor %}
+</div>
+{% endblock %}

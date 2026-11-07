@@ -1,0 +1,55 @@
+name: Build data release and deploy
+# Weekly rebuild from sources, plus manual runs. Requires repository secrets:
+#   CLOUDFLARE_API_TOKEN  (Workers Scripts: Edit permission)
+#   CLOUDFLARE_ACCOUNT_ID
+on:
+  schedule:
+    - cron: "0 3 * * 1"          # Mondays 03:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: build-and-deploy
+  cancel-in-progress: false
+
+jobs:
+  build:
+    # The weekly run stays off until Cloudflare is set up: add the two secrets, then set the
+    # repository variable CLOUDFLARE_ENABLED to true. Manual runs always go ahead.
+    if: ${{ vars.CLOUDFLARE_ENABLED == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: pip install -r requirements.txt
+
+      # Raw downloads are cached between runs; GDELT only fetches days it doesn't have.
+      - uses: actions/cache@v4
+        with:
+          path: raw
+          key: raw-${{ github.run_id }}
+          restore-keys: raw-
+
+      - name: Fetch sources (refresh World Bank, UNDP, OECD, CPI weekly)
+        run: |
+          rm -rf raw/wb raw/undp raw/oecd raw/ti raw/wikidata/events.csv*
+          python -m pipeline.fetch
+
+      - name: Build release (strict licence gate)
+        run: RELEASE_DATE=$(date -u +%F) python -m pipeline.build --skip-fetch --strict
+
+      - name: Test the built release
+        run: python -m pytest -q pipeline/tests
+
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy

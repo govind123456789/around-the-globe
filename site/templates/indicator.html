@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% block title %}{{ ind.name }}{% endblock %}
+{% block description %}{{ ind.name }} for {{ latest|length }} countries: map, rankings, time series and download. {{ ind.definition }}{% endblock %}
+{% block head %}
+<script type="application/ld+json">{{ {"@context":"https://schema.org","@type":"Dataset","name":ind.name,"description":ind.definition,"license":"https://creativecommons.org/licenses/by/4.0/","creator":{"@type":"Organization","name":src.publisher},"isBasedOn":src.url,"temporalCoverage":(cov[0][0]|string) ~ "/" ~ (cov[-1][0]|string) if cov else "","distribution":[{"@type":"DataDownload","encodingFormat":"application/json","contentUrl":site.base_url ~ "/v1/latest/indicators/" ~ ind.id ~ ".json"}]}|tojson_safe }}</script>
+{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/data/indicators/">Indicators</a> › <a href="/topics/{{ dim.id }}/">{{ dim.name }}</a></p>
+<div class="page-head">
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="badge">{{ {'higher_better': 'Higher is better', 'lower_better': 'Lower is better', 'neutral': 'Neutral'}[ind.direction] }}</span>{% if ind.status == 'estimate' %}<span class="badge">Modelled estimate</span>{% endif %}</div>
+  <h1 style="margin-top:10px">{{ ind.name }}</h1>
+  <p class="lede">{{ ind.definition }}</p>
+  <p class="small muted">Unit: {{ ind.unit }} · Source: <a href="{{ src.url }}">{{ src.publisher }}</a> (<span class="mono">{{ ind.code }}</span>) · Licence {{ src.licence }} · {{ latest|length }} of {{ n_countries }} countries have data; {{ recent }} have data from 2019 or later.</p>
+  <div class="btns">
+    <a class="btn ghost sm" href="/v1/latest/indicators/{{ ind.id }}.json">JSON (all years)</a>
+    <button class="btn ghost sm" data-csv="ind-table" data-csv-name="{{ ind.id }}-latest.csv">Download CSV</button>
+    <a class="btn ghost sm" href="/explore/#{{ ind.id }}">Open on the map</a>
+  </div>
+</div>
+<div class="split">
+  <div>{{ m.map("ind-map", map_values, ind.name, lower_better=lower_better) }}</div>
+  <div class="card">
+    <h3>Used in</h3>
+    {% if used_in %}<ul class="small" style="padding-left:18px;margin:0">{% for r in used_in %}<li><a href="/rankings/{{ r.ranking_id }}/">{{ r.name }}</a></li>{% endfor %}</ul>{% else %}<p class="small muted">Not used in any ranking yet. Add it to your own index in the <a href="/index-builder/">Index Builder</a>.</p>{% endif %}
+    <h3 style="margin-top:16px">Countries with data, by year</h3>
+    {% set mx = cov|map(attribute=1)|max if cov else 1 %}
+    <div class="mini" style="height:60px;width:100%" aria-label="Coverage by year">{% for y, n in cov if y >= 2000 %}<b title="{{ y }}: {{ n }} countries" style="height:{{ (n / mx * 100)|round }}%;flex:1"></b>{% endfor %}</div>
+    <p class="small muted" style="display:flex;justify-content:space-between;margin:2px 0 0"><span>2000</span><span>{{ latest_year }}</span></p>
+  </div>
+</div>
+<h2>Six most populous countries</h2>
+<div class="card">{{ chart|safe }}</div>
+<h2>Latest value by country</h2>
+<div class="table-wrap">
+  <table id="ind-table" data-sortable>
+    <thead><tr><th class="num sortable" data-type="num">#</th><th class="sortable" data-type="text">Country</th><th class="num sortable" data-type="num">{{ ind.name }}</th><th class="num sortable" data-type="num">Year</th></tr></thead>
+    <tbody>
+    {% for x in latest %}
+      <tr><td class="num muted" data-v="{{ loop.index }}">{{ loop.index }}</td><td>{{ flag(x.e.entity_id) }}<a href="/countries/{{ x.e.slug }}/">{{ x.e.name }}</a></td><td class="num" data-v="{{ x.value }}">{{ x.value|fmt(ind.decimals, ind.unit) }}{% if x.status == 'estimate' %} <span class="chip"><span class="st">EST</span></span>{% endif %}</td><td class="num" data-v="{{ x.year }}"><span{% if x.year < 2019 %} class="stale"{% endif %}>{{ x.year }}</span></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="small muted" style="margin-top:8px">The table is sorted {{ 'lowest' if lower_better else 'highest' }} first. Values come from different years; older data (before 2019) is highlighted. {{ src.attribution_text }}</p>
+{% endblock %}
