@@ -34,7 +34,7 @@
 
   compIds.forEach((id, i) => { TEMPLATES[id] = fromPillars(compPillars[i]); });
   TEMPLATES.capability = TEMPLATES["capability-index"] || TEMPLATES.capability;
-  let M = null, indById = {}, state = null, lastResults = [];
+  let M = null, indById = {}, state = null, lastResults = [], lastInput = null, stabilityTimer = null;
 
   // ---------- state <-> URL ----------
   function encode(s) {
@@ -69,7 +69,8 @@
         norm[i.id] = E.normalise(vals, state.norm, meta.direction, meta.transform);
       }
     }
-    if (!specs.length) return [];
+    if (!specs.length) { lastInput = null; return []; }
+    lastInput = { norm, specs, pillars, ents };
     return E.score(norm, specs, pillars, ents, state.cov, state.agg);
   }
 
@@ -108,12 +109,37 @@
         <td>${window.atlasFlag(iso2[r.entity_id])}<a href="/countries/${slug[r.entity_id]}/">${esc(name[r.entity_id])}</a>${r.rank ? "" : ' <span class="muted small">· insufficient data</span>'}</td>
         <td class="num" data-v="${r.score ?? ""}"><b>${r.score === null ? "—" : r.score.toFixed(1)}</b></td>
         <td class="num" data-v="${r.coverage}">${Math.round(r.coverage * 100)}%</td>
+        <td class="num small" data-band="${r.entity_id}"></td>
         <td class="small">${d === null ? '<span class="muted">·</span>' : d > 0 ? `<span class="mv up">▲${d}</span>` : d < 0 ? `<span class="mv down">▼${-d}</span>` : '<span class="muted">=</span>'}</td></tr>`;
     }).join("");
     const top = ranked.slice(0, 3).map(r => esc(name[r.entity_id])).join(", ");
     $("ib-summary").innerHTML = ranked.length
       ? `<b>${ranked.length}</b> countries ranked, <b>${res.length - ranked.length}</b> without enough data (coverage below ${Math.round(state.cov * 100)}%). Top 3: ${top}. Data: latest value ${M.reference_year - M.max_data_age}–${M.reference_year}, release ${esc(M.release)}.`
       : "Add indicators with a weight above zero to build an index.";
+    scheduleStability();
+  }
+
+  /* Rank ranges take a moment to compute, so they run shortly after the sliders stop moving. */
+  function scheduleStability() {
+    clearTimeout(stabilityTimer);
+    const note = $("ib-stability");
+    note.textContent = lastInput ? "Testing how stable these ranks are…" : "";
+    if (!lastInput) return;
+    stabilityTimer = setTimeout(() => {
+      const { norm, specs, pillars, ents } = lastInput;
+      const runs = 200, bands = E.sensitivity(norm, specs, pillars, ents, state.cov, state.agg, runs, 0.25, 20261107);
+      let stable = 0;
+      const top = lastResults.filter(r => r.rank).slice(0, 10);
+      for (const r of top) if (bands[r.entity_id] && bands[r.entity_id][1] <= 10) stable++;
+      for (const td of document.querySelectorAll("[data-band]")) {
+        const b = bands[td.dataset.band];
+        td.textContent = b ? `${b[0]}–${b[1]}` : "";
+        td.dataset.v = b ? b[1] - b[0] : "";
+      }
+      const widths = Object.values(bands).map(b => b[1] - b[0]).sort((a, b) => a - b);
+      const median = widths[Math.floor(widths.length / 2)] || 0;
+      note.textContent = `Stability: ${stable} of the top ${top.length} stay in the top 10 when every weight shifts by up to ±25% (${runs} random tests). The typical country’s rank moves across ${median} places.`;
+    }, 350);
   }
 
   function update(push = true) {

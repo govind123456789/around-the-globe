@@ -77,6 +77,7 @@ def polity_key(props: dict) -> str:
 
 def build(known_countries: set[str]) -> dict:
     """Return {'shares': ..., 'polities': ...} and write map snapshots."""
+    rename = load_yaml("history_overrides.yaml").get("rename", {})
     modern = load_modern(known_countries)
     codes = sorted(modern)
     modern_ea = [equal_area(modern[c]) for c in codes]
@@ -113,7 +114,7 @@ def build(known_countries: set[str]) -> dict:
             simple = shapely.set_precision(simple, 0.01)
             if not simple.is_empty:
                 for y in snap_ys:
-                    snapshots[y].append({"type": "Feature", "properties": {"k": key, "n": p["Name"]},
+                    snapshots[y].append({"type": "Feature", "properties": {"k": key, "n": rename.get(p["Name"], p["Name"])},
                                          "geometry": mapping(simple)})
         if not ys:
             continue
@@ -381,7 +382,8 @@ def assemble(entities: dict[str, dict]) -> dict[str, dict]:
             if not sp:
                 continue
             p = P[key]
-            rows.append({"key": key, "name": p["name"].strip("()"), "umbrella": p["name"].startswith("("),
+            rows.append({"key": key, "name": overrides.get("rename", {}).get(p["name"], p["name"].strip("()")),
+                         "umbrella": p["name"].startswith("("),
                          "wikidata": p["wikidata"], "wikipedia": p["wikipedia"], "peak": round(peak, 2),
                          "spans": [[a, b, round(m, 2)] for a, b, m in sp], "first": sp[0][0], "last": sp[-1][1]})
         rows.sort(key=lambda r: (r["first"], r["umbrella"], -r["peak"]))

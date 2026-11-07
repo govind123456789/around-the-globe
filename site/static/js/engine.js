@@ -77,6 +77,29 @@
     return ranked.concat(unranked);
   }
 
-  const api = { normalise, score, assignRanks };
+  /* Seeded PRNG, so a given index always shows the same range. */
+  function mulberry32(a) {
+    return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  }
+
+  /* Like engine.sensitivity in Python: shake every weight by up to +-spread, re-rank, return the
+     5th-95th percentile rank per entity. Fewer runs than the published indices, as it runs live. */
+  function sensitivity(norm, indicators, pillars, entities, minCoverage, aggregation, runs, spread, seed) {
+    const rng = mulberry32(seed), ranks = {};
+    const shake = w => w * (1 - spread + rng() * 2 * spread);
+    for (let n = 0; n < runs; n++) {
+      const ps = pillars.map(p => ({ ...p, weight: shake(p.weight) }));
+      const is = indicators.map(i => ({ ...i, weight: shake(i.weight) }));
+      for (const r of score(norm, is, ps, entities, minCoverage, aggregation)) if (r.rank) (ranks[r.entity_id] = ranks[r.entity_id] || []).push(r.rank);
+    }
+    const out = {};
+    for (const [e, rs] of Object.entries(ranks)) {
+      rs.sort((a, b) => a - b);
+      out[e] = [rs[Math.floor(0.05 * (rs.length - 1))], rs[Math.ceil(0.95 * (rs.length - 1))]];
+    }
+    return out;
+  }
+
+  const api = { normalise, score, assignRanks, sensitivity };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.AtlasEngine = api;
 })(typeof window !== "undefined" ? window : globalThis);

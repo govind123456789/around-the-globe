@@ -21,6 +21,7 @@
     <button class="btn ghost sm" data-csv="ranking-table" data-csv-name="{{ r.ranking_id }}-{{ r.version }}.csv">Download CSV</button>
     {% if composite %}<a class="btn ghost sm" href="/index-builder/#from={{ r.ranking_id }}">Change the weights →</a>{% endif %}
     <button class="btn ghost sm" data-share>Copy link</button>
+    <button class="btn ghost sm" data-copy='<iframe src="{{ site.base_url }}/embed/rankings/{{ r.ranking_id }}/" width="100%" height="470" style="border:1px solid #e4e1d7;border-radius:12px" loading="lazy" title="{{ r.name }}"></iframe>'>Embed</button>
   </div>
 </div>
 

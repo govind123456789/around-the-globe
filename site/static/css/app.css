@@ -492,3 +492,14 @@ main.has-band > .wrap:last-of-type { padding-top: 8px; }
 .facts-list .facts-wide { grid-column: 1 / -1; border-bottom: none; padding-bottom: 0; }
 .facts-list .peers { margin-top: 6px; font-weight: 400; }
 .facts-note { margin: 14px 0 0; }
+
+/* Smallest phones: the header must not widen the page */
+@media (max-width: 380px) {
+  .top .wrap { gap: 8px; }
+  .brand { font-size: 1.02rem; gap: 6px; }
+  .brand svg { width: 22px; height: 22px; }
+  .top-actions { gap: 3px; }
+  .top-actions .icon-btn { min-width: 30px; height: 30px; }
+}
+.toolbar .field { min-width: 0; max-width: 100%; }
+.toolbar .field select, .toolbar .field input { max-width: 100%; }

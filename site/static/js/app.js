@@ -198,6 +198,13 @@
     catch (e) { prompt("Copy this link:", location.href); }
   }));
 
+  // ---------- copy embed code ----------
+  $$("[data-copy]").forEach(btn => btn.addEventListener("click", async () => {
+    const label = btn.textContent;
+    try { await navigator.clipboard.writeText(btn.dataset.copy); btn.textContent = "Embed code copied"; setTimeout(() => { btn.textContent = label; }, 2000); }
+    catch (e) { prompt("Copy this embed code:", btn.dataset.copy); }
+  }));
+
   // ---------- compare form (home) ----------
   $$("[data-compare-form]").forEach(f => f.addEventListener("submit", e => {
     e.preventDefault();
@@ -205,7 +212,7 @@
   }));
 
   // ---------- maps ----------
-  const MAPLIBRE = "https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl";
+  const MAPLIBRE = "/static/vendor/maplibre-gl";
   let libPromise = null, geoPromise = null;
   function loadLib() {
     if (libPromise) return libPromise;

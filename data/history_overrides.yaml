@@ -2,6 +2,19 @@
 #
 # keep: overlaps the automatic consistency check would hide, but which are real history.
 #   Each entry: [ISO3, Cliopatria polity name, reason]
+# rename: display names for Cliopatria labels that are wrong or misleading for the period they cover.
+#   The record's dates and borders are unchanged.
+rename:
+  "Mali Federation": "Mali"                       # the federation ended in 1960; the record runs to 2024
+  "Federated Republic of Germany": "Federal Republic of Germany"
+  "Former Yugoslav Republic of Macedonia": "North Macedonia"
+  "Communist Cuba": "Cuba"
+  "Communist Laos": "Laos"
+  "Kingdom of Great Britain": "Great Britain / United Kingdom"
+  "Republic of Turkey": "Republic of Türkiye"
+  "Éire": "Ireland"
+  "Union of Myanmar": "Myanmar"
+
 keep:
   - [JPN, "United States of America", "Allied (US-led) occupation of Japan, 1945–1952."]
   - [LUX, "Netherlands", "Personal union of Luxembourg with the Dutch crown, 1815–1890."]

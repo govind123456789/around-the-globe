@@ -6,6 +6,7 @@ data release to dist/v1/releases/<date>/ (mirrored to dist/v1/latest/).
 from __future__ import annotations
 
 import csv
+import gzip
 import hashlib
 import json
 import re
@@ -54,6 +55,7 @@ class Model:
     rankings: dict[str, dict] = field(default_factory=dict)
     hdi_check: dict = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
+    projections: dict[str, list] = field(default_factory=dict)      # iso3 -> [[year, people], ...] UN WPP, 1950-2100
     facts: dict[str, dict] = field(default_factory=dict)
 
     def countries(self) -> list[dict]:
@@ -140,7 +142,7 @@ def load_observations(cat: dict, entities: dict, sources: dict):
     source_releases: dict[str, dict] = {}
     by_code = {(i["source"], i["code"]): i for i in cat["indicators"]}
 
-    def add(ind: dict, iso3: str, year: int, value, release_id: str):
+    def add(ind: dict, iso3: str, year: int, value, release_id: str, status: str | None = None):
         lo, hi = (float(b) for b in ind["bounds"])
         reason = None
         if iso3 not in entities:
@@ -159,7 +161,7 @@ def load_observations(cat: dict, entities: dict, sources: dict):
             rejects.append({"source_release_id": release_id, "indicator_id": ind["id"], "entity": iso3,
                             "year": year, "value": value, "rule": "duplicate_period"})
             return
-        cell[year] = (value, ind.get("status", "measured"))
+        cell[year] = (value, status or ind.get("status", "measured"))
 
     # World Bank (WDI and WGI)
     for ind in cat["indicators"]:
@@ -266,6 +268,24 @@ def load_observations(cat: dict, entities: dict, sources: dict):
         for iso3, n in arts.items():
             add(by_id["news-share"], iso3, year, round(100 * n / total, 6), rid)
             add(by_id["news-tone"], iso3, year, round(tone[iso3] / n, 4), rid)
+
+    # UN World Population Prospects 2024: median age, and population projections to 2100
+    path = RAW / "un" / "wpp2024_demographic_indicators.csv.gz"
+    if path.exists() and "median-age" in by_id:
+        rid = release("un-wpp", "WPP 2024", path)
+        projections: dict[str, list] = {}
+        with gzip.open(path, "rt", encoding="utf-8-sig", newline="") as f:
+            for row in csv.DictReader(f):
+                iso3 = "WLD" if row["LocTypeName"] == "World" else row["ISO3_code"]
+                if iso3 not in entities:
+                    continue
+                t = int(row["Time"])
+                if row["TPopulation1July"]:
+                    projections.setdefault(iso3, []).append([t, round(float(row["TPopulation1July"]) * 1000)])
+                if YEAR_MIN <= t <= YEAR_MAX and row["MedianAgePop"]:
+                    add(by_id["median-age"], iso3, t, float(row["MedianAgePop"]), rid,
+                        status="estimate" if t <= 2023 else "forecast")
+        cat["projections"] = projections
 
     sorted_obs = {k: sorted((y, v, s) for y, (v, s) in cell.items()) for k, cell in obs.items()}
     return sorted_obs, rejects, source_releases, hdr_rank
@@ -631,6 +651,8 @@ def export(model: Model, pct: dict) -> Path:
                        for g in (c["region_id"], c["income_id"]) if g],
             "attributes": {k: c.get(k) for k in ("region", "income", "capital", "lat", "lon", "iso2")},
             "facts": model.facts.get(e, {}),
+            "population_projection": {"source": "un-wpp", "variant": "medium", "licence": "CC BY 3.0 IGO",
+                                      "series": model.projections.get(e, [])},
             "latest": latest, "series": series,
             "percentiles": {ind: pct[(e, ind)] for ind in model.indicators if (e, ind) in pct},
             "rankings": positions[e], "summary": None,
@@ -795,7 +817,7 @@ def build(strict: bool = False) -> Model:
     print(f"  {sum(len(v) for v in obs.values()):,} observations, {len(rejects)} rejected")
     model = Model(release=release, sources=sources, source_releases=srel, dimensions=cat["dimensions"],
                   indicators={i["id"]: i for i in cat["indicators"]}, entities=entities, groups=groups,
-                  obs=obs, rejects=rejects, warnings=pre_warnings, facts=facts.load(entities))
+                  obs=obs, rejects=rejects, warnings=pre_warnings, projections=cat.get("projections", {}), facts=facts.load(entities))
     for ind in model.indicators.values():
         if not any(k[1] == ind["id"] for k in obs):
             raise GateError(f"indicator {ind['id']} has no data after validation")

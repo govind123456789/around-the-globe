@@ -11,7 +11,7 @@ import markdown
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
 
-from . import history, live, stories, svg
+from . import history, live, og, stories, svg
 from .build_data import Model
 from .config import CONTENT, DIST, RAW, SITE, load_yaml, site_config
 
@@ -21,7 +21,7 @@ EXCLUDED_LABEL = {
     "coverage_below_threshold": "Insufficient data", "ineligible_population": "Population under 500k",
     "not_in_hdr": "Not covered by UNDP", "no_recent_data": "No recent data",
 }
-SOURCE_SHORT = {"wb-wdi": "World Bank", "undp-hdr": "UNDP HDR", "ti-cpi": "Transparency Intl",
+SOURCE_SHORT = {"un-wpp": "UN WPP", "wb-wgi": "World Bank WGI", "wb-wdi": "World Bank", "undp-hdr": "UNDP HDR", "ti-cpi": "Transparency Intl",
                 "oecd": "OECD", "gdelt": "GDELT"}
 NE_FIX = {"KOS": "XKX", "SDS": "SSD", "PSX": "PSE", "SAH": "ESH", "JEY": "CHI", "GGY": "CHI"}  # WB reports the Channel Islands as one
 
@@ -94,6 +94,10 @@ class Site:
         """Extra columns for wide ranking tables."""
         cells = []
         for col in r.get("columns", []):
+            if col["id"] == "pop_2050":
+                v = next((x[1] for x in self.m.projections.get(row["entity_id"], []) if x[0] == 2050), None)
+                cells.append({"v": v, "text": fmt(v, 0) if v is not None else "—", "year": None, "stale": False})
+                continue
             if col["id"] == "world_share":
                 world = self.m.latest("WLD", r["indicator"], max_year=row.get("year")) if row.get("year") else None
                 v = 100 * row["score"] / world[1] if world and row["score"] is not None else None
@@ -107,6 +111,17 @@ class Site:
             text = fmt(lt[1], ind.get("decimals", 2), ind["unit"]) + ("%" if ind["unit"].startswith("%") else "")
             cells.append({"v": lt[1], "text": text, "year": lt[0], "stale": lt[0] < 2019})
         return cells
+
+    def projection_chart(self, eid: str, name: str) -> str | None:
+        """UN population estimates and medium-variant projections, 1950-2100."""
+        ser = self.m.projections.get(eid)
+        if not ser:
+            return None
+        past = [(y, v) for y, v in ser if y <= 2023]
+        future = [(y, v) for y, v in ser if y >= 2023]
+        return svg.line_chart([{"label": "UN estimate", "points": past, "cls": "s1"},
+                               {"label": "UN projection (medium)", "points": future, "cls": "s2"}],
+                              "people", decimals=1, title=f"Population of {name}, 1950 to 2100")
 
     def country_answers(self, eid: str) -> list[dict]:
         """Question tabs: average how the country compares on each question's measures."""
@@ -134,6 +149,7 @@ class Site:
                 ("Data", "/data/"), ("Insights", "/insights/")]
 
     def render(self, url: str, template: str, sitemap: bool = True, **ctx) -> None:
+        ctx.setdefault("og_image", "/og/default.png")
         html = self.env.get_template(template).render(url=url, **ctx)
         path = DIST / url.strip("/") / "index.html" if url.endswith("/") else DIST / url.lstrip("/")
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -168,11 +184,13 @@ class Site:
     def build(self) -> None:
         # Pages are rebuilt from scratch so renamed URLs don't linger. v1/ and history/ are data outputs.
         for name in ("countries", "regions", "rankings", "compare", "topics", "data", "methodology",
-                     "insights", "about", "explore", "world", "index-builder", "ask", "static"):
+                     "insights", "about", "explore", "world", "index-builder", "ask", "static", "og", "embed"):
             if (DIST / name).exists():
                 shutil.rmtree(DIST / name)
         shutil.copytree(SITE / "static", DIST / "static")
         self.geo()
+        og.card(DIST / "og" / "default.png", self.cfg["name"], "Open data on 217 countries", self.cfg["tagline"],
+                ["Every number shows its source, year and method."])
         self.hist = history.assemble(self.m.entities)
         self.home()
         self.explore()
@@ -254,12 +272,28 @@ class Site:
                 chip = self.chip(ind_meta["id"], None)
             else:
                 chip = None
-            self.render(f"/rankings/{r['ranking_id']}/", "ranking.html", r=r, rows=rows, pillars=pillars,
+            self.ranking_extras(r, rows)
+            self.render(f"/rankings/{r['ranking_id']}/", "ranking.html", og_image=f"/og/rankings/{r['ranking_id']}.png", r=r, rows=rows, pillars=pillars,
                         ind=ind_meta, chip=chip, regions=regions, incomes=incomes,
                         map_values=self.map_values(r), hdi_check=self.m.hdi_check,
                         indicators=self.m.indicators)
             self.search.append({"t": r["name"], "u": f"/rankings/{r['ranking_id']}/", "k": "Ranking",
                                 "s": KIND_LABEL[r["kind"]]})
+
+    def ranking_extras(self, r: dict, rows: list[dict]) -> None:
+        """Share card and embeddable top-10 chart for one ranking."""
+        ranked = [x for x in rows if x["rank"]]
+        dec = 1 if r["kind"] == "original_composite" else r["decimals"]
+        text = lambda v: fmt(v, dec, r["unit"]) + ("%" if r["unit"].startswith("%") else "")
+        og.card(DIST / "og" / "rankings" / f"{r['ranking_id']}.png", self.cfg["name"], KIND_LABEL[r["kind"]], r["name"],
+                [f"{x['rank']}. {x['name']}  {text(x['score'])}" for x in ranked[:3]])
+        top = ranked[:10]
+        mx = max((abs(x["score"]) for x in top), default=1) or 1
+        items = [{**x, "text": text(x["score"]), "bar": round(max(2, 100 * abs(x["score"]) / mx), 1)} for x in top]
+        html = self.env.get_template("embed.html").render(r=r, rows=items)
+        path = DIST / "embed" / "rankings" / r["ranking_id"] / "index.html"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(html, encoding="utf-8")
 
     def country_dims(self, e: dict) -> list[dict]:
         out = []
@@ -327,8 +361,19 @@ class Site:
                 charts.append(("GDP per capita, PPP (current international $)", svg.line_chart(
                     [{"label": c["name"], "points": gdp_ser}], "$", decimals=0, title=f"GDP per capita of {c['name']}"),
                     self.chip("gdp-per-capita-ppp", gdp_ser[-1][0])))
+            proj = self.projection_chart(eid, c["name"])
+            if proj:
+                charts.append(("Population to 2100 (UN)", proj, self.chip("median-age", 2100, "forecast")))
             pair_links = [(self.by_id[a], self.by_id[b]) for a, b in self.cfg["curated_pairs"] if eid in (a, b)]
-            self.render(f"/countries/{c['slug']}/", "country.html", c=c, key=key, dims=self.country_dims(c),
+            lines = []
+            if key.get("population"):
+                lines.append(f"Population {fmt(key['population'][1], 0)} ({key['population'][0]})")
+            if key.get("gdp-per-capita-ppp"):
+                lines.append(f"GDP per person, PPP {fmt(key['gdp-per-capita-ppp'][1], 0)}")
+            if key.get("hdi"):
+                lines.append(f"Human Development Index {key['hdi'][1]:.3f}")
+            og.card(DIST / "og" / "countries" / f"{c['slug']}.png", self.cfg["name"], c["region"], c["name"], lines)
+            self.render(f"/countries/{c['slug']}/", "country.html", og_image=f"/og/countries/{c['slug']}.png", c=c, key=key, dims=self.country_dims(c),
                         positions=self.positions(eid), peers=peers, region=self.by_id[c["region_id"]],
                         income=self.by_id.get(c["income_id"]) if c["income_id"] else None,
                         cap=cap, cap_row=cr, pillar_bars=pb, composites=composites, charts=charts, pair_links=pair_links,
@@ -374,7 +419,7 @@ class Site:
                 longrun.append(("Population", svg.line_chart(
                     [{"label": c["name"], "points": [tuple(p) for p in lr["pop"]]}], "people", decimals=1,
                     title=f"Population of {c['name']} over the long run", connect=True, log=True)))
-            self.render(f"/countries/{c['slug']}/history/", "history.html", c=c, h=h, strip=strip,
+            self.render(f"/countries/{c['slug']}/history/", "history.html", og_image=f"/og/countries/{c['slug']}.png", c=c, h=h, strip=strip,
                         events_by_century=groups, longrun=longrun, by_id=self.by_id)
             self.search.append({"t": f"{c['name']}: history", "u": f"/countries/{c['slug']}/history/",
                                 "k": "History", "s": "200 BCE to today"})
@@ -407,7 +452,12 @@ class Site:
             if pts:
                 charts.append((title, svg.line_chart([{"label": "World", "points": pts}], ind["unit"],
                                                      decimals=ind.get("decimals", 1), title=title)))
-        self.render("/world/", "world.html", key=key, regions=regions, charts=charts, dims=self.country_dims(self.by_id["WLD"]))
+        proj = self.projection_chart("WLD", "the world")
+        if proj:
+            charts.append(("World population to 2100 (UN)", proj))
+        wlines = [f"{x['label']} {fmt(x['value'], x['ind'].get('decimals', 1), x['ind']['unit'])}" for x in key[:3]]
+        og.card(DIST / "og" / "world.png", self.cfg["name"], "Global totals", "The world in numbers", wlines)
+        self.render("/world/", "world.html", og_image="/og/world.png", key=key, regions=regions, charts=charts, dims=self.country_dims(self.by_id["WLD"]))
         self.search.append({"t": "World", "u": "/world/", "k": "World", "s": "Global totals and live estimates",
                             "o": ["global", "world population", "earth"]})
         if self.env.globals["live"]:

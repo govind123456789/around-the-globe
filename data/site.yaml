@@ -5,6 +5,8 @@ tagline: Measure anything. Compare everything. Understand why.
 base_url: https://zmetaboard.com
 contact_email: hello@zmetaboard.com
 repo_url: https://github.com/govind123456789/around-the-globe
+# Cookieless Cloudflare Web Analytics: paste the site token here to switch it on. Empty = no analytics.
+cloudflare_analytics_token: ""
 data_licence: CC BY 4.0
 code_licence: AGPL-3.0
 

@@ -7,7 +7,7 @@
   const note = document.getElementById("explore-note");
   const mapEl = document.getElementById("explore-map");
   const cache = {};
-  const SRC = { "wb-wdi": "World Bank WDI", "undp-hdr": "UNDP HDR 2025", "ti-cpi": "Transparency International", oecd: "OECD", gdelt: "GDELT" };
+  const SRC = { "un-wpp": "UN World Population Prospects 2024", "wb-wgi": "World Bank WGI", "wb-wdi": "World Bank WDI", "undp-hdr": "UNDP HDR 2025", "ti-cpi": "Transparency International", oecd: "OECD", gdelt: "GDELT" };
 
   if (location.hash.length > 1 && sel.querySelector(`option[value="${CSS.escape(location.hash.slice(1))}"]`)) {
     sel.value = location.hash.slice(1);

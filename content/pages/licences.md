@@ -9,7 +9,10 @@ Source values keep their source's licence:
 | World Bank, World Development Indicators | CC BY 4.0 |
 | UNDP, Human Development Report 2025 | CC BY 3.0 IGO |
 | Natural Earth (map boundaries) | Public domain |
+| UN World Population Prospects 2024 | CC BY 3.0 IGO |
 | flag-icons (flag images) | MIT |
+| Fraunces, Inter, Source Serif 4 (fonts) | SIL Open Font License |
+| MapLibre GL JS (maps) | BSD-3-Clause |
 
 Every downloaded row has a `source_licence` column, and every release includes `ATTRIBUTION.md`.
 

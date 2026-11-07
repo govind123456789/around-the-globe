@@ -41,7 +41,8 @@ npx wrangler@4 deploy                                 # publish dist/ to Cloudfl
 ## Still to do
 
 - Trademark check for "Around the Globe" and a matching domain (`data/site.yaml`).
-- Create the GitHub repository and Cloudflare account, add the secrets, and run the first deploy.
+- Create the Cloudflare account, add the secrets, and run the first deploy. `base_url` in `data/site.yaml` must be the real
+  domain first: embed code, share cards and the sitemap all use it.
 - Editorial review of the three draft stories; outside reviewers (journalist, economist, student, data engineer, policy analyst).
 - Older releases are not kept once CI rebuilds `dist/`; mirror releases to R2 or Hugging Face before promising permanent URLs.
 - Post-launch: live AI assistant + MCP server, batch AI summaries, universities (OpenAlex) and cities (GHSL), funding.
@@ -49,7 +50,7 @@ npx wrangler@4 deploy                                 # publish dist/ to Cloudfl
 ## Sources
 
 World Bank WDI (per-series licence checked on every fetch) and Worldwide Governance Indicators,
-UNDP HDR 2025 (HDI, IHDI, GDI, GII, PHDI and components), OECD (tax revenue, average wages), Transparency International CPI
+UNDP HDR 2025 (HDI, IHDI, GDI, GII, PHDI and components), UN World Population Prospects 2024 (median age, projections to 2100), OECD (tax revenue, average wages), Transparency International CPI
 (display only, via Our World in Data's republication), GDELT 1.0 daily event files (news volume and tone,
 every third day over the last 90 days; `python -m pipeline.fetch --skip-gdelt` skips this ~210 MB download),
 Wikidata (FIPS→ISO code mapping), Natural Earth (India point-of-view boundaries).
@@ -61,6 +62,12 @@ Wikidata (FIPS→ISO code mapping), Natural Earth (India point-of-view boundarie
 - **Question tabs:** `data/country_questions.yaml` lists each question's measures, wording and caveat.
 - **Wide ranking tables:** add `columns` to a ranking in `data/rankings.yaml`.
 - **Globe:** `site/static/js/globe.js` is decorative. It stays still for reduced-motion users and stops rotating on slow devices.
+
+- **Index Builder rank ranges:** `sensitivity` in `engine.js` shakes every weight by up to ±25% over 200 seeded runs, after the sliders stop.
+- **Embeds:** `/embed/rankings/<id>/` is a standalone top-10 chart (noindex, not in the sitemap); the Embed button copies the iframe code.
+- **Share cards:** `pipeline/og.py` draws 1200×630 PNGs into `dist/og/` with Pillow, using the fonts in `site/assets/og-fonts/`.
+- **No third parties at runtime:** fonts (`site/static/fonts/`) and MapLibre (`site/static/vendor/`) are self-hosted; a test enforces it.
+- **Analytics:** off by default. Put a Cloudflare Web Analytics token in `cloudflare_analytics_token` in `data/site.yaml` to switch on the cookieless beacon.
 
 ## Country history pages (`/countries/<slug>/history/`)
 
@@ -74,5 +81,5 @@ Built by `pipeline/history.py` from:
 
 A consistency check hides Cliopatria rows that outlive independence (e.g. a French row still covering
 Algeria after 1962). Real overlaps it would wrongly hide are kept via `data/history_overrides.yaml`.
-Each page discloses how many samples were hidden. Historical borders are approximate, and some
-Cliopatria names for the late 20th century are imprecise.
+Each page discloses how many samples were hidden. Historical borders are approximate. Misleading Cliopatria
+labels are corrected for display through `rename:` in the same file; their dates and borders stay as published.

@@ -63,7 +63,7 @@
 
   function loadLib() {
     if (window.maplibregl) return Promise.resolve(window.maplibregl);
-    const base = "https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl";
+    const base = "/static/vendor/maplibre-gl";
     const css = document.createElement("link"); css.rel = "stylesheet"; css.href = base + ".css"; document.head.appendChild(css);
     return new Promise((res, rej) => { const s = document.createElement("script"); s.src = base + ".js"; s.onload = () => res(window.maplibregl); s.onerror = rej; document.head.appendChild(s); });
   }

@@ -38,6 +38,23 @@ sources:
       Dataset record states 'License: Creative Commons Attribution 4.0' (read 2026-10-29). Estimates are
       built from perception data from 35 sources; the 2026 release recalculated history back to 1996.
 
+  - source_id: un-wpp
+    publisher: United Nations, Population Division
+    title: World Population Prospects 2024
+    url: https://population.un.org/wpp/
+    licence: CC BY 3.0 IGO
+    licence_url: http://creativecommons.org/licenses/by/3.0/igo/
+    tier: green
+    commercial_ok: true
+    derivatives_ok: true
+    share_alike: false
+    no_modification: false
+    attribution_text: "United Nations, Department of Economic and Social Affairs, Population Division (2024). World Population Prospects 2024. CC BY 3.0 IGO."
+    licence_checked_on: 2026-11-07
+    notes: >-
+      Read 2026-11-07 on the WPP downloads page: "Copyright © 2024 by United Nations, made available under
+      a Creative Commons license CC BY 3.0 IGO". Years after 2023 are medium-variant projections.
+
   - source_id: undp-hdr
     publisher: UNDP Human Development Report Office
     title: Human Development Report 2025 — composite indices time series

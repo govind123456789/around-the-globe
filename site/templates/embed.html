@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>{{ r.name }} · {{ site.name }}</title>
+<link rel="canonical" href="{{ site.base_url }}/rankings/{{ r.ranking_id }}/">
+<link rel="stylesheet" href="/static/css/fonts.css?v={{ asset_v }}">
+<style>
+  :root { --bg:#fff; --text:#10202f; --muted:#66717b; --line:#e4e1d7; --bar:#0e5a7e; --gold:#8a6a24; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#101f2e; --text:#eef0ec; --muted:#8e9ba6; --line:#223547; --bar:#7cc0e0; --gold:#d9b76a; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px 18px; background: var(--bg); color: var(--text); font: 14px/1.4 "Inter", system-ui, sans-serif; }
+  h1 { font: 500 1.3rem/1.2 "Fraunces", Georgia, serif; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: .8rem; margin: 0 0 12px; }
+  ol { list-style: none; margin: 0; padding: 0; }
+  li { display: grid; grid-template-columns: 22px minmax(80px, 150px) minmax(30px, 1fr) auto; gap: 8px; align-items: center; padding: 4px 0; font-variant-numeric: tabular-nums; }
+  .r { color: var(--gold); font-weight: 600; }
+  .n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .n img { width: 18px; height: 13.5px; margin-right: 6px; vertical-align: -1px; }
+  .b { height: 9px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .b i { display: block; height: 100%; background: var(--bar); }
+  footer { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--line); color: var(--muted); font-size: .76rem; }
+  a { color: inherit; }
+  @media (max-width: 300px) { li { grid-template-columns: 22px 1fr auto; } .b { display: none; } }
+</style>
+</head>
+<body>
+  <h1><a href="{{ site.base_url }}/rankings/{{ r.ranking_id }}/" target="_blank" rel="noopener" style="text-decoration:none">{{ r.name }}</a></h1>
+  <p class="sub">{{ r.value_label or r.unit }}{% if r.kind == 'original_composite' %} · original index, not an official statistic{% elif r.kind == 'official_reproduction' %} · {{ r.official_owner }}{% endif %}</p>
+  <ol>
+    {% for row in rows %}
+    <li>
+      <span class="r">{{ row.rank }}</span>
+      <span class="n">{{ flag(row.entity_id) }}{{ row.name }}</span>
+      <span class="b" aria-hidden="true"><i style="width:{{ row.bar }}%"></i></span>
+      <span>{{ row.text }}</span>
+    </li>
+    {% endfor %}
+  </ol>
+  <footer>Source: <a href="{{ site.base_url }}/rankings/{{ r.ranking_id }}/" target="_blank" rel="noopener">{{ site.name }}</a>, data release {{ release }}, {{ r.output_licence }}. <a href="{{ site.base_url }}/methodology/{{ r.ranking_id }}/" target="_blank" rel="noopener">Methodology</a></footer>
+</body>
+</html>

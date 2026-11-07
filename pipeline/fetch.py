@@ -32,6 +32,7 @@ MAPSHAPER = "mapshaper@0.7.93"
 # transparency.org downloads are often unreachable; Our World in Data republishes the
 # same CPI series (2012 onward) with attribution to Transparency International.
 CPI_URL = "https://ourworldindata.org/grapher/ti-corruption-perception-index.csv?v=1&csvType=full&useColumnShortNames=true"
+WPP_URL = "https://population.un.org/wpp/assets/Excel%20Files/1_Indicator%20(Standard)/CSV_FILES/WPP2024_Demographic_Indicators_Medium.csv.gz"
 OECD_API = "https://sdmx.oecd.org/public/rest/data"
 GDELT_EVENTS = "https://data.gdeltproject.org/events"     # GDELT 1.0 daily event exports
 GDELT_DAYS, GDELT_STEP = 90, 3                             # every 3rd day over the last 90 days
@@ -311,6 +312,8 @@ def main(argv: list[str] | None = None) -> None:
             fetch_wb_indicator(ind["code"], args.refresh, ind["source"])
     print("UNDP HDR")
     fetch_file(HDR_URL, RAW / "undp" / "hdr25_composite_time_series.csv", args.refresh)
+    print("UN World Population Prospects")
+    fetch_file(WPP_URL, RAW / "un" / "wpp2024_demographic_indicators.csv.gz", args.refresh)
     print("Natural Earth")
     ne_raw = RAW / "ne" / "ne_10m_admin_0_countries_ind.geojson"
     fetch_file(NE_URL, ne_raw, args.refresh)

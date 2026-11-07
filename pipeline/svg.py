@@ -20,11 +20,15 @@ def _nice_ticks(lo: float, hi: float, n: int = 4) -> list[float]:
     while t <= hi + step * 0.001:
         ticks.append(round(t, 10))
         t += step
+    if ticks[-1] < hi:      # the axis must reach the highest value, or the line runs off the chart
+        ticks.append(round(t, 10))
     return ticks
 
 
 def compact(v: float, decimals: int = 1) -> str:
     a = abs(v)
+    if a == 0:
+        return "0"
     for div, suf in ((1e12, " tn"), (1e9, " bn"), (1e6, " m"), (1e4, "k")):
         if a >= div:
             if suf == "k":

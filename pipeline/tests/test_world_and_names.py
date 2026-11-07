@@ -65,7 +65,7 @@ def test_wide_ranking_columns_exist():
     inds = {i["id"] for i in data("indicators.yaml")["indicators"]}
     for s in data("rankings.yaml")["single"]:
         for col in s.get("columns", []):
-            assert col["id"] == "world_share" or col["id"] in inds, (s["id"], col["id"])
+            assert col["id"] in ("world_share", "pop_2050") or col["id"] in inds, (s["id"], col["id"])
 
 
 @built
