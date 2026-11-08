@@ -2,7 +2,8 @@
 name: Around the Globe
 short_name: Around the Globe
 tagline: Measure anything. Compare everything. Understand why.
-base_url: https://zmetaboard.com
+# Free Cloudflare address until the domain is ready (embed code, share images and the sitemap use it)
+base_url: https://around-the-globe.round-the-globe.workers.dev
 contact_email: hello@zmetaboard.com
 repo_url: https://github.com/govind123456789/around-the-globe
 # Cookieless Cloudflare Web Analytics: paste the site token here to switch it on. Empty = no analytics.
