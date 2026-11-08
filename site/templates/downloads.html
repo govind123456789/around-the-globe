@@ -15,6 +15,7 @@
     <tr><td><a href="/v1/releases/{{ release }}/manifest.json">manifest.json</a> <span class="muted small">(file checksums and source retrieval dates)</span></td><td></td></tr>
   </tbody>
 </table></div>
+<div class="callout"><b>Every release is kept.</b> Each weekly release is archived as a <a href="{{ site.repo_url }}/releases?q=data-&amp;expanded=true">GitHub Release</a>, so links of the form <span class="mono">{{ site.base_url }}/v1/releases/{{ release }}/bulk/observations.parquet</span> keep working after later updates. Cite the dated link, not <span class="mono">/v1/latest/</span>. Each archive also holds the full JSON API as <span class="mono">api-json-&lt;date&gt;.zip</span>.</div>
 <p class="small muted" style="margin-top:8px">CSV files are gzip-compressed (<span class="mono">.csv.gz</span>); most spreadsheet tools, pandas and R read them directly, or unzip them first.</p>
 <h2>Query the Parquet files directly</h2>
 <div class="prose"><pre><code>-- DuckDB

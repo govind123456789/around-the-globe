@@ -342,3 +342,11 @@ td.good { color: var(--good); font-weight: 600; } td.bad { color: var(--bad); fo
   .lab-controls .field { flex: 1 1 100%; }
   .lab-controls .lab-check { flex: 0 0 auto; }
 }
+
+/* Cities and universities on country pages */
+.beyond-list { list-style: none; margin: 4px 0 12px; padding: 0; counter-reset: b; }
+.beyond-list li { counter-increment: b; display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: .97rem; }
+.beyond-list li > span:first-child::before { content: counter(b); display: inline-block; width: 26px; font-family: var(--serif); color: var(--gold); }
+.beyond-list li > span:last-child { white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* The history chain is a row; a generic card-header rule was turning it into a reversed column */
+.card.link.history-teaser > .chain { flex-direction: row !important; flex-wrap: wrap; align-items: center !important; gap: 6px !important; }

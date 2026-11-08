@@ -258,5 +258,9 @@ single:
   - { id: women-secondary-education, indicator: women-secondary-education, order: desc, name: "Women with secondary education", topics: [society, education] }
   - { id: surface-area,       indicator: surface-area,       order: desc, name: "Largest countries by area",     topics: [demography], value_label: Area (km²), columns: [{ id: world_share, label: Share of world }, { id: population, label: Population }, { id: population-density, label: "Density (/km²)" }] }
   - { id: median-age, indicator: median-age, order: desc, name: "Oldest populations (median age)", value_label: Median age, topics: [demography], columns: [{ id: aged-65, label: "Aged 65+" }, { id: fertility, label: Fertility }, { id: population, label: Population }] }
+  - { id: electoral-democracy, indicator: vdem-electoral-democracy, order: desc, name: "Electoral democracy (V-Dem)", topics: [governance] }
+  - { id: liberal-democracy, indicator: vdem-liberal-democracy, order: desc, name: "Liberal democracy (V-Dem)", topics: [governance] }
+  - { id: premature-ncd-deaths, indicator: ncd-mortality, order: asc, name: "Fewest premature deaths from heart disease, cancer and diabetes", topics: [health] }
+  - { id: tobacco-use, indicator: tobacco-use, order: asc, name: "Lowest tobacco use", topics: [health] }
 
 single_defaults: { version: 1.0.0, reference_year: 2026, max_data_age: 8 }

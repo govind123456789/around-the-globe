@@ -98,6 +98,25 @@
   {% endfor %}
 </div>
 
+{% set bx = beyond.get(c.entity_id) %}
+{% if bx and (bx.cities or bx.unis) %}
+<div class="section-head"><h2>Cities and universities</h2><span class="muted small">Largest urban centres (GHSL) and most-cited universities (OpenAlex)</span></div>
+<div class="grid g2">
+  <div class="card">
+    <h3>Largest cities</h3>
+    {% if bx.cities %}<ol class="beyond-list">{% for x in bx.cities[:6] %}<li><span>{{ x.name }}{% if x.capital %} <span class="badge">capital</span>{% endif %}</span><span>{{ x.people|fmt(0) }} <small class="muted">#{{ x.rank }} in world</small></span></li>{% endfor %}</ol>
+    <p class="small"><a href="/cities/#{{ c.entity_id }}">{{ bx.cities|length }} cit{{ 'y' if bx.cities|length == 1 else 'ies' }} over one million →</a></p>
+    {% else %}<p class="small muted">No urban centre here passes one million people.</p>{% endif %}
+  </div>
+  <div class="card">
+    <h3>Most-cited universities</h3>
+    {% if bx.unis %}<ol class="beyond-list">{% for u in bx.unis[:6] %}<li><span><a href="https://openalex.org/{{ u.id }}" rel="noopener">{{ u.name }}</a></span><span>{{ u.cites|fmt(0) }} <small class="muted">citations</small></span></li>{% endfor %}</ol>
+    <p class="small"><a href="/universities/#{{ c.entity_id }}">{{ bx.unis|length }} in the world’s top {{ beyond_counts.unis|fmt(0) }} →</a></p>
+    {% else %}<p class="small muted">None in the world’s {{ beyond_counts.unis|fmt(0) }} most-cited universities.</p>{% endif %}
+  </div>
+</div>
+{% endif %}
+
 <div class="section-head"><h2>History</h2><a href="/countries/{{ c.slug }}/history/">Full timeline since 200 BCE →</a></div>
 <a class="card link history-teaser" href="/countries/{{ c.slug }}/history/" style="display:block;color:inherit;text-decoration:none">
   {% if chain %}<div class="chain">{% for n in chain[-7:] %}<span>{{ n }}</span>{% if not loop.last %}→{% endif %}{% endfor %}</div>{% endif %}

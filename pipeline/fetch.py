@@ -33,6 +33,8 @@ MAPSHAPER = "mapshaper@0.7.93"
 # same CPI series (2012 onward) with attribution to Transparency International.
 CPI_URL = "https://ourworldindata.org/grapher/ti-corruption-perception-index.csv?v=1&csvType=full&useColumnShortNames=true"
 WPP_URL = "https://population.un.org/wpp/assets/Excel%20Files/1_Indicator%20(Standard)/CSV_FILES/WPP2024_Demographic_Indicators_Medium.csv.gz"
+GHSL_BASE = "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_UCDB_GLOBE_R2024A/GHS_UCDB_THEME_GLOBE_R2024A"
+OPENALEX = "https://api.openalex.org/institutions"
 OECD_API = "https://sdmx.oecd.org/public/rest/data"
 GDELT_EVENTS = "https://data.gdeltproject.org/events"     # GDELT 1.0 daily event exports
 GDELT_DAYS, GDELT_STEP = 90, 3                             # every 3rd day over the last 90 days
@@ -147,6 +149,25 @@ def fetch_file(url: str, out: Path, refresh: bool) -> None:
     r = _get(url)
     _write(out, r.content, url)
     print(f"  {out.name}: {len(r.content):,} bytes")
+
+
+def fetch_openalex(refresh: bool, limit: int = 2000) -> None:
+    """The most-cited educational institutions, with summary statistics. Keyless OpenAlex access
+    has a small shared daily budget, so this runs only when the cached file is missing or --refresh."""
+    out = RAW / "openalex" / "institutions.json"
+    if out.exists() and not refresh:
+        return
+    fields = "id,ror,display_name,country_code,works_count,cited_by_count,summary_stats,homepage_url,geo"
+    results = []                     # numbered pages: cursor paging needs an API key
+    for page in range(1, limit // 200 + 1):
+        d = _get(OPENALEX, {"filter": "type:education", "sort": "cited_by_count:desc", "per-page": 200,
+                            "select": fields, "page": page}).json()
+        results += d["results"]
+        if len(d["results"]) < 200:
+            break
+    body = json.dumps({"query": "type:education sorted by cited_by_count", "results": results[:limit]}, ensure_ascii=False)
+    _write(out, body.encode("utf-8"), OPENALEX)
+    print(f"  {len(results[:limit])} institutions")
 
 
 def fetch_oecd(ind: dict, refresh: bool) -> None:
@@ -320,6 +341,17 @@ def main(argv: list[str] | None = None) -> None:
     simplify_boundaries(ne_raw, RAW / "ne" / "countries_ind_simplified.geojson", args.refresh)
     print("Transparency International (via Our World in Data)")
     fetch_file(CPI_URL, RAW / "ti" / "cpi.csv", args.refresh)
+    print("V-Dem (via Our World in Data)")
+    for ind in cat["indicators"]:
+        if ind["source"] == "v-dem":
+            fetch_file(f"https://ourworldindata.org/grapher/{ind['owid']}.csv?v=1&csvType=full&useColumnShortNames=true",
+                       RAW / "vdem" / f"{ind['id']}.csv", args.refresh)
+    print("Cities (GHSL Urban Centre Database)")
+    for theme in ("GENERAL_CHARACTERISTICS", "GHSL"):
+        fetch_file(f"{GHSL_BASE}/GHS_UCDB_THEME_{theme}_GLOBE_R2024A/V1-2/GHS_UCDB_THEME_{theme}_GLOBE_R2024A_V1_2.zip",
+                   RAW / "ghsl" / f"{theme}.zip", args.refresh)
+    print("Universities (OpenAlex)")
+    fetch_openalex(args.refresh)
     print("OECD")
     for ind in cat["indicators"]:
         if ind["source"] == "oecd":

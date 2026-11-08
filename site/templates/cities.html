@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}The world’s largest cities{% endblock %}
+{% block description %}{{ cities|length }} cities of more than a million people, measured the same way everywhere from satellite data: population in 2025, growth since 1975 and the 2030 projection.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">Beyond countries · GHSL</span>
+  <h1>The world’s largest cities</h1>
+  <p class="lede">{{ cities|length }} cities of more than a million people in 2025, measured in the same way everywhere, from satellite imagery and census data, with their growth since 1975 and the projection for 2030.</p>
+</div>
+<div class="callout"><b>How “city” is defined.</b> These are the European Commission’s <i>urban centres</i>: continuous areas of dense, built-up land with at least 50,000 people, drawn the same way in every country. They ignore municipal borders, so one urban centre can hold several administrative cities (Guangzhou’s includes much of the Pearl River Delta), and its population can differ a lot from official city figures. Names are the main city in each area. Figures for 2025 and 2030 are model estimates.</div>
+
+<div class="toolbar">
+  <label class="field">Find<input type="search" id="c-find" placeholder="City…" autocomplete="off"></label>
+  <label class="field">Country<select id="c-country"><option value="">All countries</option>{% for iso, name in countries %}<option value="{{ iso }}">{{ name }}</option>{% endfor %}</select></label>
+  <span class="small muted" id="c-count"></span>
+</div>
+<div class="table-wrap">
+<table id="c-table" data-sortable>
+  <thead><tr>
+    <th class="num sortable" data-type="num">Rank</th><th class="sortable" data-type="text">City</th><th class="sortable" data-type="text">Country</th>
+    <th class="num sortable" data-type="num">People, 2025</th><th class="num sortable" data-type="num">1975</th>
+    <th class="num sortable" data-type="num" title="Population in 2025 divided by population in 1975">Growth since 1975</th>
+    <th class="num sortable" data-type="num">2030 (projected)</th><th class="num sortable" data-type="num">Area (km²)</th>
+    <th class="num sortable" data-type="num">People per km²</th>
+  </tr></thead>
+  <tbody>
+  {% for c in cities %}
+    <tr data-c="{{ c.iso3 or c.country }}">
+      <td class="num rank" data-v="{{ c.rank }}">{{ c.rank }}</td>
+      <td><b>{{ c.name }}</b>{% if c.capital %} <span class="badge" title="Capital city">capital</span>{% endif %}</td>
+      <td class="country-cell">{% if c.iso3 %}<a href="/countries/{{ by_id[c.iso3].slug }}/">{{ flag(c.iso3) }}{{ by_id[c.iso3].name }}</a>{% else %}{{ c.country }}{% endif %}</td>
+      <td class="num" data-v="{{ c.people }}">{{ c.people|fmt(0) }}</td>
+      <td class="num" data-v="{{ c.pop1975 or 0 }}">{{ c.pop1975|fmt(0) if c.pop1975 else '—' }}</td>
+      <td class="num" data-v="{{ (c.people / c.pop1975) if c.pop1975 else 0 }}">{{ '×%.1f'|format(c.people / c.pop1975) if c.pop1975 else '—' }}</td>
+      <td class="num" data-v="{{ c.pop2030 or 0 }}">{{ c.pop2030|fmt(0) if c.pop2030 else '—' }}</td>
+      <td class="num" data-v="{{ c.area or 0 }}">{{ c.area|fmt(0) if c.area else '—' }}</td>
+      <td class="num" data-v="{{ c.density or 0 }}">{{ c.density|fmt(0) if c.density else '—' }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="small muted" style="margin-top:10px">Source: GHS Urban Centre Database R2024A v1.2, European Commission Joint Research Centre (Mari Rivero et al., 2025), CC BY 4.0. Values shown rounded; this site selected urban centres over one million people. <a href="/data/cities.json">Download as JSON</a> (with population every five years from 1975 to 2030).</p>
+{% endblock %}
+{% block scripts %}<script>
+(() => {
+  const find = document.getElementById("c-find"), sel = document.getElementById("c-country"), count = document.getElementById("c-count");
+  const rows = [...document.querySelectorAll("#c-table tbody tr")];
+  function apply() {
+    const q = find.value.trim().toLowerCase(), c = sel.value; let n = 0;
+    for (const r of rows) { const show = (!c || r.dataset.c === c) && (!q || r.cells[1].textContent.toLowerCase().includes(q)); r.hidden = !show; if (show) n++; }
+    count.textContent = `${n.toLocaleString("en")} shown`;
+    history.replaceState(null, "", c ? "#" + c : location.pathname);
+  }
+  if (location.hash.length > 1) sel.value = decodeURIComponent(location.hash.slice(1));
+  find.addEventListener("input", apply); sel.addEventListener("change", apply); apply();
+})();
+</script>{% endblock %}

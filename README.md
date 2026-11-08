@@ -37,6 +37,8 @@ npx wrangler@4 deploy                                 # publish dist/ to Cloudfl
 - `wrangler.jsonc` serves `dist/` as Workers static assets (free plan: 20,000 files, 25 MiB each; a test enforces both).
 - `.github/workflows/ci.yml` runs the tests on every push; `build-and-deploy.yml` rebuilds the data weekly with
   `--strict` and deploys. It needs repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+- Each data release is archived as a GitHub Release (`data-<date>`) by the deploy workflow, and `dist/_redirects` sends
+  `/v1/releases/<date>/…` links there, so dated download links are permanent.
 - Data stories (`pipeline/stories.py`) are generated from the release. They stay drafts (noindex, not in the
   sitemap) until `data/stories.yaml` marks them `published` after editorial review.
 
@@ -46,7 +48,6 @@ npx wrangler@4 deploy                                 # publish dist/ to Cloudfl
 - Create the Cloudflare account, add the secrets, and run the first deploy. `base_url` in `data/site.yaml` must be the real
   domain first: embed code, share cards and the sitemap all use it.
 - Editorial review of the three draft stories; outside reviewers (journalist, economist, student, data engineer, policy analyst).
-- Older releases are not kept once CI rebuilds `dist/`; mirror releases to R2 or Hugging Face before promising permanent URLs.
 - Post-launch: live AI assistant + MCP server, batch AI summaries, universities (OpenAlex) and cities (GHSL), funding.
 
 ## Sources
@@ -75,6 +76,12 @@ Wikidata (FIPS→ISO code mapping), Natural Earth (India point-of-view boundarie
   income predicts, ten-year movers, and links that survive holding income constant (partial correlation). It writes
   `dist/lab/{meta,correlations,findings}.json`; `site/static/js/lab.js` draws the scatter explorer and heatmap
   (its statistics are tested against the Python ones).
+
+- **Cities and universities (`pipeline/beyond.py`):** GHSL urban centres over one million people (`/cities/`) and the
+  2,000 most-cited universities in OpenAlex (`/universities/`), plus a section on each country page. OpenAlex is fetched
+  with numbered pages (cursor paging needs an API key) and cached in `raw/openalex/`.
+- **Democracy (V-Dem, CC BY-SA 4.0):** five indices via Our World in Data. Share-alike, so they are shown and ranked on
+  their own and never enter the CC BY composites or the Index Builder.
 
 ## Country history pages (`/countries/<slug>/history/`)
 

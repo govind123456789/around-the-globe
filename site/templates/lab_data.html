@@ -21,8 +21,9 @@
   <div class="lab-code" data-pane="py"><button class="btn ghost sm lab-copy-code" type="button">Copy</button><pre><code>import pandas as pd
 
 BASE = "{{ base }}/v1/latest/bulk"
-obs = pd.read_parquet(f"{BASE}/observations.parquet")   # one row per country, indicator and year
-countries = pd.read_parquet(f"{BASE}/entities.parquet").query("type == 'country'")
+WEB = {"User-Agent": "data-notebook"}   # the host blocks Python's default user agent, so name your client
+obs = pd.read_parquet(f"{BASE}/observations.parquet", storage_options=WEB)   # one row per country, indicator and year
+countries = pd.read_parquet(f"{BASE}/entities.parquet", storage_options=WEB).query("type == 'country'")
 
 # Latest life expectancy per country since 2018
 le = (obs[(obs.indicator_id == "life-expectancy") &amp; (obs.year &gt;= 2018)]

@@ -220,7 +220,7 @@ def load_observations(cat: dict, entities: dict, sources: dict):
                                 "retrieved_at": meta["retrieved_at"],
                                 "raw_path": path.relative_to(RAW).as_posix(), "checksum_sha256": meta["sha256"]}
         for i in cat["indicators"]:
-            if i["source"] == source_id and (source_id != "oecd" or path.stem == i["id"])                     and (source_id != "gdelt" or "_release" not in i):
+            if i["source"] == source_id and (source_id not in ("oecd", "v-dem") or path.stem == i["id"])                     and (source_id != "gdelt" or "_release" not in i):
                 i["_release"], i["_retrieved_at"] = rid, meta["retrieved_at"]
         return rid
 
@@ -233,6 +233,20 @@ def load_observations(cat: dict, entities: dict, sources: dict):
                 code, year = row["code"], int(row["year"])
                 if code in entities and year >= 2012 and row["cpi_score"] != "":
                     add(by_id["cpi"], code, year, float(row["cpi_score"]), rid)
+
+    # V-Dem indices, as republished by Our World in Data (one file per indicator)
+    for ind in cat["indicators"]:
+        if ind["source"] != "v-dem":
+            continue
+        path = RAW / "vdem" / f"{ind['id']}.csv"
+        if not path.exists():
+            continue
+        rid = release("v-dem", ind["owid"], path)
+        with open(path, encoding="utf-8", newline="") as f:
+            for row in csv.DictReader(f):
+                code, year = row["code"], int(row["year"])
+                if code in entities and YEAR_MIN <= year <= YEAR_MAX and row.get(ind["code"], "") != "":
+                    add(ind, code, year, float(row[ind["code"]]), rid)
 
     # OECD SDMX CSV files, one per indicator
     for ind in cat["indicators"]:

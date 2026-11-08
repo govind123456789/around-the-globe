@@ -92,3 +92,26 @@ def test_lab_pages_exist_and_are_in_nav_and_sitemap():
     assert "/lab/findings/" in (DIST / "sitemap.xml").read_text(encoding="utf-8")
     data = (DIST / "lab" / "data" / "index.html").read_text(encoding="utf-8")
     assert "observations.parquet" in data and "indicator_id" in data
+
+
+@built
+def test_python_starter_names_its_client_and_release_links_redirect_to_archives():
+    data = (DIST / "lab" / "data" / "index.html").read_text(encoding="utf-8")
+    assert data.count("storage_options=WEB") == 2          # the host blocks Python-urllib's default user agent
+    rules = (DIST / "_redirects").read_text(encoding="utf-8").splitlines()
+    assert any(r.startswith("/v1/releases/:date/bulk/:file https://github.com/") and "data-:date/:file" in r for r in rules)
+
+
+@built
+def test_cities_universities_and_vdem_are_published_with_their_licences():
+    cities = json.loads((DIST / "data" / "cities.json").read_text(encoding="utf-8"))["results"]
+    assert len(cities) > 400 and all(c["people"] >= 1_000_000 for c in cities)
+    assert any(c["iso3"] == "IND" for c in cities[:20])
+    unis = json.loads((DIST / "data" / "universities.json").read_text(encoding="utf-8"))["results"]
+    assert len(unis) >= 1000 and unis[0]["cites"] >= unis[-1]["cites"]
+    india = (DIST / "countries" / "india" / "index.html").read_text(encoding="utf-8")
+    assert "Largest cities" in india and "Most-cited universities" in india
+    rks = json.loads((DIST / "v1" / "latest" / "rankings.json").read_text(encoding="utf-8"))
+    assert next(r for r in rks if r["ranking_id"] == "electoral-democracy")["output_licence"] == "CC BY-SA 4.0"
+    m = json.loads((DIST / "v1" / "latest" / "matrix.json").read_text(encoding="utf-8"))
+    assert not [i for i in m["indicators"] if i["indicator_id"].startswith("vdem-")]   # share-alike: not in the Index Builder

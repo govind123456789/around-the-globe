@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Universities by research citations{% endblock %}
+{% block description %}The {{ unis|length }} most-cited universities in the world from OpenAlex: citations, research output, h-index and recent citation impact, filterable by country.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">Beyond countries · OpenAlex</span>
+  <h1>Universities by research citations</h1>
+  <p class="lede">The {{ unis|length|fmt(0) }} universities whose research has been cited most, from the open OpenAlex catalogue of scholarly works. Sort by any column, or pick a country.</p>
+</div>
+<div class="callout"><b>What this measures.</b> Citations and publications count research volume and reach, which favours large, old, research-heavy and English-publishing institutions. They say nothing about teaching, cost or student experience. OpenAlex links papers to institutions automatically, so some counts include errors, and university systems or medical schools may be counted separately. The h-index is the largest number h such that h works have at least h citations each. “2-year citedness” is the average citations in the last year of works published in the two years before, which favours recent impact over size.</div>
+
+<div class="toolbar">
+  <label class="field">Find<input type="search" id="u-find" placeholder="University…" autocomplete="off"></label>
+  <label class="field">Country<select id="u-country"><option value="">All countries</option>{% for iso, name in countries %}<option value="{{ iso }}">{{ name }}</option>{% endfor %}</select></label>
+  <span class="small muted" id="u-count"></span>
+</div>
+<div class="table-wrap">
+<table id="u-table" data-sortable>
+  <thead><tr>
+    <th class="num sortable" data-type="num">Rank</th><th class="sortable" data-type="text">University</th><th class="sortable" data-type="text">Country</th>
+    <th class="num sortable" data-type="num">Citations</th><th class="num sortable" data-type="num">Works</th>
+    <th class="num sortable" data-type="num" title="h works with at least h citations each">h-index</th>
+    <th class="num sortable" data-type="num" title="Average recent citations of works from the previous two years">2-yr citedness</th>
+  </tr></thead>
+  <tbody>
+  {% for u in unis %}
+    <tr data-c="{{ u.iso3 or u.cc }}">
+      <td class="num rank" data-v="{{ u.rank }}">{{ u.rank }}</td>
+      <td><a href="https://openalex.org/{{ u.id }}" rel="noopener">{{ u.name }}</a>{% if u.city %} <span class="muted small">{{ u.city }}</span>{% endif %}</td>
+      <td class="country-cell">{% if u.iso3 %}<a href="/countries/{{ by_id[u.iso3].slug }}/">{{ flag(u.iso3) }}{{ by_id[u.iso3].name }}</a>{% else %}{{ u.country_label }}{% endif %}</td>
+      <td class="num" data-v="{{ u.cites }}">{{ u.cites|fmt(0) }}</td>
+      <td class="num" data-v="{{ u.works }}">{{ u.works|fmt(0) }}</td>
+      <td class="num" data-v="{{ u.h or 0 }}">{{ u.h or '—' }}</td>
+      <td class="num" data-v="{{ u.mean2 or 0 }}">{{ '%.1f'|format(u.mean2) if u.mean2 is not none else '—' }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="small muted" style="margin-top:10px">Source: OpenAlex (Priem, Piwowar &amp; Orr, 2022), CC0, retrieved {{ retrieved }}. Institutions of type “education”, the {{ unis|length|fmt(0) }} with the most citations. <a href="/data/universities.json">Download as JSON</a>.</p>
+{% endblock %}
+{% block scripts %}<script>
+(() => {
+  const find = document.getElementById("u-find"), sel = document.getElementById("u-country"), count = document.getElementById("u-count");
+  const rows = [...document.querySelectorAll("#u-table tbody tr")];
+  function apply() {
+    const q = find.value.trim().toLowerCase(), c = sel.value; let n = 0;
+    for (const r of rows) { const show = (!c || r.dataset.c === c) && (!q || r.cells[1].textContent.toLowerCase().includes(q)); r.hidden = !show; if (show) n++; }
+    count.textContent = `${n.toLocaleString("en")} shown`;
+    history.replaceState(null, "", c ? "#" + c : location.pathname);
+  }
+  if (location.hash.length > 1) sel.value = decodeURIComponent(location.hash.slice(1));
+  find.addEventListener("input", apply); sel.addEventListener("change", apply); apply();
+})();
+</script>{% endblock %}

@@ -18,6 +18,8 @@ jobs:
     if: ${{ vars.CLOUDFLARE_ENABLED == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    permissions:
+      contents: write        # to publish each data release as a GitHub Release (permanent download links)
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -46,6 +48,24 @@ jobs:
 
       - name: Test the built release
         run: python -m pytest -q pipeline/tests
+
+      # Each data release is kept for good as a GitHub Release. The site redirects
+      # /v1/releases/<date>/<file> and /v1/releases/<date>/bulk/<file> there (see _redirects),
+      # so links in citations keep working after later weekly rebuilds.
+      - name: Archive this release on GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          REL=$(python -c "import json; print(json.load(open('dist/v1/releases.json'))[0]['release'])")
+          DIR=dist/v1/releases/$REL
+          (cd "$DIR" && zip -qr "$GITHUB_WORKSPACE/api-json-$REL.zip" . -x 'bulk/*')
+          TAG=data-$REL
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --title "Data release $REL" --latest=false --target "$GITHUB_SHA" \
+              --notes "Around the Globe data release $REL. Bulk tables (Parquet and gzipped CSV), the manifest with checksums, licences and attribution, and the full JSON API as api-json-$REL.zip. Release notes: https://around-the-globe.round-the-globe.workers.dev/insights/releases/$REL/"
+          fi
+          FILES=$(find "$DIR" -maxdepth 1 -type f; find "$DIR/bulk" -type f)
+          gh release upload "$TAG" $FILES "api-json-$REL.zip" --clobber
 
       - name: Deploy to Cloudflare
         uses: cloudflare/wrangler-action@v4

@@ -11,7 +11,7 @@ import markdown
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
 
-from . import history, lab, live, og, stories, svg
+from . import beyond, history, lab, live, og, stories, svg
 from .build_data import Model
 from .config import CONTENT, DIST, RAW, SITE, load_yaml, site_config
 
@@ -185,7 +185,8 @@ class Site:
     def build(self) -> None:
         # Pages are rebuilt from scratch so renamed URLs don't linger. v1/ and history/ are data outputs.
         for name in ("countries", "regions", "rankings", "compare", "topics", "data", "methodology",
-                     "insights", "about", "explore", "world", "index-builder", "ask", "static", "og", "embed", "lab"):
+                     "insights", "about", "explore", "world", "index-builder", "ask", "static", "og", "embed", "lab",
+                     "universities", "cities"):
             if (DIST / name).exists():
                 shutil.rmtree(DIST / name)
         shutil.copytree(SITE / "static", DIST / "static")
@@ -193,6 +194,7 @@ class Site:
         og.card(DIST / "og" / "default.png", self.cfg["name"], "Open data on 217 countries", self.cfg["tagline"],
                 ["Every number shows its source, year and method."])
         self.hist = history.assemble(self.m.entities)
+        self.load_beyond()
         self.home()
         self.explore()
         self.rankings()
@@ -206,6 +208,7 @@ class Site:
         self.methodology()
         self.builder()
         self.lab_pages()
+        self.beyond_pages()
         self.insights()
         self.static_pages()
         self.render("/404.html", "404.html", sitemap=False)
@@ -586,6 +589,52 @@ class Site:
         comps = [r for r in self.rk.values() if r["kind"] == "original_composite"]
         self.render("/index-builder/", "builder.html", cap=cap, dims=self.m.dimensions, composites=comps)
 
+    def load_beyond(self) -> None:
+        """Universities and cities, grouped by country for the country pages."""
+        self.unis = beyond.load_universities(self.m)
+        for u in self.unis:
+            u["country_label"] = {"TW": "Taiwan"}.get(u.get("cc") or "", "") if not u["iso3"] else ""
+        self.cities, unmatched = beyond.load_cities(self.m)
+        if unmatched:
+            print(f"  cities: no country match for {', '.join(unmatched)}")
+        by_c: dict[str, dict] = {}
+        for u in self.unis:
+            if u["iso3"]:
+                by_c.setdefault(u["iso3"], {"unis": [], "cities": []})["unis"].append(u)
+        for c in self.cities:
+            if c["iso3"]:
+                by_c.setdefault(c["iso3"], {"unis": [], "cities": []})["cities"].append(c)
+        self.env.globals["beyond"] = by_c
+        self.env.globals["beyond_counts"] = {"unis": len(self.unis), "cities": len(self.cities)}
+
+    def beyond_pages(self) -> None:
+        def countries_of(items):
+            isos = {x["iso3"] for x in items if x["iso3"]}
+            opts = sorted(((i, self.by_id[i]["name"]) for i in isos), key=lambda t: t[1])
+            extra = sorted({x.get("country_label") or x.get("country") for x in items if not x["iso3"]} - {None, ""})
+            return opts + [(n, n) for n in extra]
+
+        for u in self.unis:
+            u.setdefault("country_label", "")
+        if self.unis:
+            meta = json.loads((RAW / "openalex" / "institutions.json.meta.json").read_text(encoding="utf-8"))
+            self.render("/universities/", "universities.html", unis=self.unis, countries=countries_of(self.unis),
+                        by_id=self.by_id, retrieved=meta.get("retrieved_at", "")[:10])
+            self.search.append({"t": "Universities by research citations", "u": "/universities/", "k": "List", "s": "OpenAlex"})
+        if self.cities:
+            self.render("/cities/", "cities.html", cities=self.cities, countries=countries_of(self.cities), by_id=self.by_id)
+            self.search.append({"t": "The world's largest cities", "u": "/cities/", "k": "List", "s": "GHSL urban centres"})
+            for c in self.cities[:300]:
+                if c["iso3"]:
+                    self.search.append({"t": c["name"], "u": f"/cities/#{c['iso3']}", "k": "City",
+                                        "s": f"{self.by_id[c['iso3']]['name']} · {fmt(c['people'], 0)} people"})
+        out = DIST / "data"
+        out.mkdir(parents=True, exist_ok=True)
+        (out / "universities.json").write_text(json.dumps({"source": "OpenAlex, CC0", "results": self.unis}, ensure_ascii=False,
+                                                          separators=(",", ":")), encoding="utf-8")
+        (out / "cities.json").write_text(json.dumps({"source": "GHS Urban Centre Database R2024A v1.2, European Commission JRC, CC BY 4.0",
+                                                     "results": self.cities}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+
     BULK_ABOUT = {
         "observations": "Every value: one row per country (or group), indicator and year, with status, source and licence.",
         "entities": "Countries and groups: names, slugs, ISO codes, region, income group, capital.",
@@ -685,6 +734,12 @@ class Site:
             f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>',
             encoding="utf-8")
         (DIST / "robots.txt").write_text(f"User-agent: *\nAllow: /\nDisallow: /index-builder/\n\nSitemap: {base}/sitemap.xml\n")
+        repo = self.cfg.get("repo_url", "").rstrip("/")
+        if repo.startswith("https://github.com/"):
+            # Releases are archived on GitHub by the deploy workflow; send release links there so they never break.
+            dl = f"{repo}/releases/download/data-:date"
+            (DIST / "_redirects").write_text(f"/v1/releases/:date/bulk/:file {dl}/:file 302\n"
+                                             f"/v1/releases/:date/:file {dl}/:file 302\n")
         (DIST / "_headers").write_text(
             "/v1/releases/*\n  Access-Control-Allow-Origin: *\n  Cache-Control: public, max-age=31536000, immutable\n"
             "/v1/latest/*\n  Access-Control-Allow-Origin: *\n  Cache-Control: public, max-age=3600\n"
