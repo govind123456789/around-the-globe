@@ -62,11 +62,12 @@ class Site:
         self.env.globals["ename"] = lambda e: self.by_id[e]["name"]
         flags = {p.stem for p in (SITE / "static" / "flags").glob("*.svg")}
 
-        def flag(iso3: str) -> Markup:
+        def flag(iso3: str, eager: bool = False) -> Markup:
             iso2 = (self.by_id.get(iso3, {}).get("iso2") or "").lower()
             if iso2 not in flags:
                 return Markup("")
-            return Markup(f'<img class="flag" src="/static/flags/{iso2}.svg" width="20" height="15" alt="" loading="lazy">')
+            load = "" if eager else ' loading="lazy"'      # above-the-fold flags load straight away
+            return Markup(f'<img class="flag" src="/static/flags/{iso2}.svg" width="20" height="15" alt=""{load}>')
 
         self.env.globals["flag"] = flag
         self.env.globals["live"] = self.live_context()

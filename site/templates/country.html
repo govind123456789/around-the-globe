@@ -9,7 +9,7 @@
   <p class="crumbs"><a href="/countries/">Countries</a> › <a href="/regions/{{ region.slug }}/">{{ c.region }}</a></p>
 <div class="page-head" style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:end">
   <div>
-    <h1>{{ flag(c.entity_id) }}{{ c.name }}</h1>
+    <h1>{{ flag(c.entity_id, eager=True) }}{{ c.name }}</h1>
     <p class="lede" style="margin:0">{{ c.region }}{% if income %} · <a href="/regions/{{ income.slug }}/">{{ c.income }}</a>{% endif %}{% if c.capital %} · Capital: {{ c.capital }}{% endif %} · <span class="mono">{{ c.entity_id }}</span></p>
   </div>
   <div class="btns">
