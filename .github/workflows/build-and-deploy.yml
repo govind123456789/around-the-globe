@@ -39,6 +39,8 @@ jobs:
           restore-keys: raw-
 
       - name: Fetch sources (refresh World Bank, UNDP, OECD, CPI weekly)
+        env:
+          OPENALEX_API_KEY: ${{ secrets.OPENALEX_API_KEY }}   # optional: a free OpenAlex key raises the daily limit
         run: |
           rm -rf raw/wb raw/undp raw/oecd raw/ti raw/wikidata/events.csv*
           python -m pipeline.fetch

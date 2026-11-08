@@ -11,6 +11,7 @@ import csv
 import hashlib
 import io
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -158,10 +159,13 @@ def fetch_openalex(refresh: bool, limit: int = 2000) -> None:
     if out.exists() and not refresh:
         return
     fields = "id,ror,display_name,country_code,works_count,cited_by_count,summary_stats,homepage_url,geo"
-    results = []                     # numbered pages: cursor paging needs an API key
+    key = os.environ.get("OPENALEX_API_KEY", "").strip()   # optional; set as a secret, never in the repo
+    results = []                     # numbered pages work with or without a key
     for page in range(1, limit // 200 + 1):
-        d = _get(OPENALEX, {"filter": "type:education", "sort": "cited_by_count:desc", "per-page": 200,
-                            "select": fields, "page": page}).json()
+        params = {"filter": "type:education", "sort": "cited_by_count:desc", "per-page": 200, "select": fields, "page": page}
+        if key:
+            params["api_key"] = key
+        d = _get(OPENALEX, params).json()
         results += d["results"]
         if len(d["results"]) < 200:
             break
