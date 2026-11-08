@@ -32,6 +32,8 @@ Earth's India point-of-view edition, which shows boundaries as the Government of
 npx wrangler@4 deploy                                 # publish dist/ to Cloudflare (run `npx wrangler login` first)
 ```
 
+- The live site is https://around-the-globe.round-the-globe.workers.dev (Cloudflare Workers, free plan). `vercel.json` only
+  switches off Vercel's Git builds; the site is not deployed to Vercel.
 - `wrangler.jsonc` serves `dist/` as Workers static assets (free plan: 20,000 files, 25 MiB each; a test enforces both).
 - `.github/workflows/ci.yml` runs the tests on every push; `build-and-deploy.yml` rebuilds the data weekly with
   `--strict` and deploys. It needs repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.

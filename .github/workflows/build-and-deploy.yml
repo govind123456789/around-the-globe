@@ -19,18 +19,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
       - run: pip install -r requirements.txt
 
       # Raw downloads are cached between runs; GDELT only fetches days it doesn't have.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: raw
           key: raw-${{ github.run_id }}
@@ -48,9 +48,9 @@ jobs:
         run: python -m pytest -q pipeline/tests
 
       - name: Deploy to Cloudflare
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: "4.152.0"     # the action's default (3.x) cannot deploy a static-assets-only Worker
+          wranglerVersion: "4.152.0"     # pinned so a new Wrangler release cannot change deploys unannounced
           command: deploy
