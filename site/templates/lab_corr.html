@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% import "lab_macros.html" as L %}
+{% block title %}Correlation atlas{% endblock %}
+{% block description %}How {{ inds|length }} indicators move together across countries: a clustered Spearman correlation heatmap with the strongest links for any indicator.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">The Lab · B</span>
+  <h1>Correlation atlas</h1>
+  <p class="lede">Every indicator against every other. Orange cells move together, blue cells move in opposite directions, and pale cells barely relate. Indicators are grouped so that families of related measures form blocks.</p>
+</div>
+{{ L.lab_nav('/lab/correlations/') }}
+
+<div class="lab-corr">
+  <div class="card lab-corr-map">
+    <div class="lab-corr-canvas"><canvas id="corr-canvas" role="img" aria-label="Correlation heatmap of {{ inds|length }} indicators"></canvas><div class="map-tip lab-tip" id="corr-tip" hidden></div></div>
+    <div class="lab-corr-key small muted"><span>−1</span><i class="ramp" aria-hidden="true"></i><span>+1</span><span style="margin-left:12px">Hover a cell for details · click to plot the pair</span></div>
+  </div>
+  <div class="card lab-corr-side">
+    <label class="field">Strongest links for<select id="corr-ind">{{ L.ind_options(inds, dims, 'life-expectancy') }}</select></label>
+    <ol class="corr-list" id="corr-list"></ol>
+    <p class="small muted">Right-hand numbers: countries with both values. Click a name to plot the pair.</p>
+  </div>
+</div>
+<p class="small muted" style="margin-top:12px">{{ method }} Indicators that may not be modified (Transparency International’s CPI) and news-coverage measures are left out. <a href="/lab/correlations.json">Download the matrix (JSON)</a>.</p>
+{% endblock %}
+{% block scripts %}<script src="/static/js/lab.js?v={{ asset_v }}" defer></script>{% endblock %}

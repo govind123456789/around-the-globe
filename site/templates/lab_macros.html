@@ -1,0 +1,19 @@
+{% macro ind_options(inds, dims, selected) %}
+{% for d in dims.values() %}{% set group = inds|selectattr('dimension', 'equalto', d.id)|list %}{% if group %}<optgroup label="{{ d.name }}">
+  {% for i in group %}<option value="{{ i.id }}"{% if i.id == selected %} selected{% endif %}>{{ i.name }}</option>{% endfor %}
+</optgroup>{% endif %}{% endfor %}
+{% endmacro %}
+
+{% macro lab_nav(current) %}
+<nav class="lab-nav" aria-label="Lab sections">
+  {% for href, label in [('/lab/', 'Overview'), ('/lab/scatter/', 'Scatter explorer'), ('/lab/correlations/', 'Correlation atlas'), ('/lab/findings/', 'Findings'), ('/lab/data/', 'Use the data')] %}
+  <a href="{{ href }}"{% if href == current %} aria-current="page"{% endif %}>{{ label }}</a>
+  {% endfor %}
+</nav>
+{% endmacro %}
+
+{% macro gap(x, f) %}{% if f.ylog %}{{ '%+.0f'|format(x.gap) }}%{% else %}{{ '%+.1f'|format(x.gap) }}{% endif %}{% endmacro %}
+
+{% macro val(v, f) %}{{ v|fmt(f.decimals) }}{% endmacro %}
+
+{% macro change(r, f) %}{% if f.pct %}{{ '%+.0f'|format(r.change) }}%{% else %}{{ '%+.1f'|format(r.change) }}{% endif %}{% endmacro %}

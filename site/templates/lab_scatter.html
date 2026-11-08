@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% import "lab_macros.html" as L %}
+{% block title %}Scatter explorer{% endblock %}
+{% block description %}Plot any two of {{ inds|length }} indicators for {{ n_countries }} countries, with log scales, years, regions, correlation statistics and outliers.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">The Lab · A</span>
+  <h1>Scatter explorer</h1>
+  <p class="lede">Choose any two indicators. Each dot is a country. Hover for values, click to open its profile, and copy the link to share exactly this view.</p>
+</div>
+{{ L.lab_nav('/lab/scatter/') }}
+
+<div class="card lab-controls">
+  <label class="field">Across (x)<select id="lab-x">{{ L.ind_options(inds, dims, 'gdp-per-capita-ppp') }}</select></label>
+  <label class="field lab-check"><input type="checkbox" id="lab-lx" checked> Log scale</label>
+  <button type="button" class="btn ghost sm" id="lab-swap" title="Swap axes">⇄ Swap</button>
+  <label class="field">Up (y)<select id="lab-y">{{ L.ind_options(inds, dims, 'life-expectancy') }}</select></label>
+  <label class="field lab-check"><input type="checkbox" id="lab-ly"> Log scale</label>
+  <label class="field">Year<select id="lab-year"><option value="latest">Latest</option></select></label>
+  <label class="field lab-check"><input type="checkbox" id="lab-size" checked> Size by population</label>
+  <label class="field">Highlight<input type="search" id="lab-hl" list="lab-names" placeholder="Country…" autocomplete="off"></label>
+  <datalist id="lab-names"></datalist>
+</div>
+
+<div class="lab-stats" id="lab-stats" aria-live="polite"></div>
+<div class="card lab-plot-card">
+  <div class="lab-plot-box" id="lab-plot"><p class="muted">Loading…</p></div>
+  <div class="map-tip lab-tip" id="lab-tip" hidden></div>
+  <div class="lab-legend" id="lab-legend" aria-label="Show or hide regions"></div>
+</div>
+<p class="small muted" id="lab-note"></p>
+<div class="btns"><button type="button" class="btn ghost sm" id="lab-copy">Copy link</button><button type="button" class="btn ghost sm" id="lab-csv">Download these points (CSV)</button></div>
+
+<div class="section-head"><h2>Outliers from the line</h2><span class="muted small">Countries furthest from what the fitted line predicts</span></div>
+<div class="grid g2 lab-outliers" id="lab-outliers"></div>
+
+<div class="section-head"><h2>Reading the numbers</h2></div>
+<div class="grid g3">
+  <div class="card"><h3>Pearson r</h3><p class="small">How closely the dots follow a straight line, from −1 to +1. With a log scale ticked, it is calculated on the logged values, which is usually right for incomes and totals.</p></div>
+  <div class="card"><h3>Spearman ρ</h3><p class="small">The same idea using ranks instead of values, so a few extreme countries can’t dominate it and curved relationships still count. It doesn’t change with log scales.</p></div>
+  <div class="card"><h3>R² and the line</h3><p class="small">R² is the share of the spread in y that the straight line accounts for. A high R² describes a pattern; it does not show that x causes y.</p></div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/js/lab.js?v={{ asset_v }}" defer></script>{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% import "lab_macros.html" as L %}
+{% block title %}The Lab: explore the data yourself{% endblock %}
+{% block description %}Scatter any two of {{ n_inds }} indicators, browse a correlation atlas, read findings generated from each data release, and download everything for Python, R or SQL.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">The Lab · for data nerds and data scientists</span>
+  <h1>Find something new in the data</h1>
+  <p class="lede">The rankings are our view of the numbers. The Lab hands you the tools: plot any two of {{ n_inds }} indicators against each other, see how all of them move together, read what stood out in this release, and take the data into your own notebook.</p>
+</div>
+{{ L.lab_nav('/lab/') }}
+
+<div class="grid g2 lab-tools">
+  <a class="card link" href="/lab/scatter/"><span class="lab-num">A</span><h3>Scatter explorer</h3><p class="small">Any indicator against any other, for {{ n_countries }} countries. Log scales, a year selector, regions, population-sized dots, Pearson and Spearman, a fitted line and the biggest outliers. The link saves your view.</p></a>
+  <a class="card link" href="/lab/correlations/"><span class="lab-num">B</span><h3>Correlation atlas</h3><p class="small">A {{ n_inds }} × {{ n_inds }} heatmap of how every indicator moves with every other, grouped so related measures sit together. Click any cell to plot that pair.</p></a>
+  <a class="card link" href="/lab/findings/"><span class="lab-num">C</span><h3>Findings</h3><p class="small">Written automatically from each release: countries that beat or miss what their income predicts, the biggest ten-year movers, and links that survive holding income constant.</p></a>
+  <a class="card link" href="/lab/data/"><span class="lab-num">D</span><h3>Use the data</h3><p class="small">Copy-and-paste starters for Python, R and SQL that read our Parquet and CSV files straight from the web, plus every field explained.</p></a>
+</div>
+
+<div class="section-head"><h2>From this release</h2><a href="/lab/findings/">All findings →</a></div>
+<div class="grid g3">
+  {% set p = f.performers[0] %}
+  {% if p %}<div class="card lab-teaser"><span class="eyebrow">Beats its income</span>
+    <p><b>{{ p.above[0].name }}</b>: {{ p.name|lower }} of {{ p.above[0].actual|fmt(p.decimals) }}, against {{ p.above[0].expected|fmt(p.decimals) }} expected for its income.</p>
+    <a class="small" href="{{ p.scatter }}">Plot it →</a></div>{% endif %}
+  {% set mv = f.movers[0] %}
+  {% if mv %}<div class="card lab-teaser"><span class="eyebrow">Biggest mover</span>
+    <p><b>{{ mv.best[0].name }}</b>: {{ mv.name|lower }} {{ L.change(mv.best[0], mv) }} from {{ mv.best[0].y0 }} to {{ mv.best[0].y1 }}.</p>
+    <a class="small" href="/lab/findings/#movers">More movers →</a></div>{% endif %}
+  {% set k = f.links[0] %}
+  {% if k %}<div class="card lab-teaser"><span class="eyebrow">A link worth a look</span>
+    <p><b>{{ k.a_name }}</b> and <b>{{ k.b_name }}</b>: ρ = {{ '%.2f'|format(k.rho) }} across {{ k.n }} countries, and {{ '%.2f'|format(k.partial) }} with income held constant.</p>
+    <a class="small" href="{{ k.scatter }}">Plot it →</a></div>{% endif %}
+</div>
+
+<div class="callout" style="margin-top:28px">Everything in the Lab is descriptive. A correlation can come from a third factor, from how countries report, or from chance. Each number shows how many countries it rests on. Treat findings as questions to investigate, not answers.</div>
+{% endblock %}

@@ -11,7 +11,7 @@ import markdown
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
 
-from . import history, live, og, stories, svg
+from . import history, lab, live, og, stories, svg
 from .build_data import Model
 from .config import CONTENT, DIST, RAW, SITE, load_yaml, site_config
 
@@ -146,7 +146,7 @@ class Site:
     @staticmethod
     def nav():
         return [("World", "/world/"), ("Explore", "/explore/"), ("Rankings", "/rankings/"), ("Countries", "/countries/"),
-                ("Compare", "/compare/"), ("Topics", "/topics/"), ("Index Builder", "/index-builder/"),
+                ("Compare", "/compare/"), ("Topics", "/topics/"), ("Index Builder", "/index-builder/"), ("Lab", "/lab/"),
                 ("Data", "/data/"), ("Insights", "/insights/")]
 
     def render(self, url: str, template: str, sitemap: bool = True, **ctx) -> None:
@@ -185,7 +185,7 @@ class Site:
     def build(self) -> None:
         # Pages are rebuilt from scratch so renamed URLs don't linger. v1/ and history/ are data outputs.
         for name in ("countries", "regions", "rankings", "compare", "topics", "data", "methodology",
-                     "insights", "about", "explore", "world", "index-builder", "ask", "static", "og", "embed"):
+                     "insights", "about", "explore", "world", "index-builder", "ask", "static", "og", "embed", "lab"):
             if (DIST / name).exists():
                 shutil.rmtree(DIST / name)
         shutil.copytree(SITE / "static", DIST / "static")
@@ -205,6 +205,7 @@ class Site:
         self.data_pages()
         self.methodology()
         self.builder()
+        self.lab_pages()
         self.insights()
         self.static_pages()
         self.render("/404.html", "404.html", sitemap=False)
@@ -584,6 +585,64 @@ class Site:
         cap = self.rk["capability-index"]
         comps = [r for r in self.rk.values() if r["kind"] == "original_composite"]
         self.render("/index-builder/", "builder.html", cap=cap, dims=self.m.dimensions, composites=comps)
+
+    BULK_ABOUT = {
+        "observations": "Every value: one row per country (or group), indicator and year, with status, source and licence.",
+        "entities": "Countries and groups: names, slugs, ISO codes, region, income group, capital.",
+        "indicators": "Indicator definitions: name, unit, direction, topic, source and licence.",
+        "ranking_results": "Every ranking's results: rank, ties, score, rank range and coverage.",
+        "sources": "Sources and their licences.",
+    }
+    FIELD_ABOUT = {
+        "entity_id": "ISO 3166 alpha-3 code (WLD = world, other groups have their own ids)", "indicator_id": "Indicator id (see the list below)",
+        "year": "Year the value describes", "value": "The value, in the indicator's unit", "status": "measured, estimate or forecast",
+        "source": "Source id", "source_licence": "Licence of this value", "source_url": "Where it was downloaded",
+        "retrieved_at": "When it was downloaded (UTC)", "modified": "True if this site changed the value (e.g. unit conversion)",
+        "type": "country or a group kind", "slug": "URL name on this site", "name": "Display name", "iso3": "ISO alpha-3",
+        "region": "World Bank region", "income": "World Bank income group", "capital": "Capital city",
+        "definition": "What it measures", "unit": "Unit", "direction": "higher_better, lower_better or neutral",
+        "dimension": "Topic", "applies_to": "Entity types it applies to", "source_code": "The source's own series code",
+        "display_only": "Shown for reference; not used in calculations", "decimals": "Decimals shown on the site",
+        "transform": "log if composites use its logarithm", "ranking_id": "Ranking id", "version": "Methodology version",
+        "rank": "Rank (1 = top)", "is_tied": "Shares its rank", "score": "Score or value", "rank_low": "Best rank in the sensitivity test",
+        "rank_high": "Worst rank in the sensitivity test", "coverage": "Share of the ranking's indicators available",
+        "excluded_reason": "Why a country is not ranked",
+    }
+
+    def lab_pages(self) -> None:
+        import duckdb
+        res = lab.Lab(self).build()
+        f = res["findings"]
+        inds = sorted(({"id": i["id"], "name": i["name"], "dimension": i["dimension"], "unit": i["unit"], "source": i["source"]}
+                       for i in self.m.indicators.values()
+                       if i["source"] != "gdelt" and not self.m.sources.get(i["source"], {}).get("no_modification")),
+                      key=lambda i: i["name"].casefold())
+        n_countries = len(self.countries)
+        self.render("/lab/", "lab.html", f=f, n_inds=len(res["corr"]["ids"]), n_countries=n_countries)
+        self.render("/lab/scatter/", "lab_scatter.html", inds=inds, dims=self.dims, n_countries=n_countries)
+        self.render("/lab/correlations/", "lab_corr.html", inds=inds, dims=self.dims, method=res["corr"]["method"])
+        self.render("/lab/findings/", "lab_findings.html", f=f)
+        bulk = DIST / "v1" / "latest" / "bulk"
+        files, schemas = [], []
+        for name, about in self.BULK_ABOUT.items():
+            for ext in ("parquet", "csv.gz"):
+                p = bulk / f"{name}.{ext}"
+                if p.exists():
+                    kb = p.stat().st_size / 1024
+                    files.append({"name": f"{name}.{ext}", "url": f"/v1/latest/bulk/{name}.{ext}", "about": about,
+                                  "size": f"{kb / 1024:.1f} MB" if kb > 1024 else f"{kb:.0f} KB"})
+            p = bulk / f"{name}.parquet"
+            if p.exists():
+                cols = duckdb.sql(f"DESCRIBE SELECT * FROM read_parquet('{p.as_posix()}')").fetchall()
+                schemas.append({"name": name, "cols": [{"name": c[0], "type": c[1].lower(), "about": self.FIELD_ABOUT.get(c[0], "")}
+                                                       for c in cols]})
+        self.render("/lab/data/", "lab_data.html", files=files, schemas=schemas, inds=inds,
+                    base=self.cfg["base_url"].rstrip("/"))
+        for url, t, s in (("/lab/", "The Lab", "Explore the data yourself"), ("/lab/scatter/", "Scatter explorer", "Plot any two indicators"),
+                          ("/lab/correlations/", "Correlation atlas", "How indicators move together"),
+                          ("/lab/findings/", "Findings", "What stood out in this release"),
+                          ("/lab/data/", "Use the data", "Python, R and SQL starters")):
+            self.search.append({"t": t, "u": url, "k": "Lab", "s": s})
 
     def insights(self) -> None:
         rel = {

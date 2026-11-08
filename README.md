@@ -71,6 +71,11 @@ Wikidata (FIPS→ISO code mapping), Natural Earth (India point-of-view boundarie
 - **No third parties at runtime:** fonts (`site/static/fonts/`) and MapLibre (`site/static/vendor/`) are self-hosted; a test enforces it.
 - **Analytics:** off by default. Put a Cloudflare Web Analytics token in `cloudflare_analytics_token` in `data/site.yaml` to switch on the cookieless beacon.
 
+- **The Lab (`/lab/`):** `pipeline/lab.py` computes a clustered Spearman correlation matrix, countries above or below what
+  income predicts, ten-year movers, and links that survive holding income constant (partial correlation). It writes
+  `dist/lab/{meta,correlations,findings}.json`; `site/static/js/lab.js` draws the scatter explorer and heatmap
+  (its statistics are tested against the Python ones).
+
 ## Country history pages (`/countries/<slug>/history/`)
 
 Built by `pipeline/history.py` from:

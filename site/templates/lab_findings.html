@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% import "lab_macros.html" as L %}
+{% block title %}Findings from the {{ release }} data{% endblock %}
+{% block description %}Automatically generated findings: countries that beat or miss what their income predicts, the biggest ten-year movers, and links between indicators that hold with income constant.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">The Lab · C · Release {{ release }}</span>
+  <h1>Findings</h1>
+  <p class="lede">These are written by code from each data release, not by an editor, so they are starting points. Every one links to a plot you can check, and says how many countries it rests on.</p>
+</div>
+{{ L.lab_nav('/lab/findings/') }}
+<p class="lab-jump small"><a href="#performers">Beating their income</a> · <a href="#movers">Ten-year movers</a> · <a href="#links">Links that survive income</a> · <a href="/lab/findings.json">All findings as JSON</a></p>
+
+<div class="section-head" id="performers"><h2>Better or worse than income predicts</h2></div>
+<p class="small muted lab-explain">Richer countries usually do better on most measures. Here we fit a line of each outcome against the logarithm of GDP per person (PPP) for countries of 500,000 people or more, and list the countries furthest above and below it. A country can sit far from the line because of policy, history, geography, oil wealth that inflates income, conflict, or how the data are collected.</p>
+{% for p in f.performers %}
+<section class="card lab-finding">
+  <div class="lab-finding-head"><h3>{{ p.name }}</h3><span class="small muted">{{ p.n }} countries · income explains {{ (p.r2 * 100)|round|int }}% of the spread{% if p.ylog %} (fitted on a log scale){% endif %}</span></div>
+  <div class="lab-finding-body">
+    <div class="lab-finding-chart">{{ p.chart|safe }}</div>
+    <div class="lab-finding-lists">
+      <h4><span class="dot-key up"></span>Better than income predicts</h4>
+      <ol>{% for x in p.above %}<li><a href="/countries/{{ x.slug }}/">{{ x.name }}</a> <span>{{ x.actual|fmt(p.decimals) }} <small class="muted">vs {{ x.expected|fmt(p.decimals) }} · {{ L.gap(x, p) }}</small></span></li>{% endfor %}</ol>
+      <h4><span class="dot-key down"></span>Worse than income predicts</h4>
+      <ol>{% for x in p.below %}<li><a href="/countries/{{ x.slug }}/">{{ x.name }}</a> <span>{{ x.actual|fmt(p.decimals) }} <small class="muted">vs {{ x.expected|fmt(p.decimals) }} · {{ L.gap(x, p) }}</small></span></li>{% endfor %}</ol>
+      <p class="small">{% if p.r2 < 0.2 %}Income explains little here, so “expected” values are weak guides. {% endif %}<a href="{{ p.scatter }}">Explore this plot →</a></p>
+    </div>
+  </div>
+</section>
+{% endfor %}
+
+<div class="section-head" id="movers"><h2>Ten-year movers</h2></div>
+<p class="small muted lab-explain">Change between each country’s latest value and the value ten years earlier (or nine to eleven years where that year is missing), for countries of 500,000 people or more. Big jumps sometimes reflect recovery from a crisis, or a data revision, rather than steady progress.</p>
+<div class="grid g2">
+{% for mv in f.movers %}
+<section class="card lab-mover">
+  <h3>{{ mv.name }}</h3>
+  <p class="small muted">{{ mv.n }} countries · typical change {{ '%+.1f'|format(mv.median) }}{{ '%' if mv.pct }}{% if mv.lower_better %} · lower is better{% endif %}</p>
+  <table class="lab-mini">
+    <thead><tr><th>Most improved</th><th class="num">Then → now</th><th class="num">Change</th></tr></thead>
+    <tbody>{% for r in mv.best %}<tr><td><a href="/countries/{{ r.slug }}/">{{ r.name }}</a></td><td class="num small">{{ r.v0|fmt(mv.decimals) }} → {{ r.v1|fmt(mv.decimals) }} <span class="muted">{{ r.y0 }}–{{ r.y1 }}</span></td><td class="num good">{{ L.change(r, mv) }}</td></tr>{% endfor %}</tbody>
+    <thead><tr><th>Most worsened</th><th></th><th></th></tr></thead>
+    <tbody>{% for r in mv.worst %}<tr><td><a href="/countries/{{ r.slug }}/">{{ r.name }}</a></td><td class="num small">{{ r.v0|fmt(mv.decimals) }} → {{ r.v1|fmt(mv.decimals) }} <span class="muted">{{ r.y0 }}–{{ r.y1 }}</span></td><td class="num bad">{{ L.change(r, mv) }}</td></tr>{% endfor %}</tbody>
+  </table>
+</section>
+{% endfor %}
+</div>
+
+<div class="section-head" id="links"><h2>Links that survive holding income constant</h2></div>
+<p class="small muted lab-explain">Many measures rise and fall together simply because richer countries score better on both. Here we keep only pairs from different topics, leave out pairs that measure nearly the same thing, and rank them by their <b>partial</b> correlation: the Spearman correlation left after removing what income per person explains. At least 80 countries per pair.</p>
+<div class="grid g2">
+{% for k in f.links %}
+<section class="card lab-link">
+  <h3>{{ k.a_name }} <span class="muted">×</span> {{ k.b_name }}</h3>
+  <p class="small">Across {{ k.n }} countries, ρ = <b>{{ '%.2f'|format(k.rho) }}</b>. With income held constant it is still <b>{{ '%.2f'|format(k.partial) }}</b>: countries with {{ 'more' }} {{ k.a_name }} tend to have {{ 'more' if k.partial > 0 else 'less' }} {{ k.b_name }} than others at the same income.</p>
+  {{ k.chart|safe }}
+  <p class="small"><a href="{{ k.scatter }}">Explore this pair →</a></p>
+</section>
+{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% import "lab_macros.html" as L %}
+{% block title %}Use the data in Python, R or SQL{% endblock %}
+{% block description %}Copy-and-paste starters for pandas, R and DuckDB that read the {{ site.name }} Parquet and CSV files from the web, plus every field explained.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">The Lab · D</span>
+  <h1>Use the data</h1>
+  <p class="lede">Everything on this site comes from files you can load directly. They are rebuilt every week. For reproducible work, note the release date in <a href="/v1/latest/manifest.json"><code>manifest.json</code></a> (this page shows release {{ release }}) and keep your own copy of the files you use.</p>
+</div>
+{{ L.lab_nav('/lab/data/') }}
+
+<div class="section-head"><h2>Quick start</h2></div>
+<div class="lab-code-tabs" data-codetabs>
+  <div class="q-tabs ready" role="tablist">
+    <button type="button" role="tab" aria-selected="true" data-tab="py">Python</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="r">R</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="sql">SQL (DuckDB)</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="js">JavaScript</button>
+  </div>
+  <div class="lab-code" data-pane="py"><button class="btn ghost sm lab-copy-code" type="button">Copy</button><pre><code>import pandas as pd
+
+BASE = "{{ base }}/v1/latest/bulk"
+obs = pd.read_parquet(f"{BASE}/observations.parquet")   # one row per country, indicator and year
+countries = pd.read_parquet(f"{BASE}/entities.parquet").query("type == 'country'")
+
+# Latest life expectancy per country since 2018
+le = (obs[(obs.indicator_id == "life-expectancy") &amp; (obs.year &gt;= 2018)]
+      .sort_values("year").groupby("entity_id").tail(1))
+
+# Wide table: one column per indicator (latest value since 2018)
+latest = obs[obs.year &gt;= 2018].sort_values("year").groupby(["entity_id", "indicator_id"]).value.last()
+wide = latest.unstack()
+print(wide[["gdp-per-capita-ppp", "life-expectancy"]].corr(method="spearman"))</code></pre></div>
+  <div class="lab-code" data-pane="r" hidden><button class="btn ghost sm lab-copy-code" type="button">Copy</button><pre><code>library(readr)
+library(dplyr)
+
+base &lt;- "{{ base }}/v1/latest/bulk"
+obs &lt;- read_csv(file.path(base, "observations.csv.gz"))
+
+le &lt;- obs |&gt;
+  filter(indicator_id == "life-expectancy", year &gt;= 2018) |&gt;
+  group_by(entity_id) |&gt;
+  slice_max(year, n = 1)
+
+# Or with arrow: arrow::read_parquet(file.path(base, "observations.parquet"))</code></pre></div>
+  <div class="lab-code" data-pane="sql" hidden><button class="btn ghost sm lab-copy-code" type="button">Copy</button><pre><code>-- In the DuckDB shell or any DuckDB client
+INSTALL httpfs; LOAD httpfs;
+
+CREATE VIEW obs AS
+  SELECT * FROM '{{ base }}/v1/latest/bulk/observations.parquet';
+
+-- Latest value per country for two indicators, side by side
+SELECT entity_id,
+       max_by(value, year) FILTER (WHERE indicator_id = 'gdp-per-capita-ppp') AS income,
+       max_by(value, year) FILTER (WHERE indicator_id = 'life-expectancy')    AS life_expectancy
+FROM obs
+WHERE year &gt;= 2018
+GROUP BY entity_id
+ORDER BY life_expectancy DESC;</code></pre></div>
+  <div class="lab-code" data-pane="js" hidden><button class="btn ghost sm lab-copy-code" type="button">Copy</button><pre><code>// Every indicator is also a small JSON file with full time series (CORS enabled)
+const res = await fetch("{{ base }}/v1/latest/indicators/life-expectancy.json");
+const ind = await res.json();
+console.log(ind.name, ind.unit, ind.data["IND"].at(-1));   // [year, value, status]</code></pre></div>
+</div>
+
+<div class="section-head"><h2>Files</h2><a href="/data/downloads/">All downloads →</a></div>
+<div class="table-wrap"><table>
+  <thead><tr><th>File</th><th>What’s in it</th><th class="num">Size</th></tr></thead>
+  <tbody>
+  {% for f in files %}<tr><td><a href="{{ f.url }}"><code>{{ f.name }}</code></a></td><td class="small">{{ f.about }}</td><td class="num small">{{ f.size }}</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+
+<div class="section-head"><h2>Fields</h2></div>
+<div class="grid g2">
+{% for t in schemas %}
+<div class="card"><h3><code>{{ t.name }}</code></h3>
+  <table class="lab-mini"><tbody>{% for c in t.cols %}<tr><td><code>{{ c.name }}</code></td><td class="small muted">{{ c.type }}</td><td class="small">{{ c.about }}</td></tr>{% endfor %}</tbody></table>
+</div>
+{% endfor %}
+</div>
+
+<div class="section-head"><h2>Indicator ids</h2><span class="muted small">{{ inds|length }} used in the Lab</span></div>
+<div class="table-wrap" style="max-height:460px;overflow:auto"><table>
+  <thead><tr><th>id</th><th>Name</th><th>Unit</th><th>Source</th></tr></thead>
+  <tbody>{% for i in inds %}<tr><td><code>{{ i.id }}</code></td><td><a href="/data/indicators/{{ i.id }}/">{{ i.name }}</a></td><td class="small">{{ i.unit }}</td><td class="small">{{ SOURCE_SHORT.get(i.source, i.source) }}</td></tr>{% endfor %}</tbody>
+</table></div>
+
+<div class="callout" style="margin-top:24px"><b>Licences.</b> Each row carries <code>source_licence</code>. Most data is CC BY 4.0 or CC BY 3.0 IGO: credit the source and this site. Transparency International’s CPI is included for reference but may not be modified or redistributed as a derived work. See <a href="/about/licences/">Licences &amp; how to cite</a>.</div>
+{% endblock %}
+{% block scripts %}<script>
+document.querySelectorAll("[data-codetabs]").forEach(box => {
+  box.addEventListener("click", async e => {
+    const tab = e.target.closest("[data-tab]");
+    if (tab) {
+      box.querySelectorAll("[data-tab]").forEach(b => b.setAttribute("aria-selected", b === tab ? "true" : "false"));
+      box.querySelectorAll("[data-pane]").forEach(p => { p.hidden = p.dataset.pane !== tab.dataset.tab; });
+    }
+    const copy = e.target.closest(".lab-copy-code");
+    if (copy) {
+      const text = copy.parentElement.querySelector("code").innerText;
+      try { await navigator.clipboard.writeText(text); copy.textContent = "Copied"; setTimeout(() => { copy.textContent = "Copy"; }, 1500); } catch (err) { /* select manually */ }
+    }
+  });
+});
+</script>{% endblock %}
