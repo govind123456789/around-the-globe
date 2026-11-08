@@ -237,3 +237,6 @@ footer.site .fine { font-size: .84rem; line-height: 1.6; margin-top: 36px; }
   .hero-band .facts b { font-size: 1.65rem; }
 }
 @media (max-width: 640px) { td.country-cell { white-space: normal; min-width: 120px; } }
+/* Live counters: never split a number across lines */
+.live-grid b { overflow-wrap: normal; white-space: nowrap; font-size: clamp(1.1rem, 1.6vw, 1.5rem); }
+@media (min-width: 761px) { .live-grid > div { padding: 2px 18px; } }
