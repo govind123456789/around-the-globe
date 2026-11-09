@@ -1,4 +1,4 @@
-"""Social share cards (1200x630 PNG) in the site's ink-and-brass style."""
+"""Social share cards (1200x630 PNG) in the site's emerald-and-brass style."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw, ImageFont
 from .config import SITE
 
 W, H = 1200, 630
-INK, INK2, ON_INK, ON_INK_2, BRASS = (11, 27, 43), (18, 41, 62), (244, 241, 232), (174, 185, 195), (217, 183, 106)
+INK, INK2, ON_INK, ON_INK_2, BRASS = (14, 43, 35), (19, 58, 47), (243, 239, 226), (169, 188, 177), (220, 193, 137)
 FONTS = SITE / "assets" / "og-fonts"
 
 

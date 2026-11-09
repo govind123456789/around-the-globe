@@ -42,9 +42,11 @@
   }
 
   const cs = getComputedStyle(canvas);
-  const land = cs.getPropertyValue("--globe-land").trim() || "#2f5877";
+  const land = cs.getPropertyValue("--globe-land").trim() || "#3d7a62";
   const line = cs.getPropertyValue("--globe-line").trim() || "rgba(255,255,255,.1)";
-  const hi = cs.getPropertyValue("--globe-hi").trim() || "#d9b76a";
+  const hi = cs.getPropertyValue("--globe-hi").trim() || "#dcc189";
+  const sea1 = cs.getPropertyValue("--globe-sea-1").trim() || "#1a4a3c";
+  const sea2 = cs.getPropertyValue("--globe-sea-2").trim() || "#0a221b";
 
   function draw() {
     const w = canvas.width, r = w / 2 - 2 * dpr, c = w / 2;
@@ -53,7 +55,7 @@
     ctx.save();
     ctx.beginPath(); ctx.arc(c, c, r, 0, 2 * Math.PI); ctx.clip();
     const sea = ctx.createRadialGradient(c - r * .35, c - r * .4, r * .1, c, c, r);
-    sea.addColorStop(0, "#1b3f5c"); sea.addColorStop(1, "#0a1c2c");
+    sea.addColorStop(0, sea1); sea.addColorStop(1, sea2);
     ctx.fillStyle = sea; ctx.fillRect(0, 0, w, w);
 
     ctx.strokeStyle = line; ctx.lineWidth = dpr * .6;              // graticule
@@ -67,7 +69,7 @@
     ctx.fillStyle = land; ctx.fill(lands); ctx.stroke(lands);
     if (highlight) { ctx.fillStyle = hi; ctx.fill(mine); ctx.stroke(mine); }
     const shade = ctx.createRadialGradient(c - r * .3, c - r * .35, r * .3, c, c, r * 1.02);
-    shade.addColorStop(0, "rgba(255,255,255,.06)"); shade.addColorStop(.7, "rgba(5,15,25,0)"); shade.addColorStop(1, "rgba(5,15,25,.55)");
+    shade.addColorStop(0, "rgba(255,255,255,.06)"); shade.addColorStop(.7, "rgba(4,18,13,0)"); shade.addColorStop(1, "rgba(4,18,13,.55)");
     ctx.fillStyle = shade; ctx.fillRect(0, 0, w, w);
     ctx.restore();
     ctx.beginPath(); ctx.arc(c, c, r, 0, 2 * Math.PI);
