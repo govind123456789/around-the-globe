@@ -42,6 +42,18 @@
   {% endfor %}
 </div>
 
+<div class="section-head"><h2>Markets</h2><a href="/markets/">All {{ n_markets }} markets →</a></div>
+<div class="grid g3 mk-grid">
+  {% for h in markets %}
+  <a class="card link mk-card" href="/markets/{{ h.id }}/">
+    <span class="mk-kicker">{{ h.kicker }}</span>
+    <h3>{{ h.name }}</h3>
+    {% if h.world_text %}<div class="mk-big">{{ h.world_text }}</div><div class="small muted">{{ h.hl.name }}, world, {{ h.world[0] }}</div>{% endif %}
+    <ol class="mk-top3">{% for r in h.rows[:3] %}<li><span>{{ flag(r.e.entity_id) }}{{ r.e.name }}</span><span class="mono">{{ r.share_text if r.share is not none else r.text }}</span></li>{% endfor %}</ol>
+  </a>
+  {% endfor %}
+</div>
+
 <div class="section-head"><h2>{{ map_label }} around the world</h2><a href="/explore/">Explore any indicator on the map →</a></div>
 <div class="split">
   <div>{{ m.map("home-map", map_values, map_label) }}</div>
@@ -65,7 +77,7 @@
     </div>
     <div class="card">
       <h3>What’s new</h3>
-      <p class="small">Release <a href="/insights/releases/{{ release }}/">{{ release }}</a>: World Bank, UNDP, OECD, Transparency International and GDELT data, with the recomputed HDI checked against UNDP’s published values.</p>
+      <p class="small">Release <a href="/insights/releases/{{ release }}/">{{ release }}</a>: World Bank, UNDP, OECD, Ember, Transparency International and GDELT data, with new <a href="/markets/">market data</a> for {{ n_markets }} industries, with the recomputed HDI checked against UNDP’s published values.</p>
     </div>
   </div>
 </div>

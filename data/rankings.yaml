@@ -263,4 +263,16 @@ single:
   - { id: premature-ncd-deaths, indicator: ncd-mortality, order: asc, name: "Fewest premature deaths from heart disease, cancer and diabetes", topics: [health] }
   - { id: tobacco-use, indicator: tobacco-use, order: asc, name: "Lowest tobacco use", topics: [health] }
 
+  # ---------------- Markets ----------------
+  - { id: consumer-markets, indicator: household-consumption, order: desc, name: "Largest consumer markets (household spending)", topics: [markets], value_label: Household spending, columns: [{ id: world_share, label: Share of world }, { id: household-consumption-pc, label: Per person }, { id: household-consumption-growth, label: Growth }, { id: population, label: Population }] }
+  - { id: manufacturing-output, indicator: manufacturing-output, order: desc, name: "Largest manufacturing nations", topics: [industry], value_label: Manufacturing output, columns: [{ id: world_share, label: Share of world }, { id: manufacturing-gdp, label: "% of GDP" }, { id: medium-high-tech-manufacturing, label: Medium & high-tech }] }
+  - { id: stock-markets, indicator: market-cap, order: desc, name: "Largest stock markets", topics: [markets], value_label: Market value, columns: [{ id: world_share, label: Share of world }, { id: market-cap-gdp, label: "% of GDP" }, { id: listed-companies, label: Listed companies }] }
+  - { id: largest-exporters, indicator: exports-value, order: desc, name: "Largest exporters (goods and services)", topics: [markets], value_label: Exports, columns: [{ id: world_share, label: Share of world }, { id: imports-value, label: Imports }, { id: exports-gdp, label: "% of GDP" }] }
+  - { id: electricity-generation, indicator: electricity-generation, order: desc, name: "Largest electricity producers", topics: [environment], value_label: Generation, columns: [{ id: world_share, label: Share of world }, { id: clean-electricity-share, label: Clean }, { id: wind-solar-share, label: Wind & solar }, { id: coal-power-share, label: Coal }] }
+  - { id: clean-electricity, indicator: clean-electricity-share, order: desc, name: "Cleanest electricity (renewables and nuclear)", topics: [environment], value_label: Clean share, columns: [{ id: wind-solar-share, label: Wind & solar }, { id: electricity-carbon-intensity, label: "gCO₂e/kWh" }, { id: electricity-generation, label: Generation }] }
+  - { id: solar-power, indicator: solar-capacity, order: desc, name: "Most solar power capacity", topics: [environment], value_label: Solar capacity, columns: [{ id: world_share, label: Share of world }, { id: wind-capacity, label: Wind capacity }, { id: wind-solar-share, label: Wind & solar share }] }
+  - { id: air-travel, indicator: air-passengers, order: desc, name: "Largest air travel markets", topics: [industry], value_label: Passengers, columns: [{ id: world_share, label: Share of world }, { id: air-freight, label: Air freight }] }
+  - { id: container-ports, indicator: container-ports, order: desc, name: "Busiest container ports (by country)", topics: [industry], value_label: TEU handled, columns: [{ id: world_share, label: Share of world }, { id: merchandise-exports, label: Goods exports }] }
+  - { id: logistics-performance, indicator: logistics-performance, order: desc, name: "Logistics performance", topics: [industry] }
+
 single_defaults: { version: 1.0.0, reference_year: 2026, max_data_age: 8 }

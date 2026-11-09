@@ -283,6 +283,29 @@ def load_observations(cat: dict, entities: dict, sources: dict):
             add(by_id["news-share"], iso3, year, round(100 * n / total, 6), rid)
             add(by_id["news-tone"], iso3, year, round(tone[iso3] / n, 4), rid)
 
+    # Ember yearly electricity data: one long-format file; code is "<electricity source>|<column>"
+    path = RAW / "ember" / "yearly_generation.csv"
+    ember = [i for i in cat["indicators"] if i["source"] == "ember"]
+    if path.exists() and ember:
+        rid = release("ember", "Yearly electricity data", path)
+        want = {}
+        for ind in ember:
+            src, col = ind["code"].split("|", 1)
+            want.setdefault(src, []).append((col, ind))
+        with open(path, encoding="utf-8", newline="") as f:
+            for row in csv.DictReader(f):
+                if row["Area type"] == "Region" and row["Area"] != "World":
+                    continue
+                iso3 = "WLD" if row["Area"] == "World" else row["ISO 3 code"]
+                if iso3 not in entities or row["Electricity source"] not in want:
+                    continue
+                year = int(row["Year"])
+                if not (YEAR_MIN <= year <= YEAR_MAX):
+                    continue
+                for col, ind in want[row["Electricity source"]]:
+                    if row.get(col, "") != "":
+                        add(ind, iso3, year, float(row[col]), rid)
+
     # UN World Population Prospects 2024: median age, and population projections to 2100
     path = RAW / "un" / "wpp2024_demographic_indicators.csv.gz"
     if path.exists() and "median-age" in by_id:

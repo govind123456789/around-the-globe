@@ -98,6 +98,19 @@
   {% endfor %}
 </div>
 
+{% if mk %}
+<div class="section-head"><h2>{{ c.name }} in world markets</h2><a href="/markets/">All markets →</a></div>
+<div class="pos-grid">
+  {% for x in mk %}
+  <a class="pos" href="/markets/{{ x.hub.id }}/">
+    <div class="nm">{{ x.hub.name }}</div>
+    <div class="rk">{{ x.share_text }}<small> of world</small></div>
+    <div class="small muted">#{{ x.rank }} of {{ x.n }} · {{ x.text }} · {{ x.year }}</div>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
 {% set bx = beyond.get(c.entity_id) %}
 {% if bx and (bx.cities or bx.unis) %}
 <div class="section-head"><h2>Cities and universities</h2><span class="muted small">Largest urban centres (GHSL) and most-cited universities (OpenAlex)</span></div>

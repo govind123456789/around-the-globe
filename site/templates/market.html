@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% block title %}{{ h.name }}: market size and data by country{% endblock %}
+{% block description %}{{ h.blurb }} Open data for {{ h.n_countries }} countries, with the source and year of every figure.{% endblock %}
+{% block main %}
+{% set hl = h.hl %}
+<p class="crumbs"><a href="/markets/">Markets</a> › {{ h.kicker }}</p>
+<div class="page-head">
+  <span class="eyebrow">Market data · {{ h.indicators|length }} indicators</span>
+  <h1>{{ h.name }}</h1>
+  <p class="lede">{{ h.blurb }}</p>
+  <p class="small">Sources: {% for s in h.sources %}{{ SOURCE_SHORT.get(s, s) }}{% if not loop.last %}, {% endif %}{% endfor %} · free to reuse with credit</p>
+  <div class="mk-actions"><a class="btn sm" href="{{ h.csv }}" download>Download CSV</a><a class="btn ghost sm" href="/data/indicators/{{ hl.id }}/">{{ hl.name }}: method and sources</a></div>
+</div>
+
+<div class="stats mk-kpis">
+  {% if h.world %}
+  <div class="card stat"><span class="l">{{ hl.name }}, world</span><span class="v">{{ h.world_text }}</span><span class="small muted">{{ h.world[0] }} · {{ SOURCE_SHORT.get(hl.source, hl.source) }}</span></div>
+  {% endif %}
+  {% if h.growth and h.growth.rate is not none %}
+  <div class="card stat"><span class="l">World growth per year</span><span class="v">{{ '%+.1f'|format(h.growth.rate) }}%</span><span class="small muted">Average, {{ h.growth.from }}–{{ h.growth.to }}{% if hl.unit == 'current US$' %}, current US${% endif %}</span></div>
+  {% endif %}
+  {% if h.rows %}{% set r = h.rows[0] %}
+  <div class="card stat"><span class="l">{{ 'Largest market' if h.additive else 'Highest' }}</span><span class="v mk-lead">{{ flag(r.e.entity_id) }}{{ r.e.name }}</span><span class="small muted">{{ r.text }}{% if r.share is not none %} · {{ r.share_text }} of world{% endif %} · {{ r.year }}</span></div>
+  {% endif %}
+  {% if h.top5_share is not none %}
+  <div class="card stat"><span class="l">Top 5 countries</span><span class="v">{{ '%.0f'|format(h.top5_share) }}%</span><span class="small muted">of the world total</span></div>
+  {% else %}
+  <div class="card stat"><span class="l">Countries with data</span><span class="v">{{ h.n_countries }}</span><span class="small muted">latest values since {{ (h.world[0] - 4) if h.world else 2015 }}</span></div>
+  {% endif %}
+</div>
+
+<div class="section-head"><h2>{{ hl.name }} by country</h2>{% if h.rankings_list %}<a href="/rankings/{{ h.rankings_list[0].ranking_id }}/">Full ranking →</a>{% endif %}</div>
+<div class="split mk-split">
+  <div class="card">
+    <h3>{{ 'Largest markets' if h.additive else 'Highest values' }}</h3>
+    <ol class="mk-bars">
+      {% for r in h.top %}
+      <li><span class="rk">{{ r.rank }}</span><span class="nm">{{ flag(r.e.entity_id) }}<a href="/countries/{{ r.e.slug }}/">{{ r.e.name }}</a></span><span class="bar" aria-hidden="true"><i style="width:{{ r.bar }}%"></i></span><span class="val">{{ r.text }}{% if r.share is not none %}<small>{{ r.share_text }}</small>{% endif %}</span></li>
+      {% endfor %}
+    </ol>
+    <p class="small muted" style="margin:10px 0 0">Latest year per country{% if h.additive %}; shares use the {{ SOURCE_SHORT.get(hl.source, hl.source) }} world total for the same year{% else %}; countries of at least one million people{% endif %}.</p>
+  </div>
+  <div>{{ m.map("market-map", h.map_values, hl.name, hl.direction == 'lower_better') }}</div>
+</div>
+
+<div class="grid g2" style="margin-top:18px">
+  <div class="card"><h3>{{ hl.name }}{{ ', world,' if h.world else '' }} over time</h3>{{ h.chart|safe }}</div>
+  {% if h.fastest %}
+  <div class="card">
+    <h3>Fastest-growing large markets</h3>
+    <p class="small muted" style="margin-top:0">Average yearly growth over five years, among the {{ 40 if h.rows|length >= 40 else h.rows|length }} largest markets{% if hl.unit == 'current US$' %}, in current US dollars (so exchange rates and inflation count){% endif %}.</p>
+    <ol class="mk-list">
+      {% for r in h.fastest %}<li><span>{{ flag(r.e.entity_id) }}<a href="/countries/{{ r.e.slug }}/">{{ r.e.name }}</a></span><span class="mono">{{ '%+.1f'|format(r.growth) }}% a year</span></li>{% endfor %}
+    </ol>
+  </div>
+  {% endif %}
+</div>
+
+<div class="section-head"><h2>All indicators</h2><span class="muted small">World figures as the source publishes them; “highest” among countries of 1m+ people, data since 2019</span></div>
+<div class="table-wrap">
+  <table data-sortable class="mk-table">
+    <thead><tr><th class="sortable" data-type="text">Indicator</th><th class="num sortable" data-type="num">World</th><th class="sortable" data-type="text">{{ 'Highest' }}</th><th class="num sortable" data-type="num">Countries</th><th>World trend</th></tr></thead>
+    <tbody>
+    {% for t in h.table %}
+      <tr>
+        <td><a href="/data/indicators/{{ t.ind.id }}/">{{ t.ind.name }}</a><div class="small muted">{{ t.ind.unit }} · {{ SOURCE_SHORT.get(t.ind.source, t.ind.source) }}</div></td>
+        <td class="num" data-v="{{ t.world_v if t.world_v is not none else '' }}">{% if t.world %}{{ t.world }}<div class="small muted">{{ t.world_year }}</div>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td data-v="{{ t.leader.e.name if t.leader else '' }}">{% if t.leader %}{{ flag(t.leader.e.entity_id) }}{{ t.leader.e.name }}<div class="small muted">{{ 'Lowest: ' if t.ind.direction == 'lower_better' else '' }}{{ t.leader.text }} · {{ t.leader.year }}</div>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td class="num" data-v="{{ t.covered }}">{{ t.covered }}</td>
+        <td>{{ t.spark|safe }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if h.rankings_list %}
+<div class="section-head"><h2>Rankings in this market</h2><a href="/rankings/">All rankings →</a></div>
+<div class="grid g3">
+  {% for r in h.rankings_list %}<a class="card link" href="/rankings/{{ r.ranking_id }}/" style="color:inherit;text-decoration:none"><div style="display:flex;justify-content:space-between;gap:8px"><h3 style="margin:0">{{ r.name }}</h3>{{ m.kind_badge(r) }}</div><p class="small muted" style="margin:6px 0 0">Top: {% for e in r.top10[:3] %}{{ ename(e) }}{% if not loop.last %}, {% endif %}{% endfor %}</p></a>{% endfor %}
+</div>
+{% endif %}
+
+<div class="section-head"><h2>Other markets</h2><a href="/markets/">All markets →</a></div>
+<nav class="mk-others" aria-label="Other markets">{% for x in others %}<a href="/markets/{{ x.id }}/">{{ x.name }}</a>{% endfor %}</nav>
+
+<p class="small muted" style="margin-top:22px">{% for s in src_names.values() %}{{ s.attribution_text }}{% if not loop.last %} {% endif %}{% endfor %} Figures are the latest each source publishes; years differ between countries and are shown beside each value.</p>
+{% endblock %}

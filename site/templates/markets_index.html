@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Markets: industry data by country{% endblock %}
+{% block description %}Market size, growth and leading countries for {{ hubs|length }} parts of the world economy, from open World Bank and Ember data you can download and reuse.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">Market data</span>
+  <h1>Markets</h1>
+  <p class="lede">Size, growth and the leading countries for {{ hubs|length }} parts of the world economy: {{ n_ind }} indicators from open sources, with the source and year of every figure, free to download and reuse.</p>
+</div>
+
+<div class="grid g3 mk-grid">
+  {% for h in hubs %}
+  <a class="card link mk-card" href="/markets/{{ h.id }}/">
+    <span class="mk-kicker">{{ h.kicker }}</span>
+    <h3>{{ h.name }}</h3>
+    {% if h.world_text %}
+    <div class="mk-big">{{ h.world_text }}</div>
+    <div class="small muted">{{ h.hl.name }}, world, {{ h.world[0] }}</div>
+    {% endif %}
+    {% if h.spark %}<div class="mk-spark">{{ h.spark|safe }}</div>{% endif %}
+    <ol class="mk-top3">
+      {% for r in h.rows[:3] %}<li><span>{{ flag(r.e.entity_id) }}{{ r.e.name }}</span><span class="mono">{{ r.share_text if r.share is not none else r.text }}</span></li>{% endfor %}
+    </ol>
+    <span class="mk-more">{{ h.indicators|length }} indicators →</span>
+  </a>
+  {% endfor %}
+</div>
+
+<div class="section-head"><h2>About this data</h2></div>
+<div class="grid g3">
+  <div class="card"><h3>Open sources only</h3><p class="small">Figures come from the World Bank’s World Development Indicators, Ember’s electricity data, the OECD and UNDP, all under licences that allow reuse with credit. Proprietary market-research estimates are not used.</p></div>
+  <div class="card"><h3>Shares of the world</h3><p class="small">A country’s share of a market divides its value by the source’s own world total for the same year. Money values are in current US dollars, so exchange rates move them as well as real growth.</p></div>
+  <div class="card"><h3>Download everything</h3><p class="small">Every market page has a CSV of the latest value and year of each indicator for every country. Full histories are in the <a href="/data/downloads/">bulk downloads</a> and the <a href="/data/api/">API</a>.</p></div>
+</div>
+{% endblock %}

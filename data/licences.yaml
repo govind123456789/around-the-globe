@@ -212,6 +212,10 @@ sources:
   - { source_id: openalex,      publisher: OurResearch,                title: OpenAlex institutions, url: https://openalex.org/, licence: CC0 1.0, licence_url: https://creativecommons.org/publicdomain/zero/1.0/, tier: green, commercial_ok: true, derivatives_ok: true, share_alike: false, no_modification: false,
       attribution_text: "OpenAlex (Priem, J., Piwowar, H., & Orr, R., 2022), CC0.", licence_checked_on: 2026-11-09,
       notes: "OpenAlex data is CC0. Universities are institutions of type 'education', ranked by citations of their works. Bibliometric counts, not a measure of teaching or quality." }
+  - { source_id: ember,         publisher: Ember,                      title: Yearly electricity data, url: https://ember-energy.org/data/yearly-electricity-data/, licence: CC BY 4.0, licence_url: https://creativecommons.org/licenses/by/4.0/, tier: green, commercial_ok: true, derivatives_ok: true, share_alike: false, no_modification: false,
+      attribution_text: "Ember (2026). Yearly Electricity Data. CC BY 4.0. https://ember-energy.org/data/yearly-electricity-data/",
+      licence_checked_on: 2026-11-10,
+      notes: "Licence read on Ember's yearly electricity data page on 2026-11-10 (Creative Commons Attribution Licence, CC-BY-4.0). Generation, capacity and emissions by country and source; emissions are life-cycle intensities." }
   - { source_id: ghsl,          publisher: "European Commission, Joint Research Centre", title: GHS Urban Centre Database R2024A v1.2, url: https://human-settlement.emergency.copernicus.eu/ghs_ucdb_2024.php, licence: CC BY 4.0, licence_url: https://creativecommons.org/licenses/by/4.0/, tier: green, commercial_ok: true, derivatives_ok: true, share_alike: false, no_modification: false,
       attribution_text: "Mari Rivero, I., Melchiorri, M., Florio, P., et al. (2025). GHS Urban Centre Database 2025 (R2024A v1.2). European Commission, Joint Research Centre. CC BY 4.0.",
       licence_checked_on: 2026-11-09,

@@ -1,0 +1,113 @@
+# Markets: industry hubs built from open indicators (World Bank WDI, Ember, OECD, UNDP).
+# headline: the indicator that sizes the market. additive: true when country values add up to
+# the world total (money, tonnes, TWh, people), so shares of the world make sense.
+# rankings: ranking ids from rankings.yaml to link from the hub.
+
+markets:
+  - id: economy
+    name: Economy
+    kicker: Output and growth
+    blurb: "The size of each economy, how fast it is growing, prices, investment and public finances."
+    headline: gdp
+    additive: true
+    indicators: [gdp, gdp-growth, gdp-per-capita-ppp, gni-per-capita-atlas, inflation, investment-gdp, government-debt, tax-revenue-wb]
+    rankings: [gdp, gdp-per-capita-ppp, gni-per-capita-atlas]
+
+  - id: consumer
+    name: Consumer spending
+    kicker: Households
+    blurb: "What households spend on goods and services, how much per person, how fast it is growing, and how many people bank and go online."
+    headline: household-consumption
+    additive: true
+    indicators: [household-consumption, household-consumption-pc, household-consumption-growth, account-ownership, internet-users, mobile-subs, inflation, population]
+    rankings: [consumer-markets, internet-users]
+
+  - id: trade
+    name: Trade
+    kicker: Exports and imports
+    blurb: "Goods and services sold to and bought from the rest of the world, what countries export, and the balance with the world."
+    headline: exports-value
+    additive: true
+    indicators: [exports-value, imports-value, merchandise-exports, merchandise-imports, service-exports, trade-gdp, exports-gdp, current-account, manufactures-exports, food-exports, fuel-exports]
+    rankings: [largest-exporters]
+
+  - id: manufacturing
+    name: Manufacturing
+    kicker: Factories and industry
+    blurb: "Manufacturing output, how high-tech it is, what share of the economy and of jobs it accounts for, and high-technology exports."
+    headline: manufacturing-output
+    additive: true
+    indicators: [manufacturing-output, manufacturing-gdp, industry-gdp, medium-high-tech-manufacturing, manufactures-exports, industry-employment, high-tech-exports-value, high-tech-exports, patents-residents]
+    rankings: [manufacturing-output]
+
+  - id: energy
+    name: Energy & electricity
+    kicker: Power and fuels
+    blurb: "Electricity generated, how clean it is, solar and wind capacity, power-sector emissions, energy use and fuel trade."
+    headline: electricity-generation
+    additive: true
+    indicators: [electricity-generation, clean-electricity-share, wind-solar-share, coal-power-share, solar-capacity, wind-capacity, electricity-carbon-intensity, power-emissions, electricity-access, renewable-share, energy-use, energy-intensity, fuel-exports, fuel-imports]
+    rankings: [electricity-generation, clean-electricity, solar-power, renewable-share, electricity-access]
+
+  - id: technology
+    name: Technology & telecoms
+    kicker: Digital economy
+    blurb: "Software and IT service exports, electronics trade, internet and broadband use, mobile phones, servers and research effort."
+    headline: ict-service-exports-value
+    additive: true
+    indicators: [ict-service-exports-value, ict-service-exports, ict-goods-exports, high-tech-exports-value, internet-users, fixed-broadband, mobile-subs, secure-servers, rd-spending, researchers, patents-residents]
+    rankings: [internet-users, fixed-broadband, rd-spending]
+
+  - id: finance
+    name: Finance & stock markets
+    kicker: Capital markets
+    blurb: "The value of listed companies, how many there are, bank credit, account ownership, foreign investment and remittances."
+    headline: market-cap
+    additive: true
+    indicators: [market-cap, market-cap-gdp, listed-companies, private-credit, account-ownership, fdi-inflows, remittances-value, remittances]
+    rankings: [stock-markets]
+
+  - id: agriculture
+    name: Agriculture & food
+    kicker: Farming
+    blurb: "Farm, forestry and fishing output, cereal harvests and yields, fertilizer, farm jobs, food exports and hunger."
+    headline: agriculture-output
+    additive: true
+    indicators: [agriculture-output, agriculture-gdp, cereal-production, cereal-yield, agri-employment, fertilizer-use, food-exports, forest-area, undernourishment]
+    rankings: []
+
+  - id: services
+    name: Services & business
+    kicker: Services sector
+    blurb: "Services output and jobs, commercial service exports, new company registrations and investment."
+    headline: services-output
+    additive: true
+    indicators: [services-output, services-gdp, services-employment, service-exports, ict-service-exports-value, new-business-density, new-businesses, investment-gdp]
+    rankings: []
+
+  - id: transport
+    name: Transport & logistics
+    kicker: Moving people and goods
+    blurb: "Air passengers and freight, container traffic through ports, and how well each country's logistics work."
+    headline: air-passengers
+    additive: true
+    indicators: [air-passengers, air-freight, container-ports, logistics-performance]
+    rankings: [air-travel, container-ports, logistics-performance]
+
+  - id: healthcare
+    name: Healthcare
+    kicker: Health systems
+    blurb: "What countries spend on health, how much of it patients pay themselves, doctors and hospital beds, and the results."
+    headline: health-spending-gdp
+    additive: false
+    indicators: [health-spending-gdp, health-spending, out-of-pocket, physicians, hospital-beds, life-expectancy, aged-65]
+    rankings: [life-expectancy]
+
+  - id: labour
+    name: Jobs & labour
+    kicker: Work
+    blurb: "The size of the workforce, unemployment, women at work, where people work, and wages in OECD countries."
+    headline: labour-force
+    additive: true
+    indicators: [labour-force, unemployment, youth-unemployment, female-labour, agri-employment, industry-employment, services-employment, average-wage]
+    rankings: [youth-unemployment, average-wage]

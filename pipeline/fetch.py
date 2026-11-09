@@ -34,6 +34,7 @@ MAPSHAPER = "mapshaper@0.7.93"
 # same CPI series (2012 onward) with attribution to Transparency International.
 CPI_URL = "https://ourworldindata.org/grapher/ti-corruption-perception-index.csv?v=1&csvType=full&useColumnShortNames=true"
 WPP_URL = "https://population.un.org/wpp/assets/Excel%20Files/1_Indicator%20(Standard)/CSV_FILES/WPP2024_Demographic_Indicators_Medium.csv.gz"
+EMBER_URL = "https://files.ember-energy.org/public-downloads/generation/outputs/release_generation_yearly_global.csv"
 GHSL_BASE = "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_UCDB_GLOBE_R2024A/GHS_UCDB_THEME_GLOBE_R2024A"
 OPENALEX = "https://api.openalex.org/institutions"
 OECD_API = "https://sdmx.oecd.org/public/rest/data"
@@ -350,6 +351,8 @@ def main(argv: list[str] | None = None) -> None:
         if ind["source"] == "v-dem":
             fetch_file(f"https://ourworldindata.org/grapher/{ind['owid']}.csv?v=1&csvType=full&useColumnShortNames=true",
                        RAW / "vdem" / f"{ind['id']}.csv", args.refresh)
+    print("Electricity (Ember)")
+    fetch_file(EMBER_URL, RAW / "ember" / "yearly_generation.csv", args.refresh)
     print("Cities (GHSL Urban Centre Database)")
     for theme in ("GENERAL_CHARACTERISTICS", "GHSL"):
         fetch_file(f"{GHSL_BASE}/GHS_UCDB_THEME_{theme}_GLOBE_R2024A/V1-2/GHS_UCDB_THEME_{theme}_GLOBE_R2024A_V1_2.zip",

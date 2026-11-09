@@ -11,7 +11,7 @@ import markdown
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
 
-from . import beyond, history, lab, live, og, stories, svg
+from . import beyond, history, lab, live, markets, og, stories, svg
 from .build_data import Model
 from .config import CONTENT, DIST, RAW, SITE, load_yaml, site_config
 
@@ -22,7 +22,7 @@ EXCLUDED_LABEL = {
     "not_in_hdr": "Not covered by UNDP", "no_recent_data": "No recent data",
 }
 SOURCE_SHORT = {"un-wpp": "UN WPP", "wb-wgi": "World Bank WGI", "wb-wdi": "World Bank", "undp-hdr": "UNDP HDR", "ti-cpi": "Transparency Intl",
-                "oecd": "OECD", "gdelt": "GDELT"}
+                "oecd": "OECD", "gdelt": "GDELT", "ember": "Ember"}
 NE_FIX = {"KOS": "XKX", "SDS": "SSD", "PSX": "PSE", "SAH": "ESH", "JEY": "CHI", "GGY": "CHI"}  # WB reports the Channel Islands as one
 
 
@@ -152,7 +152,7 @@ class Site:
                    ("Universities", "/universities/", "The 2,000 most-cited universities"),
                    ("Insights", "/insights/", "Stories and release notes")]
         return [("World", "/world/", None), ("Countries", "/countries/", None), ("Rankings", "/rankings/", None),
-                ("Compare", "/compare/", None), ("Explore", "/explore/", explore),
+                ("Markets", "/markets/", None), ("Compare", "/compare/", None), ("Explore", "/explore/", explore),
                 ("Index Builder", "/index-builder/", None), ("Lab", "/lab/", None)]
 
     def render(self, url: str, template: str, sitemap: bool = True, **ctx) -> None:
@@ -192,7 +192,7 @@ class Site:
         # Pages are rebuilt from scratch so renamed URLs don't linger. v1/ and history/ are data outputs.
         for name in ("countries", "regions", "rankings", "compare", "topics", "data", "methodology",
                      "insights", "about", "explore", "world", "index-builder", "ask", "static", "og", "embed", "lab",
-                     "universities", "cities"):
+                     "universities", "cities", "markets"):
             if (DIST / name).exists():
                 shutil.rmtree(DIST / name)
         shutil.copytree(SITE / "static", DIST / "static")
@@ -201,9 +201,11 @@ class Site:
                 ["Every number shows its source, year and method."])
         self.hist = history.assemble(self.m.entities)
         self.load_beyond()
+        self.mk = markets.Markets(self.m, self.countries, self.rk, fmt)
         self.home()
         self.explore()
         self.rankings()
+        self.markets_pages()
         self.countries_pages()
         self.history_pages()
         self.world_page()
@@ -259,7 +261,29 @@ class Site:
         self.render("/", "home.html", featured=self.featured(), map_values=self.map_values(cap),
                     map_label=cap["name"], pairs=pairs, countries=self.countries,
                     n_countries=len(self.countries), n_indicators=len(self.m.indicators),
-                    n_rankings=len(self.rk), hdi_check=self.m.hdi_check)
+                    n_rankings=len(self.rk), hdi_check=self.m.hdi_check,
+                    markets=[h for h in self.mk.hubs if h["id"] != "economy"][:6], n_markets=len(self.mk.hubs))
+
+    def markets_pages(self) -> None:
+        hubs = self.mk.hubs
+        for h in hubs:
+            h["csv"] = f"/markets/{h['id']}/{h['id']}-latest.csv"
+            self.mk.write_csv(h, DIST / "markets" / h["id"] / f"{h['id']}-latest.csv")
+            lines = []
+            if h["world_text"]:
+                lines.append(f"{h['hl']['name']}, world: {h['world_text']} ({h['world'][0]})")
+            for r in h["top"][:3]:
+                lines.append(f"{r['rank']}. {r['e']['name']}  {r['text']}")
+            og.card(DIST / "og" / "markets" / f"{h['id']}.png", self.cfg["name"], "Market data", h["name"], lines[:4])
+            others = [x for x in hubs if x["id"] != h["id"]]
+            self.render(f"/markets/{h['id']}/", "market.html", og_image=f"/og/markets/{h['id']}.png", h=h,
+                        others=others, src_names={s: self.m.sources[s] for s in h["sources"] if s in self.m.sources})
+            self.search.append({"t": h["name"], "u": f"/markets/{h['id']}/", "k": "Market", "s": h["kicker"],
+                                "o": [h["hl"]["name"], "market size", "industry"]})
+        self.render("/markets/", "markets_index.html", hubs=hubs,
+                    n_ind=len({i for h in hubs for i in h["indicators"]}))
+        self.search.append({"t": "Markets", "u": "/markets/", "k": "Markets", "s": "Industry data by country",
+                            "o": ["industries", "market size", "statistics"]})
 
     def explore(self) -> None:
         inds = sorted(self.m.indicators.values(), key=lambda i: (i["dimension"], i["name"]))
@@ -385,7 +409,7 @@ class Site:
                 lines.append(f"Human Development Index {key['hdi'][1]:.3f}")
             og.card(DIST / "og" / "countries" / f"{c['slug']}.png", self.cfg["name"], c["region"], c["name"], lines)
             self.render(f"/countries/{c['slug']}/", "country.html", og_image=f"/og/countries/{c['slug']}.png", c=c, key=key, dims=self.country_dims(c),
-                        positions=self.positions(eid), peers=peers, region=self.by_id[c["region_id"]],
+                        positions=self.positions(eid), peers=peers, mk=self.mk.country_shares(eid), region=self.by_id[c["region_id"]],
                         income=self.by_id.get(c["income_id"]) if c["income_id"] else None,
                         cap=cap, cap_row=cr, pillar_bars=pb, composites=composites, charts=charts, pair_links=pair_links,
                         chips={k: self.chip(k, v[0], v[2]) for k, v in key.items() if v},
