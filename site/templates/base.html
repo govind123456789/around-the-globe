@@ -21,11 +21,18 @@
 <link rel="stylesheet" href="/static/css/fonts.css?v={{ asset_v }}">
 <link rel="stylesheet" href="/static/css/app.css?v={{ asset_v }}">
 <link rel="stylesheet" href="/static/css/atlas.css?v={{ asset_v }}">
+<link rel="stylesheet" href="/static/css/luxe.css?v={{ asset_v }}">
 <script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 {% block head %}{% endblock %}
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
+<div class="utility" role="note">
+  <div class="wrap">
+    <span><span class="dot" aria-hidden="true"></span><span class="u-long">Open data on 217 countries · </span>Release {{ release }}</span>
+    <span class="u-links"><a href="/data/">Data &amp; API</a><a href="/methodology/">Methodology</a><a href="/insights/">Insights</a><a href="/about/">About</a></span>
+  </div>
+</div>
 <header class="top">
   <div class="wrap">
     <a class="brand" href="/" aria-label="{{ site.name }} home">
@@ -33,7 +40,15 @@
       {{ site.name }}
     </a>
     <nav class="nav" id="nav" aria-label="Main">
-      {% for label, href in nav %}<a href="{{ href }}"{% if url.startswith(href) %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+      {% for label, href, sub in nav %}
+        {% if sub %}
+        <details class="nav-more{% for s in sub if url.startswith(s[1]) %}{% if loop.first %} current{% endif %}{% endfor %}">
+          <summary>{{ label }}</summary>
+          <div class="nav-panel">{% for l, h, d in sub %}<a href="{{ h }}"{% if url.startswith(h) %} aria-current="page"{% endif %}>{{ l }}<small>{{ d }}</small></a>{% endfor %}</div>
+        </details>
+        {% else %}<a href="{{ href }}"{% if url.startswith(href) %} aria-current="page"{% endif %}>{{ label }}</a>{% endif %}
+      {% endfor %}
+      <div class="nav-extra"><a href="/data/">Data &amp; API</a><a href="/methodology/">Methodology</a><a href="/insights/">Insights</a><a href="/about/">About</a></div>
     </nav>
     <div class="top-actions">
       <button class="icon-btn" id="search-open" aria-label="Search (press /)" title="Search (/)">

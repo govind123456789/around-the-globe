@@ -290,13 +290,25 @@
   }
   window.atlasMap = renderMap;
   const io = "IntersectionObserver" in window ? new IntersectionObserver(entries => entries.forEach(en => {
-    if (!en.isIntersecting) return; io.unobserve(en.target);
+    if (!en.isIntersecting || en.target._loading) return; io.unobserve(en.target); en.target._loading = true;
     const json = $("[data-map-values]", en.target.closest(".map-box"));
     renderMap(en.target, JSON.parse(json.textContent)).catch(err => {
       en.target.innerHTML = '<p class="muted" style="padding:16px">The map could not load. Data is in the table.</p>'; console.error(err);
     });
   }), { rootMargin: "200px" }) : null;
   $$("[data-map]").forEach(el => { if (el.id !== "explore-map") io?.observe(el); });
+  // Fallback for browsers or embedded views where the observer never fires: load a map once it is on screen.
+  const pending = () => $$("[data-map]").filter(el => el.id !== "explore-map" && !el._map && !el._loading);
+  const check = () => pending().forEach(el => {
+    const r = el.getBoundingClientRect();
+    if (r.top < innerHeight + 200 && r.bottom > -200) {
+      el._loading = true; io?.unobserve(el);
+      renderMap(el, JSON.parse($("[data-map-values]", el.closest(".map-box")).textContent)).catch(err => console.error(err));
+    }
+  });
+  addEventListener("scroll", check, { passive: true }); setTimeout(check, 1500);
+  document.addEventListener("click", e => $$(".nav-more[open]").forEach(d => { if (!d.contains(e.target)) d.open = false; }));
+  document.addEventListener("keydown", e => { if (e.key === "Escape") $$(".nav-more[open]").forEach(d => { d.open = false; }); });
   document.addEventListener("themechange", () => $$("[data-map]").forEach(el => { if (el._map) renderMap(el, el._values, { lowerBetter: el._lowerBetter, label: el._label }); }));
 
   function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }

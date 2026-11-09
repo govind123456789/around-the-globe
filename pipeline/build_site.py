@@ -145,9 +145,15 @@ class Site:
 
     @staticmethod
     def nav():
-        return [("World", "/world/"), ("Explore", "/explore/"), ("Rankings", "/rankings/"), ("Countries", "/countries/"),
-                ("Compare", "/compare/"), ("Topics", "/topics/"), ("Index Builder", "/index-builder/"), ("Lab", "/lab/"),
-                ("Data", "/data/"), ("Insights", "/insights/")]
+        # (label, url, submenu): the submenu is [(label, url, one-line description)]
+        explore = [("Map explorer", "/explore/", "Any indicator on the world map"),
+                   ("Topics", "/topics/", "Indicators grouped by theme"),
+                   ("Cities", "/cities/", "524 cities over one million people"),
+                   ("Universities", "/universities/", "The 2,000 most-cited universities"),
+                   ("Insights", "/insights/", "Stories and release notes")]
+        return [("World", "/world/", None), ("Countries", "/countries/", None), ("Rankings", "/rankings/", None),
+                ("Compare", "/compare/", None), ("Explore", "/explore/", explore),
+                ("Index Builder", "/index-builder/", None), ("Lab", "/lab/", None)]
 
     def render(self, url: str, template: str, sitemap: bool = True, **ctx) -> None:
         ctx.setdefault("og_image", "/og/default.png")
