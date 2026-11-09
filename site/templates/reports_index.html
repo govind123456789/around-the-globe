@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Reports: global trends and custom country reports{% endblock %}
+{% block description %}Global trend reports written from open data, and a builder for your own country report, free to read, print and share.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">Analysis · release {{ release }}</span>
+  <h1>Reports</h1>
+  <p class="lede">Global trend reports written from the data itself, so every number is traceable and every report updates with each release. Or build your own report on any country.</p>
+  <div class="mk-actions"><a class="btn sm" href="/reports/build/">Build a country report</a></div>
+</div>
+
+<a class="rp-builder-cta card link" href="/reports/build/">
+  <div>
+    <span class="mk-kicker">Custom report</span>
+    <h2>Your country, your topics</h2>
+    <p>Pick any of 217 countries and the markets that matter to you. The report shows where the country leads, where it lags, how it compares with the world and its region, and how it has changed in ten years. Save it as a PDF or share the link.</p>
+  </div>
+  <span class="btn">Build a report →</span>
+</a>
+
+<div class="section-head"><h2>Global trend reports</h2><span class="muted small">{{ reports|length }} reports · regenerated every release</span></div>
+<div class="grid g2 rp-grid">
+  {% for r in reports %}
+  <a class="card link rp-card" href="/reports/{{ r.id }}/">
+    <span class="mk-kicker">{{ r.kicker }}</span>
+    <h3>{{ r.title }}</h3>
+    <p class="small muted">{{ r.dek }}</p>
+    <ul class="rp-preview">{% for f in r.findings[:3] %}<li>{{ f }}</li>{% endfor %}</ul>
+    <span class="mk-more">{{ r.sections|length }} sections · read the report →</span>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

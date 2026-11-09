@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ r.title }}: global trend report{% endblock %}
+{% block description %}{{ r.dek }} Written from open data, release {{ release }}.{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/reports/">Reports</a> › {{ r.kicker }}</p>
+<div class="page-head rp-head">
+  <span class="eyebrow">Global trend report · release {{ release }}</span>
+  <h1>{{ r.title }}</h1>
+  <p class="lede">{{ r.dek }}</p>
+  <div class="mk-actions no-print"><button class="btn sm" type="button" onclick="window.print()">Save as PDF</button><a class="btn ghost sm" href="/reports/build/">Build a country report</a></div>
+</div>
+
+<section class="rp-summary" aria-label="Key findings">
+  <h2>Key findings</h2>
+  <ol class="rp-findings">
+    {% for f in r.findings %}<li class="rp-finding"><span class="rp-n">{{ '%02d'|format(loop.index) }}</span><span>{{ f }}</span></li>{% endfor %}
+  </ol>
+</section>
+
+{% for s in r.sections %}
+<section class="rp-section" id="s{{ loop.index }}">
+  <div class="rp-label"><span class="rp-n">{{ '%02d'|format(loop.index) }}</span>{{ s.ind.name }}</div>
+  <h2>{{ s.title }}</h2>
+  <div class="rp-body{% if s.chart or s.bars or s.regions or s.up %} has-figure{% endif %}">
+    <div class="rp-text">
+      {% if s.big %}<div class="rp-big">{{ s.big }}</div><div class="small muted">{{ s.big_label }}</div>{% endif %}
+      {% for t in s.text %}<p>{{ t }}</p>{% endfor %}
+      <p class="small muted"><a href="/data/indicators/{{ s.ind.id }}/">{{ s.ind.name }}</a> · {{ SOURCE_SHORT.get(s.ind.source, s.ind.source) }} · {{ s.ind.unit }}</p>
+    </div>
+    <figure class="rp-figure card">
+      {% if s.chart %}{{ s.chart|safe }}
+      {% elif s.bars %}
+        <ol class="mk-bars">{% for b in s.bars %}<li><span class="rk">{{ b.rank }}</span><span class="nm">{{ flag(b.e.entity_id) }}<a href="/countries/{{ b.e.slug }}/">{{ b.e.name }}</a></span><span class="bar" aria-hidden="true"><i style="width:{{ b.bar }}%"></i></span><span class="val">{{ b.text }}<small>{{ b.year }}</small></span></li>{% endfor %}</ol>
+        <p class="small muted" style="margin:10px 0 0">Bottom: {% for b in s.bottom %}{{ b.e.name }} ({{ b.text }}){% if not loop.last %}, {% endif %}{% endfor %}</p>
+      {% elif s.regions %}
+        <ol class="mk-bars rp-regions">{% for g in s.regions %}<li><span class="rk">{{ loop.index }}</span><span class="nm"><a href="/regions/{{ g.g.slug }}/">{{ g.g.name }}</a></span><span class="bar" aria-hidden="true"><i style="width:{{ g.bar }}%"></i></span><span class="val">{{ g.text }}<small>{{ g.n }} of {{ g.of }}</small></span></li>{% endfor %}</ol>
+      {% elif s.up %}
+        <div class="rp-movers">
+          <div><h3>Biggest {{ 'gains' if s.ind.direction != 'lower_better' else 'improvements' }}</h3><ol class="mk-list">{% for x in s.up %}<li><span>{{ flag(x.e.entity_id) }}<a href="/countries/{{ x.e.slug }}/">{{ x.e.name }}</a></span><span class="mono up">{{ x.d }}</span></li>{% endfor %}</ol></div>
+          <div><h3>Biggest {{ 'falls' if s.ind.direction == 'neutral' else 'setbacks' }}</h3><ol class="mk-list">{% for x in s.down %}<li><span>{{ flag(x.e.entity_id) }}<a href="/countries/{{ x.e.slug }}/">{{ x.e.name }}</a></span><span class="mono down">{{ x.d }}</span></li>{% endfor %}</ol></div>
+        </div>
+        <p class="small muted" style="margin:10px 0 0">Change over about {{ s.years }} years, countries of at least one million people.</p>
+      {% endif %}
+    </figure>
+  </div>
+</section>
+{% endfor %}
+
+<section class="rp-method">
+  <h2>How this report is made</h2>
+  <p class="small">Every sentence and figure above is generated from release {{ release }} of this site’s open data, so the report updates when the data does and contains no hand-typed numbers. World figures are the source’s own world totals. Regional figures add up countries (for totals) or weight them by population (for rates). Lists of countries include only those with at least one million people. Read the <a href="/methodology/">methodology</a>.</p>
+  <p class="small muted">{% for s in src_names.values() %}{{ s.attribution_text }}{% if not loop.last %} {% endif %}{% endfor %}</p>
+</section>
+
+<div class="section-head no-print"><h2>More reports</h2><a href="/reports/">All reports →</a></div>
+<nav class="mk-others no-print" aria-label="Other reports">{% for x in others %}<a href="/reports/{{ x.id }}/">{{ x.title }}</a>{% endfor %}</nav>
+{% endblock %}

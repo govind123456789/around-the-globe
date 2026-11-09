@@ -1,0 +1,99 @@
+# Global trend reports. Every sentence and figure is generated from the release's data
+# (see pipeline/reports.py for what each section kind computes). Order = order on /reports/.
+
+reports:
+  - id: world-economy
+    title: The world economy
+    kicker: Economy
+    dek: "Who produces the world's output, who is catching up, and how growth and prices have moved."
+    sections:
+      - { kind: world_trend, indicator: gdp, since: 1990 }
+      - { kind: shares, indicator: gdp }
+      - { kind: movers, indicator: gdp-per-capita-ppp, years: 10 }
+      - { kind: gap, indicator: gdp-per-capita-ppp }
+      - { kind: regions, indicator: gdp }
+      - { kind: world_trend, indicator: inflation, since: 2000 }
+
+  - id: energy-transition
+    title: The energy transition
+    kicker: Energy
+    dek: "How fast clean power is growing, where solar and wind are taking over, and where coal still rules."
+    sections:
+      - { kind: world_trend, indicator: clean-electricity-share, since: 2000 }
+      - { kind: world_trend, indicator: wind-solar-share, since: 2000 }
+      - { kind: shares, indicator: solar-capacity, since: 2010 }
+      - { kind: movers, indicator: wind-solar-share, years: 5 }
+      - { kind: leaders, indicator: clean-electricity-share }
+      - { kind: regions, indicator: coal-power-share }
+      - { kind: world_trend, indicator: electricity-carbon-intensity, since: 2000 }
+
+  - id: digital-world
+    title: The digital world
+    kicker: Technology
+    dek: "How many people are online, how fast the gap is closing, and who sells the world its software and IT services."
+    sections:
+      - { kind: world_trend, indicator: internet-users, since: 2000 }
+      - { kind: gap, indicator: internet-users }
+      - { kind: movers, indicator: internet-users, years: 10 }
+      - { kind: regions, indicator: internet-users }
+      - { kind: shares, indicator: ict-service-exports-value, since: 2005 }
+      - { kind: leaders, indicator: fixed-broadband }
+
+  - id: global-health
+    title: Global health
+    kicker: Health
+    dek: "How long people live, how fast child deaths are falling, and how unequal health still is between countries."
+    sections:
+      - { kind: world_trend, indicator: life-expectancy, since: 1990 }
+      - { kind: gap, indicator: life-expectancy }
+      - { kind: movers, indicator: life-expectancy, years: 20 }
+      - { kind: regions, indicator: life-expectancy }
+      - { kind: world_trend, indicator: under5-mortality, since: 1990 }
+      - { kind: leaders, indicator: health-spending-gdp }
+
+  - id: people-and-population
+    title: People and population
+    kicker: Demography
+    dek: "Falling birth rates, ageing societies and the countries still growing fast."
+    sections:
+      - { kind: world_trend, indicator: fertility, since: 1990 }
+      - { kind: regions, indicator: fertility }
+      - { kind: world_trend, indicator: aged-65, since: 1990 }
+      - { kind: movers, indicator: aged-65, years: 20 }
+      - { kind: leaders, indicator: population-growth }
+      - { kind: shares, indicator: population, since: 1990 }
+
+  - id: trade-and-industry
+    title: Trade and industry
+    kicker: Markets
+    dek: "Where the world's factories are, who exports most, and how manufacturing has shifted east."
+    sections:
+      - { kind: shares, indicator: manufacturing-output, since: 2000 }
+      - { kind: shares, indicator: exports-value, since: 2000 }
+      - { kind: world_trend, indicator: trade-gdp, since: 1990 }
+      - { kind: movers, indicator: manufacturing-gdp, years: 10 }
+      - { kind: leaders, indicator: medium-high-tech-manufacturing }
+      - { kind: regions, indicator: manufacturing-output }
+
+  - id: consumers-and-finance
+    title: Consumers and finance
+    kicker: Consumers
+    dek: "Where household spending is concentrated, who is getting richer fastest, and how many people now have a bank account."
+    sections:
+      - { kind: shares, indicator: household-consumption, since: 2000 }
+      - { kind: movers, indicator: household-consumption-pc, years: 10 }
+      - { kind: world_trend, indicator: account-ownership, since: 2011 }
+      - { kind: regions, indicator: account-ownership }
+      - { kind: shares, indicator: market-cap, since: 2005 }
+
+  - id: environment-and-climate
+    title: Environment and climate
+    kicker: Climate
+    dek: "Emissions per person, the power sector's footprint, forests and clean air."
+    sections:
+      - { kind: world_trend, indicator: co2-per-capita, since: 1990 }
+      - { kind: leaders, indicator: co2-per-capita }
+      - { kind: shares, indicator: power-emissions, since: 2000 }
+      - { kind: movers, indicator: renewable-share, years: 10 }
+      - { kind: world_trend, indicator: forest-area, since: 1990 }
+      - { kind: regions, indicator: pm25 }

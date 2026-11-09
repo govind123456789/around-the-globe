@@ -41,7 +41,27 @@
     </a>
     <nav class="nav" id="nav" aria-label="Main">
       {% for label, href, sub in nav %}
-        {% if sub %}
+        {% if sub == 'mega' and mega %}
+        <details class="nav-more nav-mega{% if url.startswith('/markets/') %} current{% endif %}">
+          <summary>{{ label }}</summary>
+          <div class="nav-panel mega">
+            <div class="mega-col">
+              <h4>Data</h4>
+              {% for l, h, d in mega.data %}<a class="mega-item" href="{{ h }}"{% if url == h %} aria-current="page"{% endif %}>{{ l }}<small>{{ d }}</small></a>{% endfor %}
+            </div>
+            <div class="mega-col">
+              <h4>Markets by industry</h4>
+              <div class="mega-ind">{% for x in mega.hubs %}<a href="/markets/{{ x.id }}/"{% if url.startswith('/markets/' ~ x.id ~ '/') %} aria-current="page"{% endif %}>{{ x.name }}</a>{% endfor %}</div>
+              <a class="mega-all" href="/markets/">View all markets →</a>
+            </div>
+            <div class="mega-col mega-pop">
+              <h4>Popular statistics</h4>
+              {% for l, h in mega.popular %}<a href="{{ h }}"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M2 14h12M4 12V8M7 12V4M10 12V6M13 12V9" stroke="currentColor" stroke-width="1.6" fill="none"/></svg>{{ l }}</a>{% endfor %}
+              <a class="mega-all" href="/rankings/">All rankings →</a>
+            </div>
+          </div>
+        </details>
+        {% elif sub and sub != 'mega' %}
         <details class="nav-more{% for s in sub if url.startswith(s[1]) %}{% if loop.first %} current{% endif %}{% endfor %}">
           <summary>{{ label }}</summary>
           <div class="nav-panel">{% for l, h, d in sub %}<a href="{{ h }}"{% if url.startswith(h) %} aria-current="page"{% endif %}>{{ l }}<small>{{ d }}</small></a>{% endfor %}</div>
@@ -89,6 +109,7 @@
   </div>
 </footer>
 <script src="/static/js/app.js?v={{ asset_v }}" defer></script>
+<script src="/static/js/motion.js?v={{ asset_v }}" defer></script>
 {% if site.cloudflare_analytics_token %}<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "{{ site.cloudflare_analytics_token }}"}'></script>{% endif %}
 {% block scripts %}{% endblock %}
 </body>

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Build a country report{% endblock %}
+{% block description %}Build a free custom report on any country: where it leads, where it lags, how it compares with the world and its region, and how it has changed.{% endblock %}
+{% block main %}
+<p class="crumbs no-print"><a href="/reports/">Reports</a> › Custom report</p>
+<div class="page-head no-print">
+  <span class="eyebrow">Custom report</span>
+  <h1>Build a country report</h1>
+  <p class="lede">Choose a country and the topics you care about. The report is written in your browser from release {{ release }}, so it is instant, free and private.</p>
+</div>
+
+<form class="card rb-form no-print" id="rb-form">
+  <div class="rb-row">
+    <label class="rb-field"><span>Country</span>
+      <select name="c" id="rb-country">{% for c in countries %}<option value="{{ c.entity_id }}"{% if c.entity_id == 'IND' %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+    </label>
+    <div class="rb-actions"><button class="btn" type="submit">Build report</button></div>
+  </div>
+  <fieldset class="rb-topics">
+    <legend>Topics <button type="button" class="linklike" data-all>all</button> · <button type="button" class="linklike" data-none>none</button></legend>
+    {% for h in hubs %}<label class="rb-topic"><input type="checkbox" name="t" value="{{ h.id }}"{% if h.id in ['economy', 'consumer', 'trade', 'energy', 'technology'] %} checked{% endif %}><span>{{ h.name }}</span></label>{% endfor %}
+  </fieldset>
+</form>
+
+<div id="rb-out" class="rb-out" aria-live="polite"></div>
+{% endblock %}
+{% block scripts %}<script src="/static/js/report-builder.js?v={{ asset_v }}" defer></script>{% endblock %}
