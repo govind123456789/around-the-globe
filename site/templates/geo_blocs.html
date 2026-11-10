@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% import "geo_macros.html" as g %}
+{% block title %}Alliances and blocs: NATO, EU, BRICS, SCO, G20 and more compared{% endblock %}
+{% block description %}The world's main alliances and groupings compared: share of world population and GDP, armed forces, nuclear warheads, how cohesively members vote at the UN and whom they side with.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">Geopolitics · alliances and blocs</span>
+  <h1>Alliances and blocs</h1>
+  <p class="lede">Who belongs to which club, and what each club adds up to: its weight in the world economy, its military strength, and how closely its members vote together at the United Nations.</p>
+</div>
+{{ g.subnav(url) }}
+<div class="table-wrap"><table data-sortable class="geo-blocs">
+  <thead><tr><th class="sortable" data-type="text">Bloc</th><th class="num sortable" data-type="num">Members</th><th class="num sortable" data-type="num">World population</th><th class="num sortable" data-type="num">World GDP</th><th class="num sortable" data-type="num">Nuclear warheads</th><th class="num sortable" data-type="num" title="Average share of UN votes in which two members voted the same way">UN cohesion</th><th class="num sortable" data-type="num">Votes with US</th><th class="num sortable" data-type="num">With China</th><th class="num sortable" data-type="num">With Russia</th></tr></thead>
+  <tbody>{% for b in blocs %}<tr>
+    <td><a href="/geopolitics/blocs/{{ b.id }}/"><b>{{ b.name }}</b></a><div class="small muted">{{ b.kind }}</div></td>
+    <td class="num" data-v="{{ b.mem|length }}">{{ b.mem|length }}</td>
+    <td class="num" data-v="{{ b.pop_share or 0 }}">{{ '%.1f'|format(b.pop_share) if b.pop_share is not none else '—' }}%</td>
+    <td class="num" data-v="{{ b.gdp_share or 0 }}">{{ '%.1f'|format(b.gdp_share) if b.gdp_share is not none else '—' }}%</td>
+    <td class="num" data-v="{{ b.warheads }}">{{ b.warheads|fmt(0) if b.warheads else '—' }}</td>
+    <td class="num" data-v="{{ b.cohesion or 0 }}">{{ '%.0f'|format(100 * b.cohesion) ~ '%' if b.cohesion else '—' }}</td>
+    {% for p in ('USA', 'CHN', 'RUS') %}<td class="num" data-v="{{ b.with.get(p, 0) }}">{{ '%.0f'|format(100 * b.with[p]) ~ '%' if p in b.with else '—' }}</td>{% endfor %}
+  </tr>{% endfor %}</tbody>
+</table></div>
+<p class="small muted" style="margin-top:10px">Shares use each member’s latest World Bank value against the world total. UN cohesion and “votes with” use General Assembly roll calls in {{ al.year }} (Voeten et al.); a power is left out of its own bloc’s “votes with” average. Warheads: FAS estimates, early 2026. Memberships checked {{ as_of }} against each organisation’s own list.</p>
+<div class="grid g3" style="margin-top:22px">
+  {% for b in blocs %}<a class="card link mk-card" href="/geopolitics/blocs/{{ b.id }}/"><span class="mk-kicker">{{ b.kind }}</span><h3>{{ b.name }}</h3><p class="small muted">{{ b.blurb }}</p><div class="geo-flags">{% for e in b.mem[:18] %}{{ flag(e.entity_id) }}{% endfor %}{% if b.mem|length > 18 %}<span class="small muted">+{{ b.mem|length - 18 }}</span>{% endif %}</div></a>{% endfor %}
+</div>
+{{ g.sources(srcs) }}
+{% endblock %}

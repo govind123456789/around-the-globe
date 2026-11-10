@@ -153,7 +153,10 @@ class Site:
                ("Risk index", "/geopolitics/risk/", "Our transparent country risk score"),
                ("UN alignment", "/geopolitics/un-votes/", "Who votes with whom at the UN"),
                ("Displacement", "/geopolitics/displacement/", "Refugees and the internally displaced"),
-               ("Relations", "/geopolitics/relations/", "Any two countries: votes, war, refugees, news")]
+               ("Blocs", "/geopolitics/blocs/", "NATO, EU, BRICS, SCO, G20 and more compared"),
+               ("Defence", "/geopolitics/defence/", "Nuclear warheads, armed forces and treaties"),
+               ("Relations", "/geopolitics/relations/", "Any two countries: votes, war, refugees, news"),
+               ("Watchlist", "/geopolitics/watchlist/", "Follow countries, with RSS feeds")]
         explore = [("Map explorer", "/explore/", "Any indicator on the world map"),
                    ("Topics", "/topics/", "Indicators grouped by theme"),
                    ("Cities", "/cities/", "524 cities over one million people"),
@@ -202,7 +205,7 @@ class Site:
         # Pages are rebuilt from scratch so renamed URLs don't linger. v1/ and history/ are data outputs.
         for name in ("countries", "regions", "rankings", "compare", "topics", "data", "methodology",
                      "insights", "about", "explore", "world", "index-builder", "ask", "static", "og", "embed", "lab",
-                     "universities", "cities", "markets", "reports", "geopolitics"):
+                     "universities", "cities", "markets", "reports", "geopolitics", "feeds"):
             if (DIST / name).exists():
                 shutil.rmtree(DIST / name)
         shutil.copytree(SITE / "static", DIST / "static")
@@ -298,8 +301,14 @@ class Site:
         if g.unmatched:
             print(f"  geopolitics: unmatched UCDP names: {sorted(g.unmatched)[:12]}")
         ov, al, dp, br = g.overview(), g.alignment(), g.displacement(), g.briefing()
-        srcs = {s: self.m.sources[s] for s in ("ucdp", "unvotes", "unhcr", "gdelt", "wb-wgi") if s in self.m.sources}
-        common = dict(ov=ov, al=al, dp=dp, risk=g.risk, risk_map={r["e"]["entity_id"]: round(r["score"], 1) for r in g.risk}, weights=geopolitics.RISK_WEIGHTS, srcs=srcs, types=geopolitics.TYPES,
+        srcs = {s: self.m.sources[s] for s in ("ucdp", "unvotes", "unhcr", "gdelt", "wb-wgi", "fas") if s in self.m.sources}
+        forces = sorted(((e, *lt[:2]) for e in self.countries if (lt := self.m.latest(e["entity_id"], "armed-forces", min_year=2015))),
+                        key=lambda x: -x[2]) if "armed-forces" in self.m.indicators else []
+        srcs_all = {s: self.m.sources[s] for s in ("ucdp", "unvotes", "unhcr", "gdelt", "wb-wgi", "fas") if s in self.m.sources}
+        common = dict(blocs=g.blocs, as_of=g.blocs_as_of, treaties=g.treaties, nuclear=g.nuclear_rows(), nuclear_src=g.nuclear,
+                      forces=forces, by_id=self.by_id, risers=g.risers, fallers=g.fallers, risk_year=g.risk_year,
+                      events=g.events, risk_from=geopolitics.RISK_FROM,
+                      ov=ov, al=al, dp=dp, risk=g.risk, risk_map={r["e"]["entity_id"]: round(r["score"], 1) for r in g.risk}, weights=geopolitics.RISK_WEIGHTS, srcs=srcs, types=geopolitics.TYPES,
                       powers=geopolitics.POWER_NAMES, pairs=[(self.by_id[a], self.by_id[b]) for a, b in geopolitics.PAIRS
                                                              if a in self.by_id and b in self.by_id])
         og.card(DIST / "og" / "geopolitics.png", self.cfg["name"], "Geopolitics",
@@ -313,7 +322,10 @@ class Site:
                  ("/geopolitics/risk/", "geo_risk.html", "Geopolitical risk index", "Country risk scores"),
                  ("/geopolitics/un-votes/", "geo_votes.html", "UN alignment", "Who votes with whom"),
                  ("/geopolitics/displacement/", "geo_displacement.html", "Displacement", "Refugees and the displaced"),
-                 ("/geopolitics/relations/", "geo_relations.html", "Country relations", "Any two countries")]
+                 ("/geopolitics/relations/", "geo_relations.html", "Country relations", "Any two countries"),
+                 ("/geopolitics/blocs/", "geo_blocs.html", "Alliances and blocs", "NATO, EU, BRICS, SCO, G20 compared"),
+                 ("/geopolitics/defence/", "geo_defence.html", "Defence and nuclear forces", "Warheads, armed forces, treaties"),
+                 ("/geopolitics/watchlist/", "geo_watchlist.html", "Watchlist", "Follow countries")]
         for url, tpl, t, s in pages:
             self.render(url, tpl, og_image="/og/geopolitics.png", br=br, countries=self.countries, **common)
             self.search.append({"t": t, "u": url, "k": "Geopolitics", "s": s,
@@ -327,7 +339,62 @@ class Site:
             self.search.append({"t": f"{ea['name']} and {eb['name']}", "u": f"/geopolitics/relations/{ea['slug']}-and-{eb['slug']}/",
                                 "k": "Relations", "s": "UN votes, conflict, refugees and news",
                                 "o": [f"{ea['name']} {eb['name']} relations", f"{ea['name']} vs {eb['name']}"]})
+        for b in g.blocs:
+            rows = [{"e": e, "people": (self.m.latest(e["entity_id"], "population") or (0, None, ""))[1],
+                     "gdp": (self.m.latest(e["entity_id"], "gdp", min_year=2015) or (0, None, ""))[1],
+                     "risk": g.risk_by[e["entity_id"]]["score"] if e["entity_id"] in g.risk_by else None,
+                     "status": b["status"].get(e["entity_id"])} for e in b["mem"]]
+            rows.sort(key=lambda r: -(r["people"] or 0))
+            self.render(f"/geopolitics/blocs/{b['id']}/", "geo_bloc.html", og_image="/og/geopolitics.png", b=b, rows=rows,
+                        blocs=g.blocs, as_of=g.blocs_as_of, al=al, powers=geopolitics.POWER_NAMES, srcs=srcs_all)
+            self.search.append({"t": b["full"], "u": f"/geopolitics/blocs/{b['id']}/", "k": "Bloc", "s": b["kind"],
+                                "o": [b["name"], f"{b['name']} members", f"{b['name']} countries"]})
         g.write_files(DIST / "geopolitics" / "data")
+        (DIST / "geopolitics" / "data" / "events.json").write_text(json.dumps(g.events, separators=(",", ":")), encoding="utf-8")
+        self.feeds(g, br)
+
+    def feeds(self, g, br) -> None:
+        """RSS 2.0 feeds: the weekly briefing, the trend reports and one weekly digest per country."""
+        from email.utils import format_datetime
+        from xml.sax.saxutils import escape as x
+        base = self.cfg["base_url"].rstrip("/")
+        when = format_datetime(datetime.strptime(self.m.release, "%Y-%m-%d").replace(tzinfo=timezone.utc))
+
+        def feed(path, title, link, desc, items):
+            body = "".join(f"<item><title>{x(t)}</title><link>{x(base + u)}</link><guid isPermaLink=\"false\">{x(base + u)}#{self.m.release}</guid>"
+                           f"<pubDate>{when}</pubDate><description>{x(d)}</description></item>" for t, u, d in items)
+            out = DIST / "feeds" / path
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(f'<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>{x(title)}</title>'
+                           f"<link>{x(base + link)}</link><description>{x(desc)}</description><language>en</language>"
+                           f"<lastBuildDate>{when}</lastBuildDate>{body}</channel></rss>", encoding="utf-8")
+
+        lines = []
+        if br.get("conflict"):
+            c = br["conflict"]
+            lines.append(f"{fmt(c['ytd'], 0)} deaths in organised violence in {c['year']} to {c['last']} (UCDP, preliminary), "
+                         f"against {fmt(c['same'], 0)} in the same months of {br['final_year']}.")
+        if br.get("attention"):
+            lines.append("Rising in world news: " + ", ".join(a["e"]["name"] for a in br["attention"][:3]) + ".")
+        feed("briefing.xml", f"{self.cfg['name']}: weekly world briefing", "/geopolitics/briefing/",
+             "What changed in world affairs this week, from verified data.",
+             [(f"The world this week ({self.m.release})", "/geopolitics/briefing/", " ".join(lines) or "Weekly briefing.")])
+        if getattr(self, "rp", None):
+            feed("reports.xml", f"{self.cfg['name']}: global trend reports", "/reports/", "Global trend reports written from open data.",
+                 [(r["title"], f"/reports/{r['id']}/", " ".join(r["findings"][:3])) for r in self.rp.reports])
+        for e in self.countries:
+            c = g.country(e["entity_id"]) or {}
+            parts = []
+            if c.get("risk"):
+                r = c["risk"]
+                parts.append(f"Geopolitical risk index {r['score']:.0f} ({r['band']}, #{r['rank']} of {c['n_risk']}).")
+            if c.get("cand"):
+                parts.append(f"{fmt(c['cand'], 0)} conflict deaths so far in {c['cand_year']} (UCDP, preliminary).")
+            if c.get("align"):
+                parts.append("UN votes with " + ", ".join(f"{geopolitics.POWER_NAMES[p]} {100 * v[1]:.0f}%" for p, v in c["align"].items()) + ".")
+            feed(f"countries/{e['slug']}.xml", f"{e['name']}: weekly update", f"/countries/{e['slug']}/",
+                 f"Weekly data update on {e['name']} from {self.cfg['name']}.",
+                 [(f"{e['name']}: update for {self.m.release}", f"/countries/{e['slug']}/", " ".join(parts) or "New data release.")])
 
     def reports_pages(self) -> None:
         rp = reports.Reports(self.m, self.countries, self.by_id, self.mk.show)

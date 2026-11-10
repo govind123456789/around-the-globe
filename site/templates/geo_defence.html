@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% import "geo_macros.html" as g %}
+{% block title %}Defence: nuclear warheads and armed forces by country{% endblock %}
+{% block description %}Nuclear warhead estimates for the nine nuclear-armed states, the largest armed forces, and the main nuclear and climate treaties, from FAS and the World Bank.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">Geopolitics · defence</span>
+  <h1>Defence and nuclear forces</h1>
+  <p class="lede">Nine countries have nuclear weapons. Estimates of their arsenals come from the Federation of American Scientists; the size of every country’s armed forces comes from the World Bank, which republishes the IISS Military Balance.</p>
+</div>
+{{ g.subnav(url) }}
+<div class="grid g2">
+  <div class="card">
+    <h3>Nuclear warheads, early 2026</h3>
+    <ol class="mk-bars">{% set peak = nuclear[0][1].inventory %}{% for e, v in nuclear %}<li><span class="rk">{{ loop.index }}</span><span class="nm">{{ flag(e.entity_id) }}<a href="/countries/{{ e.slug }}/">{{ e.name }}</a></span><span class="bar" aria-hidden="true"><i style="width:{{ '%.1f'|format(100 * v.inventory / peak) }}%"></i></span><span class="val">{{ v.inventory|fmt(0) }}<small>{{ v.stockpile|fmt(0) }} in stockpile</small></span></li>{% endfor %}</ol>
+    <p class="small muted" style="margin:10px 0 0">Total inventory includes retired warheads awaiting dismantlement; the military stockpile is warheads available for use. All figures are estimates: <a href="{{ nuclear_src.url }}" rel="noopener">{{ nuclear_src.source }}</a>.</p>
+  </div>
+  <div class="card">
+    <h3>Largest armed forces</h3>
+    <ol class="mk-list">{% for e, y, v in forces[:15] %}<li><span>{{ flag(e.entity_id) }}<a href="/countries/{{ e.slug }}/">{{ e.name }}</a></span><span class="mono">{{ v|fmt(0) }} <small class="muted">{{ y }}</small></span></li>{% endfor %}</ol>
+    <p class="small muted" style="margin:10px 0 0">Active personnel including paramilitary forces. World Bank (CC BY 4.0), from IISS, The Military Balance.</p>
+  </div>
+</div>
+<div class="section-head"><h2>Treaties</h2></div>
+<div class="grid g2">
+  {% for t in treaties %}<div class="card"><h3><a href="{{ t.url }}" rel="noopener">{{ t.name }}</a></h3><p class="small">{{ t.blurb }}</p><ol class="mk-list">{% for iso, st in t.outside.items() %}{% if iso in by_id %}<li><span>{{ flag(iso) }}{{ by_id[iso].name }}</span><span class="small">{{ st }}</span></li>{% endif %}{% endfor %}</ol></div>{% endfor %}
+</div>
+<p class="small muted" style="margin-top:10px">Treaty status checked {{ as_of }} against the depositaries’ status pages. Military spending (SIPRI) is not shown because its licence does not allow reuse here.</p>
+{{ g.sources(srcs) }}
+{% endblock %}

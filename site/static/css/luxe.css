@@ -399,3 +399,15 @@ main .band a:not(.btn):hover, main .live a:hover { color: #fff; text-decoration-
 .gd-controls input[type=search] { width: 100%; padding: 10px 12px; font: inherit; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface); color: var(--text); }
 .gd-check { display: inline-flex; gap: 8px; align-items: center; font-size: .9rem; padding-bottom: 10px; }
 @media (max-width: 560px) { .gd-img { width: 84px; height: 56px; } }
+.geo-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: -4px 0 14px; }
+.geo-flags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: auto; padding-top: 10px; align-items: center; }
+.geo-flags .flag { margin: 0; }
+.geo-legend { display: flex; flex-wrap: wrap; gap: 14px; }
+.geo-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.geo-blocs td { vertical-align: top; }
+.wl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.wl-top h3 { margin: 0; }
+.wl-risk { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4px 12px; margin: 10px 0; }
+.wl-risk svg { grid-column: 1 / -1; }
+.section-head > span { display: inline-flex; gap: 12px; align-items: center; }
+[data-watch][aria-pressed="true"] { border-color: var(--champagne); color: var(--gold); }

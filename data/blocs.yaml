@@ -1,0 +1,164 @@
+# Alliances, groupings and treaties. Curated from each organisation's own member list and
+# checked on the date below; memberships change, so every bloc links to its official source.
+# Corrections: see /about/errata/. status: "suspended" or "frozen" marks members not taking part.
+as_of: 2026-11-10
+
+blocs:
+  - id: nato
+    name: NATO
+    full: North Atlantic Treaty Organization
+    kind: Military alliance
+    url: https://www.nato.int/cps/en/natohq/nato_countries.htm
+    blurb: "A collective-defence alliance: an attack on one member is treated as an attack on all (Article 5)."
+    members: [ALB, BEL, BGR, CAN, HRV, CZE, DNK, EST, FIN, FRA, DEU, GRC, HUN, ISL, ITA, LVA, LTU, LUX, MNE, NLD, MKD, NOR, POL, PRT, ROU, SVK, SVN, ESP, SWE, TUR, GBR, USA]
+
+  - id: eu
+    name: European Union
+    full: European Union
+    kind: Political and economic union
+    url: https://european-union.europa.eu/principles-countries-history/eu-countries_en
+    blurb: "A single market and customs union of 27 states with shared law, a common trade policy and, for most, the euro."
+    members: [AUT, BEL, BGR, HRV, CYP, CZE, DNK, EST, FIN, FRA, DEU, GRC, HUN, IRL, ITA, LVA, LTU, LUX, MLT, NLD, POL, PRT, ROU, SVK, SVN, ESP, SWE]
+
+  - id: g7
+    name: G7
+    full: Group of Seven
+    kind: Economic forum
+    url: https://www.g7italy.it/en/
+    blurb: "Seven large advanced democracies that coordinate economic and security policy; the EU also takes part."
+    members: [CAN, FRA, DEU, ITA, JPN, GBR, USA]
+
+  - id: g20
+    name: G20
+    full: Group of Twenty
+    kind: Economic forum
+    url: https://g20.org/about-the-g20/
+    blurb: "The main forum for global economic cooperation: 19 countries plus the European Union and the African Union."
+    members: [ARG, AUS, BRA, CAN, CHN, FRA, DEU, IND, IDN, ITA, JPN, KOR, MEX, RUS, SAU, ZAF, TUR, GBR, USA]
+
+  - id: brics
+    name: BRICS
+    full: BRICS
+    kind: Political and economic grouping
+    url: https://brics.br/en/about-brics
+    blurb: "A grouping of large emerging economies, expanded since 2024; Saudi Arabia has been invited but has not confirmed membership."
+    members: [BRA, RUS, IND, CHN, ZAF, EGY, ETH, IRN, ARE, IDN]
+
+  - id: sco
+    name: SCO
+    full: Shanghai Cooperation Organisation
+    kind: Political and security organisation
+    url: https://eng.sectsco.org/
+    blurb: "A Eurasian political, economic and security organisation led by China and Russia."
+    members: [CHN, IND, IRN, KAZ, KGZ, PAK, RUS, TJK, UZB, BLR]
+
+  - id: asean
+    name: ASEAN
+    full: Association of Southeast Asian Nations
+    kind: Regional organisation
+    url: https://asean.org/member-states/
+    blurb: "Southeast Asia's regional organisation; Timor-Leste became its eleventh member in October 2025."
+    members: [BRN, KHM, IDN, LAO, MYS, MMR, PHL, SGP, THA, VNM, TLS]
+
+  - id: au
+    name: African Union
+    full: African Union
+    kind: Regional organisation
+    url: https://au.int/en/member_states/countryprofiles2
+    blurb: "All 55 African states. Members can be suspended after unconstitutional changes of government."
+    members: [DZA, AGO, BEN, BWA, BFA, BDI, CPV, CMR, CAF, TCD, COM, COG, COD, CIV, DJI, EGY, GNQ, ERI, SWZ, ETH, GAB, GMB, GHA, GIN, GNB, KEN, LSO, LBR, LBY, MDG, MWI, MLI, MRT, MUS, MAR, MOZ, NAM, NER, NGA, RWA, ESH, STP, SEN, SYC, SLE, SOM, ZAF, SSD, SDN, TZA, TGO, TUN, UGA, ZMB, ZWE]
+    status: { BFA: suspended, GIN: suspended, MLI: suspended, NER: suspended, SDN: suspended, MDG: suspended }
+
+  - id: quad
+    name: The Quad
+    full: Quadrilateral Security Dialogue
+    kind: Strategic dialogue
+    url: https://www.mea.gov.in/
+    blurb: "A strategic dialogue between four Indo-Pacific democracies."
+    members: [AUS, IND, JPN, USA]
+
+  - id: aukus
+    name: AUKUS
+    full: AUKUS
+    kind: Security partnership
+    url: https://www.defence.gov.au/about/reviews-inquiries/aukus
+    blurb: "A security pact under which Australia is to acquire nuclear-powered submarines with US and UK help."
+    members: [AUS, GBR, USA]
+
+  - id: opec
+    name: OPEC
+    full: Organization of the Petroleum Exporting Countries
+    kind: Commodity cartel
+    url: https://www.opec.org/opec_web/en/about_us/25.htm
+    blurb: "Oil exporters that coordinate production; Angola left in 2024. Russia and others cooperate through OPEC+."
+    members: [DZA, COG, GNQ, GAB, IRN, IRQ, KWT, LBY, NGA, SAU, ARE, VEN]
+
+  - id: gcc
+    name: GCC
+    full: Gulf Cooperation Council
+    kind: Regional organisation
+    url: https://www.gcc-sg.org/en
+    blurb: "The six Gulf monarchies' political, economic and defence organisation."
+    members: [BHR, KWT, OMN, QAT, SAU, ARE]
+
+  - id: oecd
+    name: OECD
+    full: Organisation for Economic Co-operation and Development
+    kind: Economic organisation
+    url: https://www.oecd.org/en/about/members-partners.html
+    blurb: "Thirty-eight mostly high-income democracies that set common standards on economic policy."
+    members: [AUS, AUT, BEL, CAN, CHL, COL, CRI, CZE, DNK, EST, FIN, FRA, DEU, GRC, HUN, ISL, IRL, ISR, ITA, JPN, KOR, LVA, LTU, LUX, MEX, NLD, NZL, NOR, POL, PRT, SVK, SVN, ESP, SWE, CHE, TUR, GBR, USA]
+
+  - id: csto
+    name: CSTO
+    full: Collective Security Treaty Organization
+    kind: Military alliance
+    url: https://en.odkb-csto.org/
+    blurb: "A Russia-led military alliance of former Soviet states; Armenia froze its participation in 2024."
+    members: [ARM, BLR, KAZ, KGZ, RUS, TJK]
+    status: { ARM: frozen }
+
+  - id: arab-league
+    name: Arab League
+    full: League of Arab States
+    kind: Regional organisation
+    url: http://www.leagueofarabstates.net/
+    blurb: "Twenty-two Arab states; Syria was readmitted in 2023."
+    members: [DZA, BHR, COM, DJI, EGY, IRQ, JOR, KWT, LBN, LBY, MRT, MAR, OMN, PSE, QAT, SAU, SOM, SDN, SYR, TUN, ARE, YEM]
+
+  - id: unsc
+    name: UN Security Council
+    full: United Nations Security Council, 2026
+    kind: UN body
+    url: https://main.un.org/securitycouncil/en/content/current-members
+    blurb: "Five permanent members with a veto, and ten elected for two-year terms (shown: members serving in 2026)."
+    members: [CHN, FRA, RUS, GBR, USA, DNK, GRC, PAK, PAN, SOM, BHR, COL, COD, LVA, LBR]
+    status: { CHN: permanent, FRA: permanent, RUS: permanent, GBR: permanent, USA: permanent }
+
+# Treaties: listed by their few non-parties, which are well documented.
+treaties:
+  - id: npt
+    name: Nuclear Non-Proliferation Treaty
+    url: https://disarmament.unoda.org/wmd/nuclear/npt/
+    blurb: "Almost every state is a party. India, Pakistan and Israel never joined; South Sudan has not acceded; North Korea announced its withdrawal in 2003."
+    outside: { IND: "never joined", PAK: "never joined", ISR: "never joined", SSD: "not acceded", PRK: "withdrew (2003)" }
+  - id: paris
+    name: Paris Agreement on climate change
+    url: https://unfccc.int/process/the-paris-agreement/status-of-ratification
+    blurb: "Almost every state is a party. Iran, Libya and Yemen signed but have not ratified; the United States withdrew with effect from January 2026."
+    outside: { IRN: "signed, not ratified", LBY: "signed, not ratified", YEM: "signed, not ratified", USA: "withdrew (2026)" }
+
+# Nuclear forces: Federation of American Scientists, Status of World Nuclear Forces 2026 (estimates, early 2026).
+nuclear:
+  source: "Federation of American Scientists, Status of World Nuclear Forces 2026 (estimates as of early 2026)"
+  url: https://fas.org/initiative/status-world-nuclear-forces/
+  states:
+    RUS: { stockpile: 4400, inventory: 5420 }
+    USA: { stockpile: 3700, inventory: 5042 }
+    CHN: { stockpile: 620, inventory: 620 }
+    FRA: { stockpile: 290, inventory: 370 }
+    GBR: { stockpile: 225, inventory: 225 }
+    IND: { stockpile: 190, inventory: 190 }
+    PAK: { stockpile: 170, inventory: 170 }
+    ISR: { stockpile: 90, inventory: 90 }
+    PRK: { stockpile: 60, inventory: 60 }

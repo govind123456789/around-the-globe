@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% import "geo_macros.html" as g %}
+{% block title %}{{ b.name }}: members, weight in the world and UN voting{% endblock %}
+{% block description %}{{ b.full }}: its {{ b.mem|length }} members, share of world population and GDP, armed forces, nuclear warheads and how its members vote at the UN.{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/geopolitics/">Geopolitics</a> › <a href="/geopolitics/blocs/">Blocs</a></p>
+<div class="page-head">
+  <span class="eyebrow">{{ b.kind }} · {{ b.mem|length }} members</span>
+  <h1>{{ b.full }}</h1>
+  <p class="lede">{{ b.blurb }}</p>
+  <p class="small">Members checked {{ as_of }} against the <a href="{{ b.url }}" rel="noopener">official member list</a>.</p>
+</div>
+{{ g.subnav(url) }}
+<div class="stats mk-kpis">
+  {% if b.pop_share is not none %}<div class="card stat"><span class="l">Share of world population</span><span class="v">{{ '%.1f'|format(b.pop_share) }}%</span><span class="small muted">{{ b.people|fmt(0) }} people</span></div>{% endif %}
+  {% if b.gdp_share is not none %}<div class="card stat"><span class="l">Share of world GDP</span><span class="v">{{ '%.1f'|format(b.gdp_share) }}%</span><span class="small muted">{{ b.gdp|fmt(0, 'current US$') }}</span></div>{% endif %}
+  {% if b.cohesion %}<div class="card stat"><span class="l">UN cohesion, {{ al.year }}</span><span class="v">{{ '%.0f'|format(100 * b.cohesion) }}%</span><span class="small muted">average agreement between members</span></div>{% endif %}
+  <div class="card stat"><span class="l">Armed forces</span><span class="v">{{ b.forces|fmt(0) }}</span><span class="small muted">active personnel · World Bank/IISS{% if b.warheads %} · {{ b.warheads|fmt(0) }} nuclear warheads{% endif %}</span></div>
+</div>
+<div class="split">
+  <div>{{ m.map("bloc-map", b.map, b.name ~ " members") }}</div>
+  <div class="card">
+    <h3>Whom the members vote with, {{ al.year }}</h3>
+    <ol class="mk-list">{% for p, v in b.with.items() %}<li><span>{{ flag(p) }}{{ powers[p] }}</span><span class="mono">{{ '%.0f'|format(100 * v) }}%</span></li>{% endfor %}</ol>
+    {% if b.risk is not none %}<p class="small" style="margin:12px 0 0">Average <a href="/geopolitics/risk/">risk index</a> of members: <b>{{ '%.0f'|format(b.risk) }}</b>. Conflict deaths in member states, last three years: <b>{{ b.deaths3|fmt(0) }}</b>.</p>{% endif %}
+  </div>
+</div>
+<div class="section-head"><h2>Members</h2></div>
+<div class="table-wrap"><table data-sortable>
+  <thead><tr><th class="sortable" data-type="text">Country</th><th class="num sortable" data-type="num">Population</th><th class="num sortable" data-type="num">GDP</th><th class="num sortable" data-type="num">Risk index</th><th>Status</th></tr></thead>
+  <tbody>{% for r in rows %}<tr><td>{{ flag(r.e.entity_id) }}<a href="/countries/{{ r.e.slug }}/">{{ r.e.name }}</a></td><td class="num" data-v="{{ r.people or 0 }}">{{ r.people|fmt(0) }}</td><td class="num" data-v="{{ r.gdp or 0 }}">{{ r.gdp|fmt(0, 'current US$') }}</td><td class="num" data-v="{{ r.risk or 0 }}">{{ '%.0f'|format(r.risk) if r.risk is not none else '—' }}</td><td class="small">{{ r.status or 'Member' }}</td></tr>{% endfor %}</tbody>
+</table></div>
+<div class="section-head"><h2>Other blocs</h2><a href="/geopolitics/blocs/">Compare all →</a></div>
+<nav class="mk-others">{% for x in blocs if x.id != b.id %}<a href="/geopolitics/blocs/{{ x.id }}/">{{ x.name }}</a>{% endfor %}</nav>
+{{ g.sources(srcs) }}
+{% endblock %}

@@ -1,7 +1,7 @@
 {% macro subnav(url) -%}
 <nav class="geo-nav no-print" aria-label="Geopolitics">
-  {% for href, label in [('/geopolitics/', 'Overview'), ('/geopolitics/news/', 'Live news'), ('/geopolitics/briefing/', 'Weekly briefing'), ('/geopolitics/conflicts/', 'Conflicts'), ('/geopolitics/risk/', 'Risk index'), ('/geopolitics/un-votes/', 'UN alignment'), ('/geopolitics/displacement/', 'Displacement'), ('/geopolitics/relations/', 'Relations')] %}
-  <a href="{{ href }}"{% if url == href or (href == '/geopolitics/relations/' and url.startswith(href)) %} aria-current="page"{% endif %}>{{ label }}</a>
+  {% for href, label in [('/geopolitics/', 'Overview'), ('/geopolitics/news/', 'Live news'), ('/geopolitics/briefing/', 'Weekly briefing'), ('/geopolitics/conflicts/', 'Conflicts'), ('/geopolitics/risk/', 'Risk index'), ('/geopolitics/un-votes/', 'UN alignment'), ('/geopolitics/displacement/', 'Displacement'), ('/geopolitics/blocs/', 'Blocs'), ('/geopolitics/defence/', 'Defence'), ('/geopolitics/relations/', 'Relations'), ('/geopolitics/watchlist/', 'Watchlist')] %}
+  <a href="{{ href }}"{% if url == href or (href in ('/geopolitics/relations/', '/geopolitics/blocs/') and url.startswith(href)) %} aria-current="page"{% endif %}>{{ label }}</a>
   {% endfor %}
 </nav>
 {%- endmacro %}

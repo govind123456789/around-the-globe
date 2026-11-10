@@ -16,16 +16,16 @@ from collections import defaultdict
 from pathlib import Path
 
 from . import svg
-from .config import RAW
+from .config import RAW, load_yaml
 
 TYPES = {1: "State-based conflict", 2: "Non-state conflict", 3: "One-sided violence"}
 POWERS = ["USA", "CHN", "RUS", "IND", "FRA"]
 POWER_NAMES = {"USA": "United States", "CHN": "China", "RUS": "Russia", "IND": "India", "FRA": "France"}
-RISK_WEIGHTS = [("conflict", "Conflict deaths per 100,000 people, last 3 years (UCDP)", .35),
+RISK_WEIGHTS = [("conflict", "Conflict deaths per 100,000 people, last 3 years (UCDP)", .40),
                 ("instability", "Political instability (World Bank WGI, inverted)", .25),
                 ("lawless", "Weak rule of law (World Bank WGI, inverted)", .15),
-                ("displaced", "People displaced from the country per 1,000 (UNHCR)", .15),
-                ("tone", "Negative tone of world news coverage (GDELT)", .10)]
+                ("displaced", "People displaced from the country per 1,000 (UNHCR)", .20)]
+RISK_FROM = 2015
 PAIRS = [("USA", "CHN"), ("USA", "RUS"), ("CHN", "IND"), ("IND", "PAK"), ("RUS", "UKR"), ("ISR", "IRN"),
          ("SAU", "IRN"), ("CHN", "JPN"), ("KOR", "PRK"), ("ARM", "AZE"), ("USA", "IND"), ("RUS", "IND"),
          ("CHN", "RUS"), ("USA", "IRN"), ("DEU", "FRA"), ("TUR", "GRC"), ("ETH", "ERI"), ("SDN", "SSD"),
@@ -68,6 +68,7 @@ class Geo:
         self.load_votes()
         self.load_unhcr()
         self.compute_risk()
+        self.load_blocs()
 
     def iso(self, name: str) -> str | None:
         k = _norm(name)
@@ -105,6 +106,7 @@ class Geo:
         conflicts = defaultdict(lambda: {"deaths": 0.0, "countries": set(), "type": None, "events": 0})
         inter = defaultdict(lambda: defaultdict(float))  # (isoA, isoB) -> year -> deaths, government vs government
         self.final_year = self.cand_year = None
+        recent = []                                  # events of the last two years, for the event map
         cand_seen = set()
         for row, cand in self._events():
             try:
@@ -121,6 +123,12 @@ class Geo:
                 self.final_year = max(self.final_year or y, y)
             iso = self.iso(row.get("country", ""))
             world[y][t] += d
+            if y >= 2024:
+                try:
+                    recent.append(((row.get("date_start") or "")[:10], float(row["latitude"]), float(row["longitude"]), d, t,
+                                   (row.get("conflict_name") or "").strip(), iso))
+                except (KeyError, ValueError):
+                    pass
             if ym:
                 monthly[ym] += d
             if iso:
@@ -146,7 +154,29 @@ class Geo:
         if self.cand_year and self.final_year and self.cand_year <= self.final_year:
             self.cand_year = None
         self.cy, self.cyt, self.world_deaths, self.monthly, self.cmonth = cy, cyt, world, monthly, cmonth
+        self.events = self.event_points(recent)
         self.conflicts, self.inter = conflicts, inter
+
+    @staticmethod
+    def event_points(recent: list) -> dict:
+        """Events of the last 12 months, merged onto a half-degree grid so the map stays light."""
+        dates = sorted(r[0] for r in recent if r[0])
+        if not dates:
+            return {"points": [], "from": None, "to": None}
+        end = dates[-1]
+        y, mth = int(end[:4]), int(end[5:7])
+        start = f"{y - 1}-{mth:02d}-{end[8:10]}"
+        cells = {}
+        for date, lat, lon, d, t, conflict, iso in recent:
+            if not date or date <= start:
+                continue
+            k = (round(lat * 2) / 2, round(lon * 2) / 2)
+            c = cells.setdefault(k, {"d": 0.0, "n": 0, "t": defaultdict(float), "c": defaultdict(float), "iso": iso})
+            c["d"] += d; c["n"] += 1; c["t"][t] += d or 1; c["c"][conflict] += d or 1
+        pts = [[k[1], k[0], round(c["d"]), c["n"], max(c["t"], key=c["t"].get), max(c["c"], key=c["c"].get), c["iso"] or ""]
+               for k, c in cells.items()]
+        pts.sort(key=lambda p: -p[2])
+        return {"points": pts, "from": start, "to": end}
 
     def deaths(self, iso: str, years) -> float:
         return sum(self.cy.get((iso, y), 0.0) for y in years)
@@ -236,37 +266,97 @@ class Geo:
 
     # ------------------------------------------------------------------ risk index
     def compute_risk(self):
+        """The index for every year since RISK_FROM, scaled on the pooled range of all years so that a
+        country's score can be compared across time. Built only from the verified datasets."""
         fy = self.final_year or 2025
-        last3 = range(fy - 2, fy + 1)
-        raw = defaultdict(dict)
-        for e in self.countries:
-            i, pop = e["entity_id"], self.pop.get(e["entity_id"], 0)
-            if pop < 100_000:
-                continue
-            raw[i]["conflict"] = math.log1p(1e5 * self.deaths(i, last3) / pop / 3)
-            for key, ind in (("instability", "wgi-political-stability"), ("lawless", "wgi-rule-of-law"), ("tone", "news-tone")):
-                lt = self.m.latest(i, ind, min_year=2020) if ind in self.m.indicators else None
-                if lt:
-                    raw[i][key] = -lt[1]
-            d = self.displaced_out(i)
-            if d:
-                raw[i]["displaced"] = math.log1p(1000 * (d["abroad"] + d["idps"]) / pop)
-        lo = {k: min(v[k] for v in raw.values() if k in v) for k, _, _ in RISK_WEIGHTS if any(k in v for v in raw.values())}
-        hi = {k: max(v[k] for v in raw.values() if k in v) for k in lo}
-        out = []
-        for i, comps in raw.items():
-            if len(comps) < 4 or "conflict" not in comps or "instability" not in comps:
-                continue
+        raw = {}
+        for y in range(RISK_FROM, fy + 1):
+            for e in self.countries:
+                i, pop = e["entity_id"], self.pop.get(e["entity_id"], 0)
+                if pop < 100_000:
+                    continue
+                c = {"conflict": math.log1p(1e5 * self.deaths(i, range(y - 2, y + 1)) / pop / 3)}
+                for key, ind in (("instability", "wgi-political-stability"), ("lawless", "wgi-rule-of-law")):
+                    lt = self.m.latest(i, ind, max_year=y, min_year=y - 2) if ind in self.m.indicators else None
+                    if lt:
+                        c[key] = -lt[1]
+                d = self.displaced_out(i, y) or self.displaced_out(i, y - 1)
+                if d:
+                    c["displaced"] = math.log1p(1000 * (d["abroad"] + d["idps"]) / pop)
+                if "instability" in c and len(c) >= 3:
+                    raw[(i, y)] = c
+        keys = [k for k, _, _ in RISK_WEIGHTS]
+        lo = {k: min(v[k] for v in raw.values() if k in v) for k in keys}
+        hi = {k: max(v[k] for v in raw.values() if k in v) for k in keys}
+        scores = {}
+        for (i, y), comps in raw.items():
             norm = {k: 100 * (comps[k] - lo[k]) / ((hi[k] - lo[k]) or 1) for k in comps}
             wsum = sum(w for k, _, w in RISK_WEIGHTS if k in norm)
-            score = sum(norm[k] * w for k, _, w in RISK_WEIGHTS if k in norm) / wsum
-            out.append({"e": self.by_id[i], "score": score, "parts": norm,
-                        "band": "Very high" if score >= 55 else "High" if score >= 40 else "Elevated" if score >= 25 else "Low"})
+            scores[(i, y)] = (sum(norm[k] * w for k, _, w in RISK_WEIGHTS if k in norm) / wsum, norm)
+        band = lambda sc: "Very high" if sc >= 55 else "High" if sc >= 40 else "Elevated" if sc >= 25 else "Low"
+        out = []
+        for e in self.countries:
+            i = e["entity_id"]
+            if (i, fy) not in scores:
+                continue
+            sc, norm = scores[(i, fy)]
+            hist = [(y, round(scores[(i, y)][0], 1)) for y in range(RISK_FROM, fy + 1) if (i, y) in scores]
+            base = next((v for y, v in hist if y == fy - 5), None)
+            out.append({"e": e, "score": sc, "parts": norm, "band": band(sc), "hist": hist,
+                        "change5": (sc - base) if base is not None else None,
+                        "spark": svg.sparkline(hist, w=90, h=26, label=f"{e['name']} risk") if len(hist) > 1 else ""})
         out.sort(key=lambda r: -r["score"])
         for k, r in enumerate(out):
             r["rank"] = k + 1
         self.risk = out
         self.risk_by = {r["e"]["entity_id"]: r for r in out}
+        moved = [r for r in out if r["change5"] is not None]
+        self.risers = sorted(moved, key=lambda r: -r["change5"])[:10]
+        self.fallers = sorted(moved, key=lambda r: r["change5"])[:10]
+        self.risk_year = fy
+
+    # ------------------------------------------------------------------ blocs, treaties, nuclear forces
+    def load_blocs(self):
+        cfg = load_yaml("blocs.yaml")
+        self.blocs_as_of, self.treaties, self.nuclear = cfg["as_of"], cfg["treaties"], cfg["nuclear"]
+        world_pop = (self.m.latest("WLD", "population") or (0, 0, ""))[1]
+        world_gdp = (self.m.latest("WLD", "gdp") or (0, 0, ""))[1]
+        world_exp = (self.m.latest("WLD", "exports-value") or (0, 0, ""))[1] if "exports-value" in self.m.indicators else 0
+        self.blocs = []
+        vy = self.vote_year
+        for b in cfg["blocs"]:
+            mem = [x for x in b["members"] if x in self.ids]
+            status = b.get("status", {})
+            tot = lambda ind: sum((self.m.latest(x, ind, min_year=2015) or (0, 0, ""))[1] for x in mem) if ind in self.m.indicators else 0
+            pop, gdp, exp, forces = tot("population"), tot("gdp"), tot("exports-value"), tot("armed-forces")
+            warheads = sum(self.nuclear["states"].get(x, {}).get("inventory", 0) for x in mem)
+            inner = [self.agreement(a, c).get(vy) for k, a in enumerate(mem) for c in mem[k + 1:]] if vy else []
+            inner = [v for v in inner if v is not None]
+            withp = {}
+            for pw in ("USA", "CHN", "RUS"):
+                v = [self.agreement(x, pw).get(vy) for x in mem if x != pw] if vy else []
+                v = [x for x in v if x is not None]
+                if v:
+                    withp[pw] = sum(v) / len(v)
+            risks = [self.risk_by[x]["score"] for x in mem if x in self.risk_by]
+            deaths = sum(self.deaths(x, range((self.final_year or 2025) - 2, (self.final_year or 2025) + 1)) for x in mem)
+            self.blocs.append({**b, "mem": [self.by_id[x] for x in mem], "status": status, "people": pop, "gdp": gdp, "exp": exp,
+                               "pop_share": 100 * pop / world_pop if world_pop else None,
+                               "gdp_share": 100 * gdp / world_gdp if world_gdp else None,
+                               "exp_share": 100 * exp / world_exp if world_exp else None,
+                               "forces": forces, "warheads": warheads, "cohesion": sum(inner) / len(inner) if inner else None,
+                               "with": withp, "risk": sum(risks) / len(risks) if risks else None, "deaths3": deaths,
+                               "map": {x: 1 for x in mem}})
+        self.bloc_of = defaultdict(list)
+        for b in self.blocs:
+            for e in b["mem"]:
+                self.bloc_of[e["entity_id"]].append({"id": b["id"], "name": b["name"], "status": b["status"].get(e["entity_id"])})
+
+    def treaty_status(self, iso: str) -> list:
+        return [{"t": t, "status": t["outside"].get(iso, "party")} for t in self.treaties]
+
+    def nuclear_rows(self) -> list:
+        return sorted(((self.by_id[i], v) for i, v in self.nuclear["states"].items() if i in self.by_id), key=lambda x: -x[1]["inventory"])
 
     # ------------------------------------------------------------------ page data
     def overview(self) -> dict:
@@ -342,7 +432,9 @@ class Geo:
         cyear = None
         if self.cand_year:
             cyear = sum(v for (i, ym), v in self.cmonth.items() if i == iso and ym.startswith(str(self.cand_year)))
-        return {"risk": r, "deaths3": d3, "years": (fy - 2, fy), "align": al, "disp": disp, "host": host,
+        forces = self.m.latest(iso, "armed-forces", min_year=2015) if "armed-forces" in self.m.indicators else None
+        return {"blocs": self.bloc_of.get(iso, []), "treaties": self.treaty_status(iso), "nuclear": self.nuclear["states"].get(iso),
+                "forces": forces, "risk": r, "deaths3": d3, "years": (fy - 2, fy), "align": al, "disp": disp, "host": host,
                 "cand": cyear, "cand_year": self.cand_year, "n_risk": len(self.risk)}
 
     def pair(self, a: str, b: str) -> dict:
@@ -433,7 +525,14 @@ class Geo:
                 "out": sorted([[b, round(v)] for (a, b), v in self.flows.items() if a == iso and v > 0], key=lambda x: -x[1])[:15],
                 "in": sorted([[a, round(v)] for (a, b), v in self.flows.items() if b == iso and v > 0], key=lambda x: -x[1])[:15],
                 "war": {("".join(k).replace(iso, "")): [[y, round(d)] for y, d in sorted(v.items())] for k, v in self.inter.items() if iso in k},
-                "risk": round(self.risk_by[iso]["score"], 1) if iso in self.risk_by else None}
+                "risk": round(self.risk_by[iso]["score"], 1) if iso in self.risk_by else None,
+                "risk_band": self.risk_by[iso]["band"] if iso in self.risk_by else None,
+                "risk_rank": [self.risk_by[iso]["rank"], len(self.risk)] if iso in self.risk_by else None,
+                "risk_hist": self.risk_by[iso]["hist"] if iso in self.risk_by else [],
+                "blocs": [b["name"] for b in self.bloc_of.get(iso, [])],
+                "name": self.by_id[iso]["name"], "slug": self.by_id[iso]["slug"],
+                "cand": [self.cand_year, round(sum(v for (i, ym), v in self.cmonth.items() if i == iso and ym.startswith(str(self.cand_year))))]
+                        if self.cand_year else None}
 
     def write_files(self, out: Path) -> None:
         out.mkdir(parents=True, exist_ok=True)

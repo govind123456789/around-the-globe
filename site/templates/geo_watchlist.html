@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% import "geo_macros.html" as g %}
+{% block title %}Your watchlist{% endblock %}
+{% block description %}Follow the countries you care about: risk, conflict, UN alignment and live news in one place, with RSS feeds. Saved in your browser only.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">Geopolitics · watchlist</span>
+  <h1>Your watchlist</h1>
+  <p class="lede">Star countries on their pages (or add them here) to follow their risk score, conflict deaths, alignment and live news in one place. Your list is saved only in this browser: no account, nothing sent to us.</p>
+</div>
+{{ g.subnav(url) }}
+<form class="card rb-form no-print" id="wl-form">
+  <div class="rb-row">
+    <label class="rb-field"><span>Add a country</span><select name="c">{% for c in countries %}<option value="{{ c.entity_id }}">{{ c.name }}</option>{% endfor %}</select></label>
+    <div class="rb-actions"><button class="btn" type="submit">Add to watchlist</button></div>
+  </div>
+</form>
+<div id="wl-out" aria-live="polite"></div>
+<div class="section-head"><h2>Follow by RSS</h2></div>
+<div class="card">
+  <p class="small">Paste a feed into any RSS reader (Feedly, Inoreader, NetNewsWire, Outlook) to get each weekly update:</p>
+  <ul class="small">
+    <li><a href="/feeds/briefing.xml">Weekly world briefing</a></li>
+    <li><a href="/feeds/reports.xml">Global trend reports</a></li>
+    <li>One feed per country, for example <a href="/feeds/countries/india.xml">India</a> or <a href="/feeds/countries/ukraine.xml">Ukraine</a>; your watched countries’ feeds are linked below.</li>
+  </ul>
+</div>
+<div id="wl-feeds"></div>
+{% endblock %}
+{% block scripts %}<script src="/static/js/geo-news.js?v={{ asset_v }}" defer></script><script src="/static/js/watch.js?v={{ asset_v }}" defer></script>{% endblock %}

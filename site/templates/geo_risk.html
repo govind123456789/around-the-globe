@@ -15,13 +15,19 @@
   <div class="card">
     <h3>How it is built</h3>
     <ol class="mk-list">{% for k, label, w in weights %}<li><span>{{ label }}</span><span class="mono">{{ '%.0f'|format(100 * w) }}%</span></li>{% endfor %}</ol>
-    <p class="small muted" style="margin:10px 0 0">Each measure is scaled 0–100 across countries (conflict and displacement on a log scale, so a few extreme cases don’t flatten the rest), then weighted. Countries need conflict, instability and at least two other measures; a missing measure’s weight is shared among the others. Bands: low under 25, elevated 25–40, high 40–55, very high 55+.</p>
+    <p class="small muted" style="margin:10px 0 0">Each measure is scaled 0–100 across countries (conflict and displacement on a log scale, so a few extreme cases don’t flatten the rest), then weighted. Countries need conflict, instability and at least one other measure; a missing measure’s weight is shared among the others. The index is calculated for every year since {{ risk_from }} on one common scale, so scores can be compared over time; it uses only verified datasets, not news coverage. Bands: low under 25, elevated 25–40, high 40–55, very high 55+.</p>
   </div>
 </div>
+<div class="section-head"><h2>How risk has moved, {{ risk_year - 5 }} to {{ risk_year }}</h2></div>
+<div class="grid g2">
+  <div class="card"><h3>Biggest rises</h3><ol class="mk-list">{% for r in risers %}<li><span>{{ flag(r.e.entity_id) }}<a href="/countries/{{ r.e.slug }}/">{{ r.e.name }}</a></span><span class="mono down">{{ '%+.0f'|format(r.change5) }} → {{ '%.0f'|format(r.score) }}</span></li>{% endfor %}</ol></div>
+  <div class="card"><h3>Biggest falls</h3><ol class="mk-list">{% for r in fallers %}<li><span>{{ flag(r.e.entity_id) }}<a href="/countries/{{ r.e.slug }}/">{{ r.e.name }}</a></span><span class="mono up">{{ '%+.0f'|format(r.change5) }} → {{ '%.0f'|format(r.score) }}</span></li>{% endfor %}</ol></div>
+</div>
+
 <div class="section-head"><h2>All countries</h2><span class="muted small">Highest risk first</span></div>
 <div class="table-wrap"><table data-sortable>
-  <thead><tr><th class="num sortable" data-type="num">#</th><th class="sortable" data-type="text">Country</th><th class="num sortable" data-type="num">Score</th><th class="sortable" data-type="text">Band</th>{% for k, label, w in weights %}<th class="num sortable" data-type="num" title="{{ label }}">{{ k|capitalize }}</th>{% endfor %}</tr></thead>
-  <tbody>{% for r in risk %}<tr><td class="num" data-v="{{ r.rank }}">{{ r.rank }}</td><td>{{ flag(r.e.entity_id) }}<a href="/countries/{{ r.e.slug }}/">{{ r.e.name }}</a></td><td class="num" data-v="{{ r.score }}"><b>{{ '%.0f'|format(r.score) }}</b></td><td><span class="badge geo-band {{ r.band|lower|replace(' ', '-') }}">{{ r.band }}</span></td>{% for k, label, w in weights %}<td class="num small" data-v="{{ r.parts.get(k, '') }}">{{ '%.0f'|format(r.parts[k]) if k in r.parts else '—' }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+  <thead><tr><th class="num sortable" data-type="num">#</th><th class="sortable" data-type="text">Country</th><th class="num sortable" data-type="num">Score</th><th class="sortable" data-type="text">Band</th><th class="num sortable" data-type="num">5-year change</th><th>Since {{ risk_from }}</th>{% for k, label, w in weights %}<th class="num sortable" data-type="num" title="{{ label }}">{{ k|capitalize }}</th>{% endfor %}</tr></thead>
+  <tbody>{% for r in risk %}<tr><td class="num" data-v="{{ r.rank }}">{{ r.rank }}</td><td>{{ flag(r.e.entity_id) }}<a href="/countries/{{ r.e.slug }}/">{{ r.e.name }}</a></td><td class="num" data-v="{{ r.score }}"><b>{{ '%.0f'|format(r.score) }}</b></td><td><span class="badge geo-band {{ r.band|lower|replace(' ', '-') }}">{{ r.band }}</span></td><td class="num" data-v="{{ r.change5 if r.change5 is not none else '' }}">{{ '%+.0f'|format(r.change5) if r.change5 is not none else '—' }}</td><td>{{ r.spark|safe }}</td>{% for k, label, w in weights %}<td class="num small" data-v="{{ r.parts.get(k, '') }}">{{ '%.0f'|format(r.parts[k]) if k in r.parts else '—' }}</td>{% endfor %}</tr>{% endfor %}</tbody>
 </table></div>
 <p class="small muted" style="margin-top:12px">Component columns are each country’s 0–100 position on that measure (higher = more risk). The index describes exposure to organised violence and instability; it is not a forecast and not investment or travel advice.</p>
 {{ g.sources(srcs) }}

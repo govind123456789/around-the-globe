@@ -113,15 +113,22 @@
 {% endif %}
 
 {% if geo %}
-<div class="section-head"><h2>Geopolitics</h2><a href="/geopolitics/">Geopolitics hub →</a></div>
+<div class="section-head"><h2>Geopolitics</h2><span><button type="button" class="btn ghost sm" data-watch="{{ c.entity_id }}">☆ Watch</button> <a href="/geopolitics/">Geopolitics hub →</a></span></div>
+{% if geo.blocs %}<div class="geo-chips">{% for b in geo.blocs %}<a class="chip" href="/geopolitics/blocs/{{ b.id }}/">{{ b.name }}{% if b.status %} · {{ b.status }}{% endif %}</a>{% endfor %}</div>{% endif %}
 <div class="grid g2 geo-country">
   <div class="card">
     <ol class="mk-list">
       {% if geo.risk %}<li><span><a href="/geopolitics/risk/">Geopolitical risk index</a></span><span class="mono"><b>{{ '%.0f'|format(geo.risk.score) }}</b> · {{ geo.risk.band }} · #{{ geo.risk.rank }} of {{ geo.n_risk }}</span></li>{% endif %}
+      {% if geo.risk and geo.risk.spark %}<li><span>Risk since {{ geo.risk.hist[0][0] }}{% if geo.risk.change5 is not none %} ({{ 'unchanged' if geo.risk.change5|abs < 0.5 else '%+.0f'|format(geo.risk.change5) }} in 5 years){% endif %}</span><span>{{ geo.risk.spark|safe }}</span></li>{% endif %}
       <li><span><a href="/geopolitics/conflicts/">Deaths in organised violence, {{ geo.years[0] }}–{{ geo.years[1] }}</a></span><span class="mono">{{ geo.deaths3|fmt(0) }}</span></li>
       {% if geo.cand %}<li><span>Deaths so far in {{ geo.cand_year }} (preliminary)</span><span class="mono">{{ geo.cand|fmt(0) }}</span></li>{% endif %}
       {% if geo.disp %}<li><span><a href="/geopolitics/displacement/">Displaced from {{ c.name }}, {{ geo.disp.year }}</a></span><span class="mono">{{ geo.disp.abroad|fmt(0) }} abroad · {{ geo.disp.idps|fmt(0) }} at home</span></li>{% endif %}
       {% if geo.host and geo.host.hosted %}<li><span>Refugees and asylum seekers hosted, {{ geo.host.year }}</span><span class="mono">{{ geo.host.hosted|fmt(0) }}</span></li>{% endif %}
+    </ol>
+    <ol class="mk-list" style="margin-top:10px">
+      {% if geo.forces %}<li><span><a href="/geopolitics/defence/">Armed forces personnel, {{ geo.forces[0] }}</a></span><span class="mono">{{ geo.forces[1]|fmt(0) }}</span></li>{% endif %}
+      {% if geo.nuclear %}<li><span>Nuclear warheads (FAS estimate, 2026)</span><span class="mono">{{ geo.nuclear.inventory|fmt(0) }}</span></li>{% endif %}
+      {% for t in geo.treaties %}<li><span>{{ t.t.name }}</span><span class="small">{{ 'Party' if t.status == 'party' else t.status|capitalize }}</span></li>{% endfor %}
     </ol>
     {% if geo.align %}<h3 style="margin-top:16px">UN votes in agreement with</h3>
     <ol class="mk-list">{% for p, la in geo.align.items() %}<li><span>{{ flag(p) }}<a href="/geopolitics/relations/?a={{ c.entity_id }}&amp;b={{ p }}">{{ geo_powers[p] }}</a></span><span class="mono">{{ '%.0f'|format(100 * la[1]) }}% · {{ la[0] }}</span></li>{% endfor %}</ol>{% endif %}
@@ -216,4 +223,4 @@
 </div>
 <p class="small muted" style="margin-top:24px">Spotted a problem with a value? <a href="mailto:{{ site.contact_email }}?subject=Data%20issue%3A%20{{ c.name|urlencode }}">Report a data issue</a>. Corrections are logged on the <a href="/about/errata/">errata page</a>.</p>
 {% endblock %}
-{% block scripts %}<script src="/static/js/globe.js?v={{ asset_v }}" defer></script><script src="/static/js/geo-news.js?v={{ asset_v }}" defer></script>{% endblock %}
+{% block scripts %}<script src="/static/js/globe.js?v={{ asset_v }}" defer></script><script src="/static/js/geo-news.js?v={{ asset_v }}" defer></script><script src="/static/js/watch.js?v={{ asset_v }}" defer></script>{% endblock %}

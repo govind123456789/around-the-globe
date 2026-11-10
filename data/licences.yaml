@@ -224,6 +224,10 @@ sources:
       attribution_text: "UNHCR Refugee Population Statistics Database (CC BY 4.0).",
       licence_checked_on: 2026-11-10,
       notes: "UNHCR's dataset terms license the Refugee Population Statistics Database under CC BY 4.0 except where otherwise provided; fetched through UNHCR's public population API. Displaced abroad = refugees + asylum seekers + others in need of international protection." }
+  - { source_id: fas,           publisher: Federation of American Scientists, title: Status of World Nuclear Forces 2026, url: https://fas.org/initiative/status-world-nuclear-forces/, licence: Facts cited with attribution, licence_url: https://fas.org/initiative/status-world-nuclear-forces/, tier: green, commercial_ok: true, derivatives_ok: true, share_alike: false, no_modification: false,
+      attribution_text: "Hans M. Kristensen, Matt Korda et al., Status of World Nuclear Forces 2026, Federation of American Scientists.",
+      licence_checked_on: 2026-11-10,
+      notes: "Nine countries' estimated warhead counts (figures, not text, are reproduced, with attribution and a link). Estimates: no nuclear-armed state publishes complete figures." }
   - { source_id: ghsl,          publisher: "European Commission, Joint Research Centre", title: GHS Urban Centre Database R2024A v1.2, url: https://human-settlement.emergency.copernicus.eu/ghs_ucdb_2024.php, licence: CC BY 4.0, licence_url: https://creativecommons.org/licenses/by/4.0/, tier: green, commercial_ok: true, derivatives_ok: true, share_alike: false, no_modification: false,
       attribution_text: "Mari Rivero, I., Melchiorri, M., Florio, P., et al. (2025). GHS Urban Centre Database 2025 (R2024A v1.2). European Commission, Joint Research Centre. CC BY 4.0.",
       licence_checked_on: 2026-11-09,
