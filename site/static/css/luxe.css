@@ -411,3 +411,28 @@ main .band a:not(.btn):hover, main .live a:hover { color: #fff; text-decoration-
 .wl-risk svg { grid-column: 1 / -1; }
 .section-head > span { display: inline-flex; gap: 12px; align-items: center; }
 [data-watch][aria-pressed="true"] { border-color: var(--champagne); color: var(--gold); }
+.geo-alert span { color: var(--bad); }
+svg.chart rect.bar-s1 { fill: var(--bad); opacity: .82; }
+.so-country .up { color: var(--good); } .so-country .down { color: var(--bad); }
+.fit-split { align-items: start; }
+.fit-row { display: grid; grid-template-columns: 1fr 120px 18px; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--border); font-size: .92rem; }
+.fit-row input { accent-color: var(--accent); width: 100%; }
+.fit-list { list-style: none; margin: 0; padding: 0; }
+.fit-list li { display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px dashed var(--border); }
+.fit-list .rk { color: var(--muted); }
+.fit-score { font-family: var(--serif); font-size: 1.5rem; color: var(--accent); }
+.fit-score small { font-size: .7rem; color: var(--muted); }
+.tl-controls { display: flex; flex-wrap: wrap; gap: 18px; align-items: end; padding: 16px 18px; margin-bottom: 14px; }
+.tl-play { display: flex; align-items: center; gap: 12px; flex: 1 1 320px; }
+.tl-play input { flex: 1; accent-color: var(--accent); }
+.tl-year { font-family: var(--serif); font-size: 1.8rem; min-width: 70px; }
+.rb-vs { font-size: .82rem; color: var(--text-2); border-top: 1px dashed var(--border); padding-top: 4px; margin-top: 2px; }
+.rb-vs-title { display: block; font-size: .45em; color: var(--champagne-2); letter-spacing: 0; margin-top: 4px; }
+.rb-chart { margin: 0 0 14px; padding: 14px 16px; }
+.rb-chart svg { width: 100%; height: auto; }
+svg.chart .lbl-s1 { fill: var(--series-1); } svg.chart .lbl-s2 { fill: var(--series-2); } svg.chart .lbl-s3 { fill: var(--muted); }
+.lang-select { margin-left: 18px; background: transparent; color: var(--on-plate-2); border: 1px solid rgb(var(--brass-rgb) / .3); border-radius: 4px; font: inherit; font-size: .72rem; letter-spacing: .04em; padding: 2px 6px; text-transform: none; }
+.lang-select option { color: #111; }
+[dir="rtl"] .mk-bars .val, [dir="rtl"] .rb-foot { text-align: left; }
+[dir="rtl"] .nav-panel { left: auto; right: -8px; }
+[dir="rtl"] .utility a, [dir="rtl"] .lang-select { margin-left: 0; margin-right: 18px; }

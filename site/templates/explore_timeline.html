@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Timeline map: watch the world change since 1990{% endblock %}
+{% block description %}An animated world map of life expectancy, income, internet use, democracy, conflict risk and more, year by year since 1990.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">Explore · animated history</span>
+  <h1>Timeline map</h1>
+  <p class="lede">Watch the world change year by year. Colours use one scale across every year, so a country darkening means it really moved.</p>
+</div>
+<div class="card tl-controls no-print">
+  <label class="rb-field"><span>Indicator</span><select id="tl-ind">{% for t in timeline %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}</select></label>
+  <div class="tl-play"><button class="btn" type="button" id="tl-play">▶ Play</button><input type="range" id="tl-year" min="1990" max="2025" value="2000" aria-label="Year"><b id="tl-label" class="tl-year">2000</b></div>
+</div>
+<div class="map-box">
+  <div class="map" id="tl-map" role="img" aria-label="Animated world map" style="height:520px"></div>
+  <div class="map-tip" aria-hidden="true"></div>
+  <div class="map-legend"><span id="tl-lo"></span><span class="ramp">{% for i in range(7) %}<i style="background:var(--map-{{ i }})"></i>{% endfor %}</span><span id="tl-hi"></span><span class="na"></span> No data</div>
+</div>
+<p class="small muted" style="margin-top:10px">Each country shows its value for the year, or its most recent earlier value from the previous three years. Sources: World Bank WDI, Ember, IPU via World Bank, V-Dem (CC BY-SA 4.0) and this site’s risk index.</p>
+{% endblock %}
+{% block scripts %}<script src="/static/js/timeline.js?v={{ asset_v }}" defer></script>{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% import "geo_macros.html" as g %}
+{% block title %}Crisis tracker: the world's major wars and emergencies{% endblock %}
+{% block description %}Tracking the world's deadliest ongoing wars and crises: deaths per month, events, displacement, UN alignment of the parties and live news.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">Geopolitics · crisis tracker</span>
+  <h1>Crisis tracker</h1>
+  <p class="lede">The world’s major ongoing wars and emergencies, each tracked month by month from UCDP’s verified event data, with displacement, the parties’ UN alignment and live news.</p>
+</div>
+{{ g.subnav(url) }}
+<div class="grid g3">
+  {% for c in crises %}
+  <a class="card link mk-card" href="/geopolitics/crises/{{ c.id }}/">
+    <span class="mk-kicker">Since {{ c.since }}</span>
+    <h3>{{ c.name }}</h3>
+    <div class="mk-big">{{ c.total|fmt(0) }}</div>
+    <div class="small muted">deaths recorded since {{ c.since }} (to {{ c.last_month }})</div>
+    <p class="small" style="margin:10px 0 0">Last 12 months: <b>{{ c.last12|fmt(0) }}</b>{% if c.prev12 %} · {{ '%+.0f'|format(100 * (c.last12 - c.prev12) / c.prev12) }}% on the year before{% endif %}</p>
+    <span class="mk-more">Open tracker →</span>
+  </a>
+  {% endfor %}
+</div>
+<p class="small muted" style="margin-top:12px">Deaths are UCDP best estimates for events located in the countries concerned (and, where named, events of the same conflicts elsewhere). The current year uses UCDP’s preliminary monthly candidate data.</p>
+{{ g.sources(srcs) }}
+{% endblock %}

@@ -6,7 +6,7 @@
 
 {% macro lab_nav(current) %}
 <nav class="lab-nav" aria-label="Lab sections">
-  {% for href, label in [('/lab/', 'Overview'), ('/lab/scatter/', 'Scatter explorer'), ('/lab/correlations/', 'Correlation atlas'), ('/lab/findings/', 'Findings'), ('/lab/data/', 'Use the data')] %}
+  {% for href, label in [('/lab/', 'Overview'), ('/lab/scatter/', 'Scatter explorer'), ('/lab/correlations/', 'Correlation atlas'), ('/lab/findings/', 'Findings'), ('/lab/twins/', 'Time twins'), ('/lab/targets/', 'Years to target'), ('/lab/coverage/', 'Data coverage'), ('/lab/fit/', 'Where would I fit?'), ('/lab/data/', 'Use the data')] %}
   <a href="{{ href }}"{% if href == current %} aria-current="page"{% endif %}>{{ label }}</a>
   {% endfor %}
 </nav>

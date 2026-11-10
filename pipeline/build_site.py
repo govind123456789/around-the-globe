@@ -11,7 +11,7 @@ import markdown
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
 
-from . import beyond, geopolitics, history, lab, live, markets, og, reports, stories, svg
+from . import beyond, geopolitics, history, lab, live, markets, og, reports, standout, stories, svg
 from .build_data import Model
 from .config import CONTENT, DIST, RAW, SITE, load_yaml, site_config
 
@@ -149,7 +149,10 @@ class Site:
         geo = [("Overview", "/geopolitics/", "Conflict, alignment, displacement and risk"),
                ("Live news", "/geopolitics/news/", "Geopolitical headlines from world media, live"),
                ("Weekly briefing", "/geopolitics/briefing/", "What changed this week"),
+               ("Crisis tracker", "/geopolitics/crises/", "Ukraine, Sudan, Gaza, Myanmar and more"),
                ("Conflicts", "/geopolitics/conflicts/", "Deaths in organised violence (UCDP)"),
+               ("Power index", "/geopolitics/power/", "The world's most powerful countries"),
+               ("Sanctions", "/geopolitics/sanctions/", "US sanctions by country (OFAC)"),
                ("Risk index", "/geopolitics/risk/", "Our transparent country risk score"),
                ("UN alignment", "/geopolitics/un-votes/", "Who votes with whom at the UN"),
                ("Displacement", "/geopolitics/displacement/", "Refugees and the internally displaced"),
@@ -158,6 +161,8 @@ class Site:
                ("Relations", "/geopolitics/relations/", "Any two countries: votes, war, refugees, news"),
                ("Watchlist", "/geopolitics/watchlist/", "Follow countries, with RSS feeds")]
         explore = [("Map explorer", "/explore/", "Any indicator on the world map"),
+                   ("Timeline map", "/explore/timeline/", "Watch the world change since 1990"),
+                   ("Where would I fit?", "/lab/fit/", "Countries that match what you value"),
                    ("Topics", "/topics/", "Indicators grouped by theme"),
                    ("Cities", "/cities/", "524 cities over one million people"),
                    ("Universities", "/universities/", "The 2,000 most-cited universities"),
@@ -238,6 +243,8 @@ class Site:
         self.reports_pages()
         self.geo = geopolitics.Geo(self.m, self.countries, self.by_id, self.mk.show)
         self.geopolitics_pages()
+        self.so = standout.Standout(self.m, self.countries, self.by_id)
+        self.standout_pages()
         self.countries_pages()
         self.history_pages()
         self.world_page()
@@ -296,16 +303,69 @@ class Site:
                     n_rankings=len(self.rk), hdi_check=self.m.hdi_check,
                     markets=[h for h in self.mk.hubs if h["id"] != "economy"][:6], n_markets=len(self.mk.hubs))
 
+    def geo_embeds(self, g, crises) -> None:
+        """Small self-contained widgets that journalists and bloggers can put in an iframe."""
+        tpl = self.env.get_template("embed_card.html")
+
+        def write(path, **ctx):
+            out = DIST / "embed" / path / "index.html"
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(tpl.render(**ctx), encoding="utf-8")
+        fy = g.final_year or 2025
+        for r in g.risk:
+            e, c = r["e"], g.country(r["e"]["entity_id"]) or {}
+            lines = [(f"Conflict deaths, {fy - 2}–{fy}", fmt(c.get("deaths3", 0), 0))]
+            if c.get("disp"):
+                lines.append((f"People displaced, {c['disp']['year']}", fmt(c["disp"]["abroad"] + c["disp"]["idps"], 0)))
+            if c.get("power"):
+                lines.append(("Power index rank", f"#{c['power']['rank']} of {c['n_power']}"))
+            write(f"risk/{e['slug']}", title=f"{e['name']}: geopolitical risk", kicker="Geopolitical risk index",
+                  big=f"{r['score']:.0f}", band=r["band"], big_label=f"#{r['rank']} of {len(g.risk)} · 0–100",
+                  chart=svg.sparkline(r["hist"], w=300, h=60, label=f"{e['name']} risk since {r['hist'][0][0]}") if len(r["hist"]) > 1 else "",
+                  lines=lines, link=f"/countries/{e['slug']}/", source="UCDP, World Bank WGI, UNHCR")
+        for c in crises:
+            write(f"crisis/{c['id']}", title=c["name"], kicker="Crisis tracker", big=fmt(c["last12"], 0), band=None,
+                  big_label=f"deaths in the last 12 months (to {c['last_month']})", chart=geopolitics.month_bars(c["monthly"][-36:], w=560, h=160),
+                  lines=[(f"Deaths since {c['since']}", fmt(c["total"], 0))], link=f"/geopolitics/crises/{c['id']}/",
+                  source="UCDP (current year preliminary)")
+
+    def standout_pages(self) -> None:
+        so = self.so
+        rows = sorted(((self.by_id[i], t) for i, t in so.twins.items()), key=lambda r: r[0]["name"])
+        self.render("/lab/twins/", "lab_twins.html", rows=rows)
+        self.render("/lab/targets/", "lab_targets.html", tables=so.target_tables())
+        cov = sorted(((self.by_id[i], c) for i, c in so.coverage.items()), key=lambda r: r[1]["rank"])
+        least = [r for r in cov if so.pop.get(r[0]["entity_id"], 0) >= 1e6][-12:][::-1]
+        self.render("/lab/coverage/", "lab_coverage.html", rows=cov, least=least, total=cov[0][1]["total"] if cov else 0,
+                    cov_map={e["entity_id"]: round(c["share"], 1) for e, c in cov})
+        fit = so.fit_data(self.geo.risk_by)
+        (DIST / "lab" / "fit").mkdir(parents=True, exist_ok=True)
+        (DIST / "lab" / "fit" / "data.json").write_text(json.dumps(fit, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        self.render("/lab/fit/", "lab_fit.html")
+        risk_hist = {r["e"]["entity_id"]: [[y, v] for y, v in r["hist"]] for r in self.geo.risk}
+        timeline = so.timeline_files(DIST / "explore" / "timeline" / "data", risk_hist)
+        self.render("/explore/timeline/", "explore_timeline.html", timeline=timeline)
+        for url, t, s in (("/lab/twins/", "Time twins", "Which country's past matches each country today"),
+                          ("/lab/targets/", "Years to target", "When each country reaches the goal at today's pace"),
+                          ("/lab/coverage/", "How well do we know each country?", "Data coverage by country"),
+                          ("/lab/fit/", "Where would I fit?", "Countries that match what you value"),
+                          ("/explore/timeline/", "Timeline map", "Watch the world change since 1990")):
+            self.search.append({"t": t, "u": url, "k": "Tool", "s": s})
+
     def geopolitics_pages(self) -> None:
         g = self.geo
         if g.unmatched:
             print(f"  geopolitics: unmatched UCDP names: {sorted(g.unmatched)[:12]}")
         ov, al, dp, br = g.overview(), g.alignment(), g.displacement(), g.briefing()
-        srcs = {s: self.m.sources[s] for s in ("ucdp", "unvotes", "unhcr", "gdelt", "wb-wgi", "fas") if s in self.m.sources}
+        srcs = {s: self.m.sources[s] for s in ("ucdp", "unvotes", "unhcr", "gdelt", "wb-wgi", "fas", "ofac") if s in self.m.sources}
         forces = sorted(((e, *lt[:2]) for e in self.countries if (lt := self.m.latest(e["entity_id"], "armed-forces", min_year=2015))),
                         key=lambda x: -x[2]) if "armed-forces" in self.m.indicators else []
-        srcs_all = {s: self.m.sources[s] for s in ("ucdp", "unvotes", "unhcr", "gdelt", "wb-wgi", "fas") if s in self.m.sources}
-        common = dict(blocs=g.blocs, as_of=g.blocs_as_of, treaties=g.treaties, nuclear=g.nuclear_rows(), nuclear_src=g.nuclear,
+        srcs_all = {s: self.m.sources[s] for s in ("ucdp", "unvotes", "unhcr", "gdelt", "wb-wgi", "fas", "ofac") if s in self.m.sources}
+        crises = g.crises()
+        sanction_rows = sorted(((self.by_id[i], v) for i, v in g.sanctions["by_country"].items() if i in self.by_id), key=lambda x: -x[1]["n"])
+        common_extra = dict(crises=crises, power=g.power, power_weights=geopolitics.POWER_WEIGHTS, sanctions=g.sanctions,
+                            sanction_rows=sanction_rows, sanctions_map={e["entity_id"]: v["n"] for e, v in sanction_rows}, alerts=g.alerts)
+        common = dict(**common_extra, blocs=g.blocs, as_of=g.blocs_as_of, treaties=g.treaties, nuclear=g.nuclear_rows(), nuclear_src=g.nuclear,
                       forces=forces, by_id=self.by_id, risers=g.risers, fallers=g.fallers, risk_year=g.risk_year,
                       events=g.events, risk_from=geopolitics.RISK_FROM,
                       ov=ov, al=al, dp=dp, risk=g.risk, risk_map={r["e"]["entity_id"]: round(r["score"], 1) for r in g.risk}, weights=geopolitics.RISK_WEIGHTS, srcs=srcs, types=geopolitics.TYPES,
@@ -325,7 +385,10 @@ class Site:
                  ("/geopolitics/relations/", "geo_relations.html", "Country relations", "Any two countries"),
                  ("/geopolitics/blocs/", "geo_blocs.html", "Alliances and blocs", "NATO, EU, BRICS, SCO, G20 compared"),
                  ("/geopolitics/defence/", "geo_defence.html", "Defence and nuclear forces", "Warheads, armed forces, treaties"),
-                 ("/geopolitics/watchlist/", "geo_watchlist.html", "Watchlist", "Follow countries")]
+                 ("/geopolitics/watchlist/", "geo_watchlist.html", "Watchlist", "Follow countries"),
+                 ("/geopolitics/crises/", "geo_crises.html", "Crisis tracker", "Major wars and emergencies"),
+                 ("/geopolitics/power/", "geo_power.html", "Power index", "Most powerful countries"),
+                 ("/geopolitics/sanctions/", "geo_sanctions.html", "US sanctions by country", "OFAC SDN list")]
         for url, tpl, t, s in pages:
             self.render(url, tpl, og_image="/og/geopolitics.png", br=br, countries=self.countries, **common)
             self.search.append({"t": t, "u": url, "k": "Geopolitics", "s": s,
@@ -339,6 +402,10 @@ class Site:
             self.search.append({"t": f"{ea['name']} and {eb['name']}", "u": f"/geopolitics/relations/{ea['slug']}-and-{eb['slug']}/",
                                 "k": "Relations", "s": "UN votes, conflict, refugees and news",
                                 "o": [f"{ea['name']} {eb['name']} relations", f"{ea['name']} vs {eb['name']}"]})
+        for c in crises:
+            self.render(f"/geopolitics/crises/{c['id']}/", "geo_crisis.html", og_image="/og/geopolitics.png", c=c, crises=crises, srcs=srcs)
+            self.search.append({"t": c["name"], "u": f"/geopolitics/crises/{c['id']}/", "k": "Crisis", "s": "Deaths, events, displacement, news",
+                                "o": [c["name"] + " deaths", c["name"] + " news", "war tracker"]})
         for b in g.blocs:
             rows = [{"e": e, "people": (self.m.latest(e["entity_id"], "population") or (0, None, ""))[1],
                      "gdp": (self.m.latest(e["entity_id"], "gdp", min_year=2015) or (0, None, ""))[1],
@@ -349,6 +416,7 @@ class Site:
                         blocs=g.blocs, as_of=g.blocs_as_of, al=al, powers=geopolitics.POWER_NAMES, srcs=srcs_all)
             self.search.append({"t": b["full"], "u": f"/geopolitics/blocs/{b['id']}/", "k": "Bloc", "s": b["kind"],
                                 "o": [b["name"], f"{b['name']} members", f"{b['name']} countries"]})
+        self.geo_embeds(g, crises)
         g.write_files(DIST / "geopolitics" / "data")
         (DIST / "geopolitics" / "data" / "events.json").write_text(json.dumps(g.events, separators=(",", ":")), encoding="utf-8")
         self.feeds(g, br)
@@ -376,6 +444,10 @@ class Site:
                          f"against {fmt(c['same'], 0)} in the same months of {br['final_year']}.")
         if br.get("attention"):
             lines.append("Rising in world news: " + ", ".join(a["e"]["name"] for a in br["attention"][:3]) + ".")
+        feed("alerts.xml", f"{self.cfg['name']}: risk alerts", "/geopolitics/risk/",
+             "Countries whose risk rose sharply or whose conflict deaths jumped, from verified data.",
+             [(f"Alert: {a['e']['name']}", f"/countries/{a['e']['slug']}/", a["text"]) for a in g.alerts] or
+             [("No alerts this week", "/geopolitics/risk/", "No country crossed the alert thresholds in this release.")])
         feed("briefing.xml", f"{self.cfg['name']}: weekly world briefing", "/geopolitics/briefing/",
              "What changed in world affairs this week, from verified data.",
              [(f"The world this week ({self.m.release})", "/geopolitics/briefing/", " ".join(lines) or "Weekly briefing.")])
@@ -384,7 +456,7 @@ class Site:
                  [(r["title"], f"/reports/{r['id']}/", " ".join(r["findings"][:3])) for r in self.rp.reports])
         for e in self.countries:
             c = g.country(e["entity_id"]) or {}
-            parts = []
+            parts = [f"ALERT: {a['text']}" for a in g.alerts_by.get(e["entity_id"], [])]
             if c.get("risk"):
                 r = c["risk"]
                 parts.append(f"Geopolitical risk index {r['score']:.0f} ({r['band']}, #{r['rank']} of {c['n_risk']}).")
@@ -409,9 +481,18 @@ class Site:
                                    if s in self.m.sources})
             self.search.append({"t": r["title"], "u": f"/reports/{r['id']}/", "k": "Report", "s": r["kicker"],
                                 "o": ["report", "global trends", "analysis"]})
+        regions = rp.region_reports()
+        for r in regions:
+            r["dek"] = (f"How the {r['n']} countries of {r['g']['name']} compare with the world, who leads the region "
+                        f"and who has moved fastest, written from release {self.m.release}.")
+            self.render(f"/reports/regions/{r['id']}/", "report.html", r=r, others=[x for x in regions if x["id"] != r["id"]],
+                        base_url="/reports/regions/",
+                        src_names={s: self.m.sources[s] for s in ("wb-wdi", "ember") if s in self.m.sources})
+            self.search.append({"t": r["title"], "u": f"/reports/regions/{r['id']}/", "k": "Report", "s": "Regional report"})
+        self.region_reports = regions
         rp.builder_files(self.mk.hubs, DIST / "reports" / "data")
         self.render("/reports/build/", "report_builder.html", countries=self.countries, hubs=self.mk.hubs)
-        self.render("/reports/", "reports_index.html", reports=rp.reports)
+        self.render("/reports/", "reports_index.html", reports=rp.reports, regions=self.region_reports)
         self.search.append({"t": "Reports", "u": "/reports/", "k": "Reports", "s": "Global trend reports",
                             "o": ["analysis", "custom report", "country report"]})
         self.search.append({"t": "Build a country report", "u": "/reports/build/", "k": "Reports",
@@ -562,7 +643,8 @@ class Site:
                 lines.append(f"Human Development Index {key['hdi'][1]:.3f}")
             og.card(DIST / "og" / "countries" / f"{c['slug']}.png", self.cfg["name"], c["region"], c["name"], lines)
             self.render(f"/countries/{c['slug']}/", "country.html", og_image=f"/og/countries/{c['slug']}.png", c=c, key=key, dims=self.country_dims(c),
-                        positions=self.positions(eid), peers=peers, mk=self.mk.country_shares(eid), geo=self.geo.country(eid),
+                        positions=self.positions(eid), peers=peers, mk=self.mk.country_shares(eid), geo=self.geo.country(eid), so_twins=self.so.twins.get(eid),
+                        so_targets=self.so.targets.get(eid, []), so_cov=self.so.coverage.get(eid),
                         geo_powers=geopolitics.POWER_NAMES, region=self.by_id[c["region_id"]],
                         income=self.by_id.get(c["income_id"]) if c["income_id"] else None,
                         cap=cap, cap_row=cr, pillar_bars=pb, composites=composites, charts=charts, pair_links=pair_links,

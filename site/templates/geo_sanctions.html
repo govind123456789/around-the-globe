@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% import "geo_macros.html" as g %}
+{% block title %}US sanctions by country (OFAC SDN list){% endblock %}
+{% block description %}How many people, companies, vessels and aircraft on the US Treasury's sanctions list are located in each country, and under which sanctions programmes.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">Geopolitics · sanctions</span>
+  <h1>US sanctions by country</h1>
+  <p class="lede">The US Treasury’s Specially Designated Nationals list names {{ sanctions.total|fmt(0) }} people, companies, vessels and aircraft whose assets are blocked. Here they are counted by the country of their listed address, with the main sanctions programmes.</p>
+</div>
+{{ g.subnav(url) }}
+<div class="split">
+  <div>{{ m.map("sanctions-map", sanctions_map, "US-sanctioned entries with an address here") }}</div>
+  <div class="card"><h3>Largest programmes</h3><ol class="mk-list">{% for p, n in sanctions.programs[:14] %}<li><span class="mono small">{{ p }}</span><span class="mono">{{ n|fmt(0) }}</span></li>{% endfor %}</ol><p class="small muted" style="margin:8px 0 0">Programme codes are OFAC’s, e.g. RUSSIA-EO14024 (Russia’s war on Ukraine), SDGT (terrorism), IRAN, CYBER2.</p></div>
+</div>
+<div class="section-head"><h2>Countries with the most designations</h2></div>
+<div class="table-wrap"><table data-sortable>
+  <thead><tr><th class="sortable" data-type="text">Country of address</th><th class="num sortable" data-type="num">Entries</th><th class="num sortable" data-type="num">Individuals</th><th>Main programmes</th></tr></thead>
+  <tbody>{% for e, v in sanction_rows %}<tr><td>{{ flag(e.entity_id) }}<a href="/countries/{{ e.slug }}/">{{ e.name }}</a></td><td class="num" data-v="{{ v.n }}">{{ v.n|fmt(0) }}</td><td class="num" data-v="{{ v.individuals }}">{{ v.individuals|fmt(0) }}</td><td class="small mono">{% for p, n in v.programs[:3] %}{{ p }} ({{ n }}){% if not loop.last %}, {% endif %}{% endfor %}</td></tr>{% endfor %}</tbody>
+</table></div>
+<p class="small muted" style="margin-top:10px">An address in a country does not mean that country’s government is sanctioned: listed entries include firms and people abroad helping sanctions evasion. One entry can have addresses in several countries. Only US sanctions are shown; UN, EU and UK lists differ.</p>
+{{ g.sources(srcs) }}
+{% endblock %}

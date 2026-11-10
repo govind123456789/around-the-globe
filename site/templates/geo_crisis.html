@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% import "geo_macros.html" as g %}
+{% block title %}{{ c.name }}: deaths, events, displacement and live news{% endblock %}
+{% block description %}{{ c.blurb }} Deaths per month, events of the last year, displacement and live news.{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/geopolitics/">Geopolitics</a> › <a href="/geopolitics/crises/">Crisis tracker</a></p>
+<div class="page-head">
+  <span class="eyebrow">Crisis tracker · since {{ c.since }}</span>
+  <h1>{{ c.name }}</h1>
+  <p class="lede">{{ c.blurb }}</p>
+  <div class="mk-actions no-print"><button class="btn ghost sm" type="button" data-copy='<iframe src="{{ site.base_url }}/embed/crisis/{{ c.id }}/" width="100%" height="340" style="border:1px solid #e0d8c3;border-radius:12px" loading="lazy" title="{{ c.name }} tracker"></iframe>'>Embed this tracker</button></div>
+</div>
+{{ g.subnav(url) }}
+<div class="stats mk-kpis">
+  <div class="card stat"><span class="l">Deaths since {{ c.since }}</span><span class="v">{{ c.total|fmt(0) }}</span><span class="small muted">to {{ c.last_month }} · UCDP</span></div>
+  <div class="card stat"><span class="l">Last 12 months</span><span class="v">{{ c.last12|fmt(0) }}</span><span class="small muted">{% if c.prev12 %}{{ '%+.0f'|format(100 * (c.last12 - c.prev12) / c.prev12) }}% on the 12 months before{% endif %}</span></div>
+  {% for r in c.risk %}<div class="card stat"><span class="l">{{ r.e.name }} risk index</span><span class="v">{{ '%.0f'|format(r.score) }}</span><span class="small muted">{{ r.band }} · #{{ r.rank }}</span></div>{% endfor %}
+</div>
+<div class="card"><h3>Deaths per month</h3>{{ c.chart|safe }}<p class="small muted" style="margin:6px 0 0">Months of the current year are preliminary and revised by UCDP.</p></div>
+
+<div class="split" style="margin-top:18px">
+  <div class="map-box geo-event-box">
+    <div class="map" data-event-map data-filter="{{ c.countries|join(',') }}" data-conflicts="{{ c.conflicts|map(attribute=0)|join('|') }}" role="img" aria-label="Events of the last 12 months" style="height:440px"></div>
+    <div class="map-tip" aria-hidden="true"></div>
+    <div class="map-legend geo-legend"><span><i style="background:#a8432e"></i>State-based</span><span><i style="background:#c07a28"></i>Non-state</span><span><i style="background:#5a2a6e"></i>One-sided</span></div>
+  </div>
+  <div class="card">
+    <h3>Conflicts involved since {{ c.since }}</h3>
+    <ol class="mk-list">{% for name, d in c.conflicts %}<li><span>{{ name }}</span><span class="mono">{{ d|fmt(0) }}</span></li>{% endfor %}</ol>
+    {% if c.pairs %}<h3 style="margin-top:16px">UN vote agreement between the parties</h3><ol class="mk-list">{% for p in c.pairs %}<li><span><a href="/geopolitics/relations/?a={{ p.a.entity_id }}&amp;b={{ p.b.entity_id }}">{{ p.a.name }} · {{ p.b.name }}</a></span><span class="mono">{{ '%.0f'|format(100 * p.v) }}% · {{ p.year }}</span></li>{% endfor %}</ol>{% endif %}
+  </div>
+</div>
+
+{% if c.disp %}
+<div class="section-head"><h2>People displaced</h2><span class="muted small">UNHCR · refugees, asylum seekers and internally displaced</span></div>
+<div class="grid g3">{% for d in c.disp %}<div class="card"><h3>{{ flag(d.e.entity_id) }}{{ d.e.name }}</h3><ol class="mk-list">{% for y, v in d.series[-6:]|reverse %}<li><span>{{ y }}</span><span class="mono">{{ v|fmt(0) }}</span></li>{% endfor %}</ol></div>{% endfor %}</div>
+{% endif %}
+
+<div class="section-head"><h2>Live news</h2></div>
+{{ g.news(query=c.news, max=20, tabs=False) }}
+{{ g.news_note() }}
+<div class="section-head"><h2>Other crises</h2><a href="/geopolitics/crises/">All crises →</a></div>
+<nav class="mk-others">{% for x in crises if x.id != c.id %}<a href="/geopolitics/crises/{{ x.id }}/">{{ x.name }}</a>{% endfor %}</nav>
+{{ g.sources(srcs) }}
+{% endblock %}
+{% block scripts %}<script src="/static/js/geo-news.js?v={{ asset_v }}" defer></script><script src="/static/js/geo-map.js?v={{ asset_v }}" defer></script>{% endblock %}

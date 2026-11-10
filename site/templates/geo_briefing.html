@@ -20,6 +20,13 @@
   {% if br.displacement %}{% set d = br.displacement[0] %}{% set n.i = n.i + 1 %}<li class="rp-finding"><span class="rp-n">{{ '%02d'|format(n.i) }}</span><span>The largest rise in displacement in {{ br.unhcr_year }}: {{ d.e.name }}, to {{ d.now|fmt(0) }} people from {{ d.then|fmt(0) }}.</span></li>{% endif %}
 </ol></section>
 
+{% if alerts %}
+<section class="rp-section"><div class="rp-label"><span class="rp-n">!</span>Alerts · <a href="/feeds/alerts.xml">RSS</a></div>
+  <h2>Countries to watch</h2>
+  <ol class="mk-list">{% for a in alerts %}<li><span>{{ flag(a.e.entity_id) }}<a href="/countries/{{ a.e.slug }}/">{{ a.e.name }}</a></span><span class="small">{{ a.text }}</span></li>{% endfor %}</ol>
+</section>
+{% endif %}
+
 {% if br.conflict %}
 <section class="rp-section"><div class="rp-label"><span class="rp-n">01</span>Conflict · UCDP preliminary events</div>
   <h2>Fighting in {{ br.conflict.year }} against {{ br.final_year }}</h2>

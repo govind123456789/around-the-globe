@@ -73,7 +73,7 @@ markets:
     blurb: "Farm, forestry and fishing output, cereal harvests and yields, fertilizer, farm jobs, food exports and hunger."
     headline: agriculture-output
     additive: true
-    indicators: [agriculture-output, agriculture-gdp, cereal-production, cereal-yield, agri-employment, fertilizer-use, food-exports, forest-area, undernourishment]
+    indicators: [agriculture-output, agriculture-gdp, cereal-production, cereal-yield, agri-employment, fertilizer-use, food-exports, forest-area, undernourishment, food-insecurity, severe-food-insecurity, dietary-adequacy]
     rankings: []
 
   - id: services
@@ -100,7 +100,7 @@ markets:
     blurb: "What countries spend on health, how much of it patients pay themselves, doctors and hospital beds, and the results."
     headline: health-spending-gdp
     additive: false
-    indicators: [health-spending-gdp, health-spending, out-of-pocket, physicians, hospital-beds, life-expectancy, aged-65]
+    indicators: [health-spending-gdp, health-spending, out-of-pocket, physicians, hospital-beds, life-expectancy, aged-65, adult-obesity, anaemia-women]
     rankings: [life-expectancy]
 
   - id: labour
@@ -109,5 +109,5 @@ markets:
     blurb: "The size of the workforce, unemployment, women at work, where people work, and wages in OECD countries."
     headline: labour-force
     additive: true
-    indicators: [labour-force, unemployment, youth-unemployment, female-labour, agri-employment, industry-employment, services-employment, average-wage]
+    indicators: [labour-force, unemployment, youth-unemployment, youth-neet, informal-employment, hours-worked, female-labour, agri-employment, industry-employment, services-employment, average-wage]
     rankings: [youth-unemployment, average-wage]

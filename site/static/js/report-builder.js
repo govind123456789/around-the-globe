@@ -39,8 +39,9 @@
   const band = p => p == null ? "" : p <= .25 ? "top quarter" : p >= .75 ? "bottom quarter" : p <= .5 ? "upper half" : "lower half";
   const lcName = n => /^[A-Z]{2}/.test(n) ? n : n[0].toLowerCase() + n.slice(1);
 
-  function item(id, r, d) {
+  function item(id, r, d, vs) {
     const m = meta.inds[id], [y, v, rk, n, y0, v0, rv, sp] = r;
+    const o = vs && vs.ind[id];
     const ch = change(v0, v, m), w = m.w;
     let cmp = "";
     if (m.add && w && w[0] === y && w[1] > 0) cmp = `${(100 * v / w[1]) < 0.1 ? "<0.1" : (100 * v / w[1]).toFixed(1)}% of world`;
@@ -53,6 +54,7 @@
       <div class="rb-val num-up">${fmt(v, m)}</div>
       <div class="rb-meta">${y}${rankTxt ? " · " + rankTxt : ""}${p != null && m.dir !== "neutral" ? ` · <b>${band(p)}</b>` : ""}</div>
       <div class="rb-cmp">${[cmp, reg].filter(Boolean).join(" · ")}</div>
+      ${o ? `<div class="rb-vs">${esc(vs.name)}: <b>${fmt(o[1], m)}</b> <span class="muted">${o[0]}${o[2] ? " · #" + o[2] : ""}</span></div>` : ""}
       <div class="rb-foot">${spark(sp)}${ch ? `<span class="rb-ch${m.dir === "neutral" ? "" : ((ch.x > 0) === (m.dir === "higher_better") ? " up" : " down")}">${ch.t} <small>since ${y0}</small></span>` : ""}</div>
     </div>`;
   }
@@ -71,15 +73,32 @@
     if (bottom.length) parts.push(`Weakest: ${bottom.slice(0, 2).map(([id]) => esc(lcName(meta.inds[id].n))).join(" and ")}.`);
     return parts.join(" ");
   }
+  function lineChart(series, m) {
+    const pts = series.flatMap(s => s.pts);
+    if (pts.length < 3) return "";
+    const W = 640, H = 220, L = 54, B = 24, T = 10, R = 120;
+    const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(0, Math.min(...ys)), y1 = Math.max(...ys) * 1.05 || 1;
+    const X = x => L + (x - x0) / ((x1 - x0) || 1) * (W - L - R), Y = v => T + (1 - (v - y0) / ((y1 - y0) || 1)) * (H - T - B);
+    const grid = [0, .5, 1].map(f => { const v = y0 + f * (y1 - y0); return `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" class="grid"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" class="tick">${esc(compact(v, m.d))}</text>`; }).join("");
+    const years = [x0, x1].map(y => `<text x="${X(y)}" y="${H - 6}" text-anchor="middle" class="tick">${y}</text>`).join("");
+    const lines = series.filter(s => s.pts.length > 1).map((s, k) => {
+      const last = s.pts[s.pts.length - 1];
+      return `<polyline points="${s.pts.map(p => `${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ")}" class="line s${k + 1}" fill="none"/>` +
+             `<text x="${X(last[0]) + 6}" y="${Y(last[1]) + 4}" class="tick lbl-s${k + 1}">${esc(s.label)}</text>`;
+    }).join("");
+    return `<figure class="rb-chart card"><figcaption class="small muted">${esc(m.n)} since 2000</figcaption><svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(m.n)} over time">${grid}${years}${lines}</svg></figure>`;
+  }
   const ordinal = n => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th");
 
   async function build() {
-    const fd = new FormData(form), c = fd.get("c"), topics = fd.getAll("t");
+    const fd = new FormData(form), c = fd.get("c"), topics = fd.getAll("t"), vsId = fd.get("vs");
     if (!topics.length) { out.innerHTML = `<p class="muted">Pick at least one topic.</p>`; return; }
-    history.replaceState(null, "", `?c=${c}&t=${topics.join(",")}`);
+    history.replaceState(null, "", `?c=${c}&t=${topics.join(",")}${vsId ? "&vs=" + vsId : ""}`);
     out.innerHTML = `<p class="muted">Building the report…</p>`;
     meta = meta || await fetch("/reports/data/meta.json").then(r => r.json());
     const d = await fetch(`/reports/data/${c}.json`).then(r => r.json());
+    const vs = vsId && vsId !== c ? await fetch(`/reports/data/${vsId}.json`).then(r => r.json()) : null;
     const chosen = meta.topics.filter(t => topics.includes(t.id));
     const all = chosen.flatMap(t => t.inds.filter(i => d.ind[i]).map(i => [i, d.ind[i]]));
     const uniq = [...new Map(all).entries()];
@@ -92,7 +111,7 @@
       <article class="rb-report">
         <header class="rb-cover">
           <span class="eyebrow">Country report · ${today}</span>
-          <h2>${esc(d.name)}</h2>
+          <h2>${esc(d.name)}${vs ? ` <span class="rb-vs-title">compared with ${esc(vs.name)}</span>` : ""}</h2>
           <p>${d.region ? esc(d.region) + " · " : ""}${chosen.map(t => esc(t.name)).join(", ")}</p>
           <div class="mk-actions no-print"><button class="btn sm" type="button" data-print>Save as PDF</button><button class="btn ghost sm" type="button" data-copy-link>Copy link</button><a class="btn ghost sm" href="/countries/${d.slug}/">Full country profile</a></div>
         </header>
@@ -105,7 +124,11 @@
           if (!rows.length) return "";
           return `<section class="rb-topic-sec rp-section"><div class="section-head"><h2>${esc(t.name)}</h2><a class="no-print" href="/markets/${t.id}/">Market page →</a></div>
             <p class="rb-sum">${topicSummary(d, t, rows)}</p>
-            <div class="rb-grid">${rows.map(([id, r]) => item(id, r, d)).join("")}</div></section>`;
+            ${(() => { const [id, r] = rows[0], m = meta.inds[id]; const ser = [{ label: d.name, pts: r[7] || [] }];
+                       if (vs && vs.ind[id]) ser.push({ label: vs.name, pts: vs.ind[id][7] || [] });
+                       if (!m.add && m.ws && m.ws.length) ser.push({ label: "World", pts: m.ws });
+                       return lineChart(ser, m); })()}
+            <div class="rb-grid">${rows.map(([id, r]) => item(id, r, d, vs)).join("")}</div></section>`;
         }).join("")}
         <p class="small muted">Ranks compare the latest value of each country with data from the last five years, best first (largest first for sizes). Changes compare with the value about ten years earlier. Regional figures are population-weighted averages. Data: release of this site’s open data from the World Bank, Ember, OECD, UNDP and others; see each indicator for its source and licence.</p>
       </article>`;
@@ -122,6 +145,7 @@
     const sel = document.getElementById("rb-country");
     if ([...sel.options].some(o => o.value === q.get("c"))) sel.value = q.get("c");
     const ts = (q.get("t") || "").split(",");
+    if (q.get("vs")) form.vs.value = q.get("vs");
     if (ts[0]) form.querySelectorAll("[name=t]").forEach(x => { x.checked = ts.includes(x.value); });
     build().catch(() => {});
   }

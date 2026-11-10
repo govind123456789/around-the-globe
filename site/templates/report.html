@@ -17,6 +17,17 @@
   </ol>
 </section>
 
+{% if r.table %}
+<section class="rp-section">
+  <div class="rp-label"><span class="rp-n">00</span>Region against the world</div>
+  <h2>{{ r.g.name }} against the world average</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Measure</th><th class="num">{{ r.g.name }}</th><th class="num">World</th><th></th></tr></thead>
+    <tbody>{% for t in r.table %}<tr><td><a href="/data/indicators/{{ t.ind.id }}/">{{ t.ind.name }}</a></td><td class="num"><b>{{ t.region }}</b></td><td class="num">{{ t.world }}</td><td class="small {{ 'up' if t.better else 'down' if t.better is sameas false else 'muted' }}">{{ 'ahead' if t.better else 'behind' if t.better is sameas false else '' }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  <p class="small muted">Regional values weight each country by its population (totals are summed); world values are the World Bank’s or Ember’s own world figures.</p>
+</section>
+{% endif %}
 {% for s in r.sections %}
 <section class="rp-section" id="s{{ loop.index }}">
   <div class="rp-label"><span class="rp-n">{{ '%02d'|format(loop.index) }}</span>{{ s.ind.name }}</div>
@@ -53,5 +64,5 @@
 </section>
 
 <div class="section-head no-print"><h2>More reports</h2><a href="/reports/">All reports →</a></div>
-<nav class="mk-others no-print" aria-label="Other reports">{% for x in others %}<a href="/reports/{{ x.id }}/">{{ x.title }}</a>{% endfor %}</nav>
+<nav class="mk-others no-print" aria-label="Other reports">{% for x in others %}<a href="{{ base_url or '/reports/' }}{{ x.id }}/">{{ x.title }}</a>{% endfor %}</nav>
 {% endblock %}

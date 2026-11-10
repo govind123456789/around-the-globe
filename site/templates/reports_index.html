@@ -30,4 +30,8 @@
   </a>
   {% endfor %}
 </div>
+{% if regions %}
+<div class="section-head"><h2>Regional reports</h2><span class="muted small">{{ regions|length }} regions</span></div>
+<div class="grid g3">{% for r in regions %}<a class="card link rp-card" href="/reports/regions/{{ r.id }}/"><span class="mk-kicker">Region · {{ r.n }} countries</span><h3>{{ r.g.name }}</h3><ul class="rp-preview">{% for f in r.findings[:2] %}<li>{{ f }}</li>{% endfor %}</ul><span class="mk-more">Read the report →</span></a>{% endfor %}</div>
+{% endif %}
 {% endblock %}

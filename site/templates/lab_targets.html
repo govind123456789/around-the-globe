@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% import "lab_macros.html" as lm %}
+{% block title %}Years to target: when will each country get there at today's pace?{% endblock %}
+{% block description %}At the pace of the last ten years, when will each country reach universal electricity, clean water, internet access, a life expectancy of 80 and the UN goal for child deaths?{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">The Lab · years to target</span>
+  <h1>Years to target</h1>
+  <p class="lede">If each country keeps the straight-line pace of its last ten years, when does it reach the goal? A plain extrapolation, not a forecast: it shows how far the current pace is from the goal, especially against the UN’s 2030 deadline.</p>
+</div>
+{{ lm.lab_nav('/lab/targets/') }}
+{% for t in tables %}
+<div class="section-head"><h2>{{ t.label }}</h2><span class="muted small">{{ t.achieved }} countries already there · {{ t.on_track|length }} on track for 2030 · {{ t.slow|length }} later · {{ t.off|length }} stalled or going backwards</span></div>
+<div class="grid g3">
+  <div class="card"><h3>On track by 2030</h3><ol class="mk-list">{% for e, r in t.on_track[:10] %}<li><span>{{ flag(e.entity_id) }}<a href="/countries/{{ e.slug }}/">{{ e.name }}</a></span><span class="mono">{{ r.year }}</span></li>{% else %}<li class="small muted">None</li>{% endfor %}</ol></div>
+  <div class="card"><h3>After 2030</h3><ol class="mk-list">{% for e, r in t.slow[:10] %}<li><span>{{ flag(e.entity_id) }}<a href="/countries/{{ e.slug }}/">{{ e.name }}</a></span><span class="mono">{{ r.year }}</span></li>{% else %}<li class="small muted">None</li>{% endfor %}</ol>{% if t.slow|length > 10 %}<p class="small muted">and {{ t.slow|length - 10 }} more</p>{% endif %}</div>
+  <div class="card"><h3>Stalled or going backwards</h3><ol class="mk-list">{% for e, r in t.off[:10] %}<li><span>{{ flag(e.entity_id) }}<a href="/countries/{{ e.slug }}/">{{ e.name }}</a></span><span class="small">{{ r.value|fmt(r.ind.decimals, r.ind.unit) }}{% if r.ind.unit.startswith('%') %}%{% endif %}</span></li>{% else %}<li class="small muted">None</li>{% endfor %}</ol></div>
+</div>
+{% endfor %}
+<p class="small muted" style="margin-top:12px">Method: ordinary least squares on the values of the last ten years (at least six), extended to the target. Data: World Bank WDI (CC BY 4.0).</p>
+{% endblock %}

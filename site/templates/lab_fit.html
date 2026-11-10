@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% import "lab_macros.html" as lm %}
+{% block title %}Where would I fit? Find countries that match what you value{% endblock %}
+{% block description %}Choose what matters to you, from income and safety to clean air and political freedom, and see which countries match best, with the data behind each match.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">The Lab · where would I fit?</span>
+  <h1>Where would I fit?</h1>
+  <p class="lede">Move the sliders for what matters to you. Countries are scored by where they rank on each thing you care about, weighted by how much you care. Everything runs in your browser.</p>
+</div>
+{{ lm.lab_nav('/lab/fit/') }}
+<div class="split fit-split">
+  <form class="card fit-form" id="fit-form" aria-label="What matters to you">
+    <h3>What matters to you?</h3>
+    <div id="fit-sliders"><p class="small muted">Loading…</p></div>
+    <p class="small muted" style="margin:12px 0 0">0 = doesn’t matter, 3 = very important.</p>
+  </form>
+  <div id="fit-out" aria-live="polite"></div>
+</div>
+<p class="small muted" style="margin-top:12px">Each factor is a country’s rank among countries of a million people or more (top = 1, bottom = 0) on the latest data since 2015, from the World Bank, Transparency International, Ember and this site’s risk index. A match score is the weighted average of those ranks. This is a starting point for reading, not advice on where to move.</p>
+{% endblock %}
+{% block scripts %}<script src="/static/js/fit.js?v={{ asset_v }}" defer></script>{% endblock %}

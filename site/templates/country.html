@@ -113,12 +113,15 @@
 {% endif %}
 
 {% if geo %}
-<div class="section-head"><h2>Geopolitics</h2><span><button type="button" class="btn ghost sm" data-watch="{{ c.entity_id }}">☆ Watch</button> <a href="/geopolitics/">Geopolitics hub →</a></span></div>
+<div class="section-head"><h2>Geopolitics</h2><span><button type="button" class="btn ghost sm" data-watch="{{ c.entity_id }}">☆ Watch</button>{% if geo.risk %} <button class="btn ghost sm" type="button" data-copy='<iframe src="{{ site.base_url }}/embed/risk/{{ c.slug }}/" width="100%" height="330" style="border:1px solid #e0d8c3;border-radius:12px" loading="lazy" title="{{ c.name }} geopolitical risk"></iframe>'>Embed</button>{% endif %} <a href="/geopolitics/">Geopolitics hub →</a></span></div>
 {% if geo.blocs %}<div class="geo-chips">{% for b in geo.blocs %}<a class="chip" href="/geopolitics/blocs/{{ b.id }}/">{{ b.name }}{% if b.status %} · {{ b.status }}{% endif %}</a>{% endfor %}</div>{% endif %}
 <div class="grid g2 geo-country">
   <div class="card">
     <ol class="mk-list">
       {% if geo.risk %}<li><span><a href="/geopolitics/risk/">Geopolitical risk index</a></span><span class="mono"><b>{{ '%.0f'|format(geo.risk.score) }}</b> · {{ geo.risk.band }} · #{{ geo.risk.rank }} of {{ geo.n_risk }}</span></li>{% endif %}
+      {% for a in geo.alerts %}<li class="geo-alert"><span><b>Alert</b> · {{ a.text }}</span><span></span></li>{% endfor %}
+      {% if geo.power %}<li><span><a href="/geopolitics/power/">Power index</a></span><span class="mono"><b>{{ '%.0f'|format(geo.power.score) }}</b> · #{{ geo.power.rank }} of {{ geo.n_power }}</span></li>{% endif %}
+      {% if geo.sanctions %}<li><span><a href="/geopolitics/sanctions/">US-sanctioned entries with an address here</a></span><span class="mono">{{ geo.sanctions.n|fmt(0) }}</span></li>{% endif %}
       {% if geo.risk and geo.risk.spark %}<li><span>Risk since {{ geo.risk.hist[0][0] }}{% if geo.risk.change5 is not none %} ({{ 'unchanged' if geo.risk.change5|abs < 0.5 else '%+.0f'|format(geo.risk.change5) }} in 5 years){% endif %}</span><span>{{ geo.risk.spark|safe }}</span></li>{% endif %}
       <li><span><a href="/geopolitics/conflicts/">Deaths in organised violence, {{ geo.years[0] }}–{{ geo.years[1] }}</a></span><span class="mono">{{ geo.deaths3|fmt(0) }}</span></li>
       {% if geo.cand %}<li><span>Deaths so far in {{ geo.cand_year }} (preliminary)</span><span class="mono">{{ geo.cand|fmt(0) }}</span></li>{% endif %}
@@ -140,6 +143,17 @@
   </div>
 </div>
 {{ g.news_note() }}
+{% endif %}
+
+{% if so_twins or so_targets or so_cov %}
+<div class="section-head"><h2>{{ c.name }} in perspective</h2><a href="/lab/">The Lab →</a></div>
+<div class="grid g3 so-country">
+  {% if so_twins %}<div class="card"><h3><a href="/lab/twins/">Time twins</a></h3><p class="small muted" style="margin-top:0">On income, health, families and cities, {{ c.name }} in {{ so_twins.year }} looks most like:</p>
+    <ol class="mk-list">{% for w in so_twins.twins %}<li><span>{{ flag(w.e.entity_id) }}<a href="/countries/{{ w.e.slug }}/">{{ w.e.name }}</a></span><span class="mono">in {{ w.year }}</span></li>{% endfor %}</ol></div>{% endif %}
+  {% if so_targets %}<div class="card"><h3><a href="/lab/targets/">Years to target</a></h3><p class="small muted" style="margin-top:0">At the pace of the last ten years:</p>
+    <ol class="mk-list">{% for t in so_targets %}<li><span>{{ t.label }}</span><span class="small {{ 'up' if t.status in ('achieved', 'on track') else 'down' }}">{% if t.status == 'achieved' %}Achieved{% elif t.year %}{{ t.year }}{% else %}{{ t.status|capitalize }}{% endif %}</span></li>{% endfor %}</ol></div>{% endif %}
+  {% if so_cov %}<div class="card"><h3><a href="/lab/coverage/">How well do we know {{ c.name }}?</a></h3><div class="rp-big" style="font-size:2.4rem">{{ '%.0f'|format(so_cov.share) }}%</div><p class="small muted">of {{ so_cov.total }} indicators have data from 2019 or later; the typical latest value is {{ so_cov.median_age|round(1) }} years old. #{{ so_cov.rank }} of {{ so_cov.of }} countries.</p></div>{% endif %}
+</div>
 {% endif %}
 
 {% set bx = beyond.get(c.entity_id) %}

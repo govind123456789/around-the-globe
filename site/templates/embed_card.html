@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>{{ title }} · {{ site.name }}</title>
+<link rel="canonical" href="{{ site.base_url }}{{ link }}">
+<link rel="stylesheet" href="/static/css/fonts.css?v={{ asset_v }}">
+<style>
+  :root { --bg:#fffdf6; --text:#1b2621; --muted:#5d6a62; --line:#e0d8c3; --bar:#a8432e; --gold:#8a6526; --ok:#1e6a50; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0f1f19; --text:#f0ece0; --muted:#9aaaa1; --line:#1f3a30; --bar:#e48a74; --gold:#dcc189; --ok:#8fd0b2; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px 18px; background: var(--bg); color: var(--text); font: 14px/1.4 "Inter", system-ui, sans-serif; }
+  .k { color: var(--gold); font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 600; }
+  h1 { font: 500 1.35rem/1.2 "Fraunces", Georgia, serif; margin: 2px 0 10px; }
+  h1 a { text-decoration: none; color: inherit; }
+  .big { font: 500 2.6rem/1 "Fraunces", Georgia, serif; }
+  .row { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .band { font-size: .8rem; padding: 2px 8px; border-radius: 3px; background: color-mix(in srgb, var(--bar) 18%, transparent); color: var(--bar); }
+  ul { list-style: none; margin: 12px 0 0; padding: 0; }
+  li { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; border-bottom: 1px dashed var(--line); font-variant-numeric: tabular-nums; }
+  svg { display: block; width: 100%; height: auto; margin-top: 10px; }
+  .grid line { stroke: var(--line); } .tick { fill: var(--muted); font-size: 10px; } rect { fill: var(--bar); }
+  polyline { stroke: var(--bar); stroke-width: 2; fill: none; }
+  footer { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--line); color: var(--muted); font-size: .76rem; }
+  footer a { color: inherit; }
+</style>
+</head>
+<body>
+  <div class="k">{{ kicker }}</div>
+  <h1><a href="{{ site.base_url }}{{ link }}" target="_blank" rel="noopener">{{ title }}</a></h1>
+  <div class="row"><span class="big">{{ big }}</span>{% if band %}<span class="band">{{ band }}</span>{% endif %}<span style="color:var(--muted);font-size:.85rem">{{ big_label }}</span></div>
+  {{ chart|safe }}
+  {% if lines %}<ul>{% for l, v in lines %}<li><span>{{ l }}</span><b>{{ v }}</b></li>{% endfor %}</ul>{% endif %}
+  <footer>{{ source }} · <a href="{{ site.base_url }}{{ link }}" target="_blank" rel="noopener">{{ site.name }}</a> · updated {{ release }}</footer>
+</body>
+</html>

@@ -162,3 +162,72 @@ nuclear:
     PAK: { stockpile: 170, inventory: 170 }
     ISR: { stockpile: 90, inventory: 90 }
     PRK: { stockpile: 60, inventory: 60 }
+
+# Crisis pages: ongoing wars and emergencies. Deaths count UCDP events located in the listed countries
+# (and, where named, events of conflicts whose UCDP name matches). News queries run live in the browser.
+crises:
+  - id: russia-ukraine
+    name: Russia–Ukraine war
+    since: 2022
+    countries: [UKR, RUS]
+    conflicts: ["Russia - Ukraine"]
+    parties: [RUS, UKR]
+    news: '"Ukraine" (Russia OR war OR ceasefire)'
+    blurb: "Russia's full-scale invasion of Ukraine in February 2022 began the deadliest interstate war in Europe since 1945."
+  - id: sudan
+    name: Sudan civil war
+    since: 2023
+    countries: [SDN]
+    parties: [SDN]
+    news: '"Sudan" (RSF OR war OR Darfur OR Khartoum)'
+    blurb: "Fighting between Sudan's army and the Rapid Support Forces since April 2023, with mass atrocities against civilians in Darfur."
+  - id: israel-region
+    name: Israel, Gaza and the region
+    since: 2023
+    countries: [ISR, PSE, LBN]
+    conflicts: ["Israel: Palestine", "Israel - Iran", "Israel - Lebanon", "Hezbollah - Israel"]
+    parties: [ISR, PSE, LBN, IRN]
+    news: '(Gaza OR Israel OR Hezbollah OR "West Bank")'
+    blurb: "The war that followed the Hamas-led attack of 7 October 2023, and its spread to Lebanon, Yemen and Iran."
+  - id: iran
+    name: Iran
+    since: 2024
+    countries: [IRN]
+    parties: [IRN, ISR, USA]
+    news: '"Iran" (strike OR war OR nuclear OR sanctions)'
+    blurb: "Organised violence in Iran, including strikes by Israel and the United States and internal repression, has surged since 2025."
+  - id: myanmar
+    name: Myanmar civil war
+    since: 2021
+    countries: [MMR]
+    parties: [MMR]
+    news: '"Myanmar" (junta OR war OR resistance OR Rakhine)'
+    blurb: "Armed resistance to the military junta that seized power in February 2021."
+  - id: drc
+    name: Eastern DR Congo
+    since: 2022
+    countries: [COD]
+    parties: [COD, RWA]
+    news: '("DR Congo" OR Congo) (M23 OR Goma OR Kivu)'
+    blurb: "The M23 rebellion, backed by Rwanda according to UN experts, and dozens of other armed groups in the east."
+  - id: sahel
+    name: Central Sahel
+    since: 2019
+    countries: [MLI, BFA, NER]
+    parties: [MLI, BFA, NER]
+    news: '(Mali OR "Burkina Faso" OR Niger) (jihadist OR attack OR junta)'
+    blurb: "Jihadist insurgencies and military juntas across Mali, Burkina Faso and Niger."
+  - id: yemen
+    name: Yemen and the Red Sea
+    since: 2015
+    countries: [YEM]
+    parties: [YEM, SAU, USA]
+    news: '(Yemen OR Houthi OR "Red Sea")'
+    blurb: "Civil war since 2014, Saudi-led intervention, and Houthi attacks on shipping in the Red Sea."
+  - id: haiti
+    name: Haiti gang violence
+    since: 2021
+    countries: [HTI]
+    parties: [HTI]
+    news: '"Haiti" (gangs OR violence OR "Port-au-Prince")'
+    blurb: "Armed gangs control much of Port-au-Prince; a Kenyan-led multinational mission has struggled to restore order."

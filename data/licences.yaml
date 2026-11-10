@@ -228,6 +228,18 @@ sources:
       attribution_text: "Hans M. Kristensen, Matt Korda et al., Status of World Nuclear Forces 2026, Federation of American Scientists.",
       licence_checked_on: 2026-11-10,
       notes: "Nine countries' estimated warhead counts (figures, not text, are reproduced, with attribution and a link). Estimates: no nuclear-armed state publishes complete figures." }
+  - { source_id: ofac,          publisher: "US Department of the Treasury, Office of Foreign Assets Control", title: Specially Designated Nationals and Blocked Persons List, url: https://ofac.treasury.gov/specially-designated-nationals-and-blocked-persons-list-sdn-human-readable-lists, licence: Public domain (US government work), licence_url: https://www.usa.gov/government-copyright, tier: green, commercial_ok: true, derivatives_ok: true, share_alike: false, no_modification: false,
+      attribution_text: "US Department of the Treasury, Office of Foreign Assets Control (OFAC), SDN list.",
+      licence_checked_on: 2026-11-10,
+      notes: "Works of the US federal government are not subject to copyright in the US. Counts are of SDN entries by the country of their listed address; one sanctioned person can have addresses in several countries." }
+  - { source_id: ilostat,       publisher: International Labour Organization, title: ILOSTAT, url: https://ilostat.ilo.org/, licence: CC BY 4.0, licence_url: https://www.ilo.org/node/9321, tier: green, commercial_ok: true, derivatives_ok: true, share_alike: false, no_modification: false,
+      attribution_text: "International Labour Organization, ILOSTAT database (CC BY 4.0).",
+      licence_checked_on: 2026-11-10,
+      notes: "ILO rights and permissions page: since 3 May 2023 ILO databases and datasets are covered by CC BY 4.0 (restricted microdata excepted). Total-sex, all-sector series; where several sources give a year, the first listed is used." }
+  - { source_id: faostat,       publisher: Food and Agriculture Organization of the United Nations, title: "FAOSTAT: Suite of Food Security Indicators", url: https://www.fao.org/faostat/en/#data/FS, licence: CC BY 4.0, licence_url: https://www.fao.org/contact-us/terms/db-terms-of-use, tier: green, commercial_ok: true, derivatives_ok: true, share_alike: false, no_modification: false,
+      attribution_text: "FAO. 2026. FAOSTAT: Suite of Food Security Indicators. Licence: CC-BY-4.0.",
+      licence_checked_on: 2026-11-10,
+      notes: "FAO Statistical Database Terms of Use: datasets in FAO corporate statistical databases are CC BY 4.0 unless their metadata says otherwise. Three-year averages are dated to their last year; values reported as '<2.5' are left out." }
   - { source_id: ghsl,          publisher: "European Commission, Joint Research Centre", title: GHS Urban Centre Database R2024A v1.2, url: https://human-settlement.emergency.copernicus.eu/ghs_ucdb_2024.php, licence: CC BY 4.0, licence_url: https://creativecommons.org/licenses/by/4.0/, tier: green, commercial_ok: true, derivatives_ok: true, share_alike: false, no_modification: false,
       attribution_text: "Mari Rivero, I., Melchiorri, M., Florio, P., et al. (2025). GHS Urban Centre Database 2025 (R2024A v1.2). European Commission, Joint Research Centre. CC BY 4.0.",
       licence_checked_on: 2026-11-09,

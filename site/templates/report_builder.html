@@ -14,6 +14,9 @@
     <label class="rb-field"><span>Country</span>
       <select name="c" id="rb-country">{% for c in countries %}<option value="{{ c.entity_id }}"{% if c.entity_id == 'IND' %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
     </label>
+    <label class="rb-field"><span>Compare with (optional)</span>
+      <select name="vs" id="rb-vs"><option value="">No comparison</option>{% for c in countries %}<option value="{{ c.entity_id }}">{{ c.name }}</option>{% endfor %}</select>
+    </label>
     <div class="rb-actions"><button class="btn" type="submit">Build report</button></div>
   </div>
   <fieldset class="rb-topics">

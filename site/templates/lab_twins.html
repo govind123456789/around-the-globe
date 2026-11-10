@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% import "lab_macros.html" as lm %}
+{% block title %}Time twins: which country's past matches each country today{% endblock %}
+{% block description %}For every country, the countries and years whose income, health, families and cities looked most like it does today.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">The Lab · time twins</span>
+  <h1>Time twins</h1>
+  <p class="lede">Which country, and which year, looked most like each country does today? Twins are matched on five measures of development: income per person, life expectancy, children per woman, the urban share and child mortality.</p>
+</div>
+{{ lm.lab_nav('/lab/twins/') }}
+<div class="card" style="margin-bottom:18px"><p class="small" style="margin:0">How it works: each measure is standardised across all countries and years since 1990 (income and child mortality on a log scale), and the closest country-year is found by distance across all five, looking at least eight years back. A small distance means a close match; it says nothing about culture, politics or the path that led there.</p></div>
+<div class="table-wrap"><table data-sortable>
+  <thead><tr><th class="sortable" data-type="text">Country (latest year)</th><th>Closest twin</th><th>Second</th><th>Third</th></tr></thead>
+  <tbody>{% for e, t in rows %}<tr><td>{{ flag(e.entity_id) }}<a href="/countries/{{ e.slug }}/">{{ e.name }}</a> <span class="small muted">{{ t.year }}</span></td>{% for w in t.twins %}<td>{{ flag(w.e.entity_id) }}{{ w.e.name }} in <b>{{ w.year }}</b> <span class="small muted">{{ w.dist }}</span></td>{% endfor %}</tr>{% endfor %}</tbody>
+</table></div>
+<p class="small muted" style="margin-top:10px">Data: World Bank WDI (CC BY 4.0). Countries of at least a million people.</p>
+{% endblock %}

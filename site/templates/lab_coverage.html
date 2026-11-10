@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% import "lab_macros.html" as lm %}
+{% block title %}How well do we know each country? Data coverage by country{% endblock %}
+{% block description %}How complete and recent each country's official statistics are across {{ total }} indicators: the countries the world knows least about.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">The Lab · data coverage</span>
+  <h1>How well do we know each country?</h1>
+  <p class="lede">Every comparison on this site depends on countries publishing statistics. Some publish almost everything, every year; others leave large gaps, often where conditions are hardest. This is the share of the site’s {{ total }} indicators with a value from 2019 or later.</p>
+</div>
+{{ lm.lab_nav('/lab/coverage/') }}
+<div class="split">
+  <div>{{ m.map("coverage-map", cov_map, "Share of indicators with data since 2019 (%)") }}</div>
+  <div class="card"><h3>Least known</h3><p class="small muted" style="margin-top:0">Countries of a million people or more</p><ol class="mk-list">{% for e, c in least %}<li><span>{{ flag(e.entity_id) }}<a href="/countries/{{ e.slug }}/">{{ e.name }}</a></span><span class="mono">{{ '%.0f'|format(c.share) }}%</span></li>{% endfor %}</ol></div>
+</div>
+<div class="section-head"><h2>All countries</h2></div>
+<div class="table-wrap"><table data-sortable>
+  <thead><tr><th class="num sortable" data-type="num">#</th><th class="sortable" data-type="text">Country</th><th class="num sortable" data-type="num">Recent data</th><th class="num sortable" data-type="num">Indicators since 2019</th><th class="num sortable" data-type="num">Any year</th><th class="num sortable" data-type="num">Median age of latest value</th></tr></thead>
+  <tbody>{% for e, c in rows %}<tr><td class="num" data-v="{{ c.rank }}">{{ c.rank }}</td><td>{{ flag(e.entity_id) }}<a href="/countries/{{ e.slug }}/">{{ e.name }}</a></td><td class="num" data-v="{{ c.share }}"><b>{{ '%.0f'|format(c.share) }}%</b></td><td class="num" data-v="{{ c.recent }}">{{ c.recent }}</td><td class="num" data-v="{{ c.any }}">{{ c.any }}</td><td class="num" data-v="{{ c.median_age or 99 }}">{{ c.median_age|round(1) if c.median_age is not none else '—' }} yrs</td></tr>{% endfor %}</tbody>
+</table></div>
+{% endblock %}

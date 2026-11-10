@@ -15,7 +15,16 @@
   async function start() {
     if (started) return; started = true;
     const [L, geo, ev] = await Promise.all([lib(), fetch("/geo/countries.json").then(r => r.json()), fetch("/geopolitics/data/events.json").then(r => r.json())]);
-    const pts = { type: "FeatureCollection", features: ev.points.map(p => ({ type: "Feature", geometry: { type: "Point", coordinates: [p[0], p[1]] },
+    // crisis pages pass data-filter (ISO3 list) and data-conflicts (UCDP names) to show only their events
+    const isos = (el.dataset.filter || "").split(",").filter(Boolean), names = (el.dataset.conflicts || "").split("|").filter(Boolean);
+    const keep = p => !isos.length || isos.includes(p[6]) || names.includes(p[5]);
+    const shown = ev.points.filter(keep);
+    let bounds = [[-120, -40], [150, 62]];
+    if (isos.length && shown.length) {
+      const xs = shown.map(p => p[0]), ys = shown.map(p => p[1]);
+      bounds = [[Math.min(...xs) - 2, Math.min(...ys) - 2], [Math.max(...xs) + 2, Math.max(...ys) + 2]];
+    }
+    const pts = { type: "FeatureCollection", features: shown.map(p => ({ type: "Feature", geometry: { type: "Point", coordinates: [p[0], p[1]] },
       properties: { d: p[2], n: p[3], t: p[4], c: p[5], iso: p[6] } })) };
     const map = new L.Map({
       container: el, attributionControl: { compact: true, customAttribution: "UCDP · Natural Earth" },
@@ -28,7 +37,7 @@
           "circle-opacity": 0.62, "circle-stroke-color": "#fff", "circle-stroke-width": 0.6,
           "circle-radius": ["interpolate", ["linear"], ["sqrt", ["max", ["get", "d"], 1]], 1, 2.2, 10, 6, 100, 22, 300, 42] } },
       ] },
-      bounds: [[-120, -40], [150, 62]], renderWorldCopies: false, dragRotate: false, pitchWithRotate: false, cooperativeGestures: true, maxZoom: 8,
+      bounds, renderWorldCopies: false, dragRotate: false, pitchWithRotate: false, cooperativeGestures: true, maxZoom: 8,
     });
     map.addControl(new L.NavigationControl({ showCompass: false }), "top-right");
     el._map = map;

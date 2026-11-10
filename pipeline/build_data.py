@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import csv
 import gzip
+import io
+import zipfile
 import hashlib
 import json
 import re
@@ -220,7 +222,7 @@ def load_observations(cat: dict, entities: dict, sources: dict):
                                 "retrieved_at": meta["retrieved_at"],
                                 "raw_path": path.relative_to(RAW).as_posix(), "checksum_sha256": meta["sha256"]}
         for i in cat["indicators"]:
-            if i["source"] == source_id and (source_id not in ("oecd", "v-dem") or path.stem == i["id"])                     and (source_id != "gdelt" or "_release" not in i):
+            if i["source"] == source_id and (source_id not in ("oecd", "v-dem", "ilostat") or path.stem in (i["id"], i.get("code")))                     and (source_id != "gdelt" or "_release" not in i):
                 i["_release"], i["_retrieved_at"] = rid, meta["retrieved_at"]
         return rid
 
@@ -305,6 +307,58 @@ def load_observations(cat: dict, entities: dict, sources: dict):
                 for col, ind in want[row["Electricity source"]]:
                     if row.get(col, "") != "":
                         add(ind, iso3, year, float(row[col]), rid)
+
+    # ILOSTAT: one CSV per indicator; keep the all-sexes, all-sectors total and the first source for each year
+    for ind in cat["indicators"]:
+        if ind["source"] != "ilostat":
+            continue
+        path = RAW / "ilostat" / f"{ind['code']}.csv"
+        if not path.exists():
+            continue
+        rid = release("ilostat", ind["code"], path)
+        ind["_release"], ind["_retrieved_at"] = rid, _meta(path)["retrieved_at"]
+        seen = set()
+        with open(path, encoding="utf-8-sig", newline="") as f:
+            for row in csv.DictReader(f):
+                if row.get("sex", "SEX_T") != "SEX_T" or row.get("classif1", "ECO_SECTOR_TOTAL") not in ("ECO_SECTOR_TOTAL", "AGE_YTHADULT_YGE15"):
+                    continue
+                iso, val = row["ref_area"], row.get("obs_value", "")
+                if iso not in entities or val in ("", None):
+                    continue
+                y = int(row["time"][:4])
+                if (iso, y) in seen:
+                    continue
+                seen.add((iso, y))
+                add(ind, iso, y, float(val), rid)
+
+    # FAOSTAT food security indicators: M49 area codes mapped to ISO3 through Natural Earth
+    path = RAW / "faostat" / "food_security.zip"
+    fao = [i for i in cat["indicators"] if i["source"] == "faostat"]
+    if path.exists() and fao:
+        rid = release("faostat", "Food security indicators", path)
+        m49 = {}
+        ne = json.loads((RAW / "ne" / "ne_10m_admin_0_countries_ind.geojson").read_text(encoding="utf-8"))
+        for feat in ne["features"]:
+            pr = feat["properties"]
+            n3, a3 = str(pr.get("ISO_N3_EH") or ""), pr.get("ISO_A3_EH") or ""
+            if n3.isdigit() and a3 in entities:
+                m49.setdefault(n3.zfill(3), a3)
+        m49.update({"156": "CHN", "158": None, "826": "GBR", "250": "FRA", "578": "NOR"})
+        items = {i["code"]: i for i in fao}
+        with zipfile.ZipFile(path) as z:
+            name = next(n for n in z.namelist() if "Normalized" in n)
+            with z.open(name) as f:
+                for row in csv.DictReader(io.TextIOWrapper(f, encoding="latin-1")):
+                    ind = items.get(row["Item"])
+                    if not ind or row.get("Element") != "Value":
+                        continue
+                    iso = m49.get(row["Area Code (M49)"].strip("'"))
+                    try:
+                        val = float(row["Value"])
+                    except ValueError:
+                        continue
+                    if iso:
+                        add(ind, iso, int(row["Year"][-4:]), val, rid)
 
     # UN World Population Prospects 2024: median age, and population projections to 2100
     path = RAW / "un" / "wpp2024_demographic_indicators.csv.gz"

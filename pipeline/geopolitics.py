@@ -26,6 +26,34 @@ RISK_WEIGHTS = [("conflict", "Conflict deaths per 100,000 people, last 3 years (
                 ("lawless", "Weak rule of law (World Bank WGI, inverted)", .15),
                 ("displaced", "People displaced from the country per 1,000 (UNHCR)", .20)]
 RISK_FROM = 2015
+POWER_WEIGHTS = [("economy", "Economic size: GDP (World Bank)", .25), ("nuclear", "Nuclear warheads (FAS)", .15),
+                 ("forces", "Armed forces personnel (World Bank/IISS)", .10), ("population", "Population (World Bank)", .10),
+                 ("trade", "Exports of goods and services (World Bank)", .10), ("tech", "Resident patent applications (World Bank/WIPO)", .05),
+                 ("hightech", "High-technology exports (World Bank)", .05),
+                 ("diplomacy", "Diplomatic reach: permanent UN Security Council seat and membership of major groupings", .20)]
+
+
+def month_bars(pts: list, w: int = 720, h: int = 240) -> str:
+    """A simple bar chart of deaths per month; pts = [('YYYY-MM', value)]."""
+    if not pts:
+        return ""
+    peak = max(v for _, v in pts) or 1
+    L, B, T = 46, 24, 8
+    bw = (w - L - 8) / len(pts)
+    out = [f'<svg class="chart" viewBox="0 0 {w} {h}" role="img" aria-label="Deaths per month">']
+    for k in range(5):
+        v = peak * k / 4
+        y = T + (1 - k / 4) * (h - T - B)
+        out.append(f'<line x1="{L}" x2="{w - 8}" y1="{y:.1f}" y2="{y:.1f}" class="grid"/>'
+                   f'<text x="{L - 6}" y="{y + 4:.1f}" text-anchor="end" class="tick">{svg.compact(v, 0)}</text>')
+    for k, (m, v) in enumerate(pts):
+        bh = (v / peak) * (h - T - B)
+        out.append(f'<rect x="{L + k * bw + 0.5:.1f}" y="{h - B - bh:.1f}" width="{max(bw - 1, 0.6):.1f}" height="{bh:.1f}" '
+                   f'class="bar-s1"><title>{m}: {v:,.0f}</title></rect>')
+        if m.endswith("-01") or k == 0:
+            out.append(f'<text x="{L + k * bw:.1f}" y="{h - 6}" class="tick">{m[:4]}</text>')
+    out.append("</svg>")
+    return "".join(out)
 PAIRS = [("USA", "CHN"), ("USA", "RUS"), ("CHN", "IND"), ("IND", "PAK"), ("RUS", "UKR"), ("ISR", "IRN"),
          ("SAU", "IRN"), ("CHN", "JPN"), ("KOR", "PRK"), ("ARM", "AZE"), ("USA", "IND"), ("RUS", "IND"),
          ("CHN", "RUS"), ("USA", "IRN"), ("DEU", "FRA"), ("TUR", "GRC"), ("ETH", "ERI"), ("SDN", "SSD"),
@@ -69,6 +97,9 @@ class Geo:
         self.load_unhcr()
         self.compute_risk()
         self.load_blocs()
+        self.load_sanctions()
+        self.compute_power()
+        self.compute_alerts()
 
     def iso(self, name: str) -> str | None:
         k = _norm(name)
@@ -107,6 +138,7 @@ class Geo:
         inter = defaultdict(lambda: defaultdict(float))  # (isoA, isoB) -> year -> deaths, government vs government
         self.final_year = self.cand_year = None
         recent = []                                  # events of the last two years, for the event map
+        conf_month = defaultdict(float)              # (conflict, iso, 'YYYY-MM') for crisis pages
         cand_seen = set()
         for row, cand in self._events():
             try:
@@ -137,6 +169,8 @@ class Geo:
                 if ym:
                     cmonth[(iso, ym)] += d
             key = (row.get("conflict_name") or "").strip()
+            if key and ym:
+                conf_month[(key, iso, ym)] += d
             if key:
                 c = conflicts[(key, y)]
                 c["deaths"] += d; c["type"] = t; c["events"] += 1
@@ -155,6 +189,7 @@ class Geo:
             self.cand_year = None
         self.cy, self.cyt, self.world_deaths, self.monthly, self.cmonth = cy, cyt, world, monthly, cmonth
         self.events = self.event_points(recent)
+        self.conf_month = conf_month
         self.conflicts, self.inter = conflicts, inter
 
     @staticmethod
@@ -352,6 +387,143 @@ class Geo:
             for e in b["mem"]:
                 self.bloc_of[e["entity_id"]].append({"id": b["id"], "name": b["name"], "status": b["status"].get(e["entity_id"])})
 
+    # ------------------------------------------------------------------ crises
+    def crises(self) -> list:
+        out = []
+        for c in load_yaml("blocs.yaml").get("crises", []):
+            isos, names = set(c["countries"]), set(c.get("conflicts", []))
+            monthly = defaultdict(float)
+            for (i, ym), d in self.cmonth.items():
+                if i in isos:
+                    monthly[ym] += d
+            for (k, i, ym), d in self.conf_month.items():
+                if k in names and i not in isos:
+                    monthly[ym] += d
+            months = sorted(m for m in monthly if int(m[:4]) >= c["since"])
+            pts = [(m, monthly[m]) for m in months]
+            involved = {k for (k, y), d in self.conflicts.items() if y >= c["since"] and (d["countries"] & isos or k in names)}
+            conflicts = sorted(((k, sum(d["deaths"] for (kk, y), d in self.conflicts.items() if kk == k and y >= c["since"])) for k in involved),
+                               key=lambda x: -x[1])[:8]
+            ev = [pt for pt in self.events["points"] if pt[6] in isos or pt[5] in names]
+            disp = []
+            for i in c["countries"]:
+                d = self.origin.get(i, {})
+                ser = sorted((y, r["refugees"] + r["asylum"] + r["oip"] + r["idps"]) for y, r in d.items() if y >= c["since"] - 2)
+                if i in self.by_id and ser:
+                    disp.append({"e": self.by_id[i], "series": ser})
+            parties = [self.by_id[i] for i in c.get("parties", []) if i in self.by_id]
+            pairs = []
+            for k, a in enumerate(parties):
+                for b in parties[k + 1:]:
+                    la = self.latest_agreement(a["entity_id"], b["entity_id"])
+                    if la:
+                        pairs.append({"a": a, "b": b, "year": la[0], "v": la[1]})
+            out.append({**c, "monthly": pts, "chart": month_bars(pts), "total": sum(v for _, v in pts),
+                        "last12": sum(v for _, v in pts[-12:]), "prev12": sum(v for _, v in pts[-24:-12]),
+                        "conflicts": conflicts, "events": ev, "disp": disp, "parties": parties, "pairs": pairs,
+                        "risk": [self.risk_by[i] for i in c["countries"] if i in self.risk_by],
+                        "states": [self.by_id[i] for i in c["countries"] if i in self.by_id],
+                        "last_month": months[-1] if months else None})
+        return out
+
+    # ------------------------------------------------------------------ US sanctions (OFAC SDN)
+    def load_sanctions(self):
+        sdn, add = RAW / "ofac" / "sdn.csv", RAW / "ofac" / "add.csv"
+        self.sanctions = {"by_country": {}, "programs": [], "total": 0}
+        if not (sdn.exists() and add.exists()):
+            return
+        before = set(self.unmatched)
+        progs, kinds = {}, {}
+        with open(sdn, encoding="latin-1", newline="") as f:
+            for row in csv.reader(f):
+                if len(row) > 3 and row[0].strip().isdigit():
+                    progs[row[0].strip()] = [x.strip(" []") for x in row[3].split("]") if x.strip(" []")]
+                    kinds[row[0].strip()] = row[2].strip().strip('"')
+        where = defaultdict(set)
+        with open(add, encoding="latin-1", newline="") as f:
+            for row in csv.reader(f):
+                if len(row) > 4 and row[0].strip().isdigit():
+                    name = row[4].strip().strip('"')
+                    if name and name != "-0-":
+                        iso = self.iso(name)
+                        if iso:
+                            where[iso].add(row[0].strip())
+        self.unmatched = before            # address countries the matcher misses are not conflict data problems
+        by = {}
+        for iso, ids in where.items():
+            pc = defaultdict(int)
+            for i in ids:
+                for pg in progs.get(i, []):
+                    pc[pg] += 1
+            by[iso] = {"n": len(ids), "individuals": sum(1 for i in ids if kinds.get(i) == "individual"),
+                       "programs": sorted(pc.items(), key=lambda x: -x[1])[:6]}
+        allp = defaultdict(int)
+        for ps in progs.values():
+            for pg in ps:
+                allp[pg] += 1
+        self.sanctions = {"by_country": by, "programs": sorted(allp.items(), key=lambda x: -x[1])[:20], "total": len(progs)}
+
+    # ------------------------------------------------------------------ power index
+    def compute_power(self):
+        nuc = self.nuclear["states"]
+        diplo_w = {"g7": 3, "g20": 3, "nato": 2, "brics": 2, "sco": 2, "oecd": 1, "eu": 1, "quad": 1, "aukus": 1}
+        permanent = {i for b in self.blocs if b["id"] == "unsc" for i, st in b["status"].items() if st == "permanent"}
+        raw = {}
+        for e in self.countries:
+            i = e["entity_id"]
+            if self.pop.get(i, 0) < 1e6:
+                continue
+
+            def g(ind):
+                if ind not in self.m.indicators:
+                    return None
+                lt = self.m.latest(i, ind, min_year=2015)
+                return lt[1] if lt else None
+            gdp = g("gdp")
+            if not gdp:
+                continue
+            reach = sum(diplo_w.get(b["id"], 0) for b in self.bloc_of.get(i, []))
+            raw[i] = {"economy": math.log10(gdp), "population": math.log10(self.pop[i]),
+                      "forces": math.log10(1 + (g("armed-forces") or 0)), "nuclear": math.log10(1 + nuc.get(i, {}).get("inventory", 0)),
+                      "trade": math.log10(1 + (g("exports-value") or 0)), "tech": math.log10(1 + (g("patents-residents") or 0)),
+                      "hightech": math.log10(1 + (g("high-tech-exports-value") or 0)),
+                      "diplomacy": 0.5 * (i in permanent) + 0.5 * reach / sum(diplo_w.values())}
+        lo = {k: min(v[k] for v in raw.values()) for k, _, _ in POWER_WEIGHTS}
+        hi = {k: max(v[k] for v in raw.values()) for k, _, _ in POWER_WEIGHTS}
+        out = []
+        for i, c in raw.items():
+            parts = {k: 100 * (c[k] - lo[k]) / ((hi[k] - lo[k]) or 1) for k in c}
+            out.append({"e": self.by_id[i], "score": sum(parts[k] * w for k, _, w in POWER_WEIGHTS), "parts": parts})
+        out.sort(key=lambda r: -r["score"])
+        for k, r in enumerate(out):
+            r["rank"] = k + 1
+        self.power = out
+        self.power_by = {r["e"]["entity_id"]: r for r in out}
+
+    # ------------------------------------------------------------------ alerts
+    def compute_alerts(self):
+        """Countries whose risk rose sharply in the latest year, or whose conflict deaths this year are well
+        above the same months of last year."""
+        alerts = []
+        y = self.risk_year
+        for r in self.risk:
+            h = dict(r["hist"])
+            if y in h and y - 1 in h and h[y] - h[y - 1] >= 5:
+                alerts.append({"e": r["e"], "kind": "risk", "text": f"Risk index up {h[y] - h[y - 1]:.0f} points in {y}, to {h[y]:.0f}."})
+        if self.cand_year and self.final_year:
+            months = sorted(k[5:] for k in self.monthly if k.startswith(str(self.cand_year)))
+            for e in self.countries:
+                i = e["entity_id"]
+                now = sum(self.cmonth.get((i, f"{self.cand_year}-{m}"), 0) for m in months)
+                before = sum(self.cmonth.get((i, f"{self.final_year}-{m}"), 0) for m in months)
+                if now >= 100 and now >= 1.5 * before:
+                    alerts.append({"e": e, "kind": "conflict",
+                                   "text": f"{now:,.0f} conflict deaths so far in {self.cand_year}, against {before:,.0f} in the same months of {self.final_year} (UCDP, preliminary)."})
+        self.alerts = alerts
+        self.alerts_by = defaultdict(list)
+        for a in alerts:
+            self.alerts_by[a["e"]["entity_id"]].append(a)
+
     def treaty_status(self, iso: str) -> list:
         return [{"t": t, "status": t["outside"].get(iso, "party")} for t in self.treaties]
 
@@ -433,7 +605,9 @@ class Geo:
         if self.cand_year:
             cyear = sum(v for (i, ym), v in self.cmonth.items() if i == iso and ym.startswith(str(self.cand_year)))
         forces = self.m.latest(iso, "armed-forces", min_year=2015) if "armed-forces" in self.m.indicators else None
-        return {"blocs": self.bloc_of.get(iso, []), "treaties": self.treaty_status(iso), "nuclear": self.nuclear["states"].get(iso),
+        return {"power": self.power_by.get(iso), "n_power": len(self.power), "sanctions": self.sanctions["by_country"].get(iso),
+                "alerts": self.alerts_by.get(iso, []),
+                "blocs": self.bloc_of.get(iso, []), "treaties": self.treaty_status(iso), "nuclear": self.nuclear["states"].get(iso),
                 "forces": forces, "risk": r, "deaths3": d3, "years": (fy - 2, fy), "align": al, "disp": disp, "host": host,
                 "cand": cyear, "cand_year": self.cand_year, "n_risk": len(self.risk)}
 

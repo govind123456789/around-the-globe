@@ -311,6 +311,9 @@ def fetch_geopolitics(refresh: bool) -> None:
     fetch_unhcr("by_origin", {"yearFrom": 2000, "yearTo": 2025, "coo_all": "true"}, refresh)
     fetch_unhcr("by_asylum", {"yearFrom": 2000, "yearTo": 2025, "coa_all": "true"}, refresh)
     fetch_unhcr("flows", {"yearFrom": 2024, "yearTo": 2025, "coo_all": "true", "coa_all": "true"}, refresh)
+    # US Treasury OFAC sanctions list (US government work, public domain)
+    for f in ("SDN.CSV", "ADD.CSV"):
+        fetch_file(f"https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/{f}", RAW / "ofac" / f.lower(), refresh)
 
 
 def fetch_history(refresh: bool) -> None:
@@ -385,6 +388,13 @@ def main(argv: list[str] | None = None) -> None:
         if ind["source"] == "v-dem":
             fetch_file(f"https://ourworldindata.org/grapher/{ind['owid']}.csv?v=1&csvType=full&useColumnShortNames=true",
                        RAW / "vdem" / f"{ind['id']}.csv", args.refresh)
+    print("ILOSTAT and FAOSTAT")
+    for ind in cat["indicators"]:
+        if ind["source"] == "ilostat":
+            fetch_file(f"https://rplumber.ilo.org/data/indicator/?id={ind['code']}&format=.csv", RAW / "ilostat" / f"{ind['code']}.csv", args.refresh)
+    if any(i["source"] == "faostat" for i in cat["indicators"]):
+        fetch_file("https://bulks-faostat.fao.org/production/Food_Security_Data_E_All_Data_(Normalized).zip",
+                   RAW / "faostat" / "food_security.zip", args.refresh)
     print("Electricity (Ember)")
     fetch_file(EMBER_URL, RAW / "ember" / "yearly_generation.csv", args.refresh)
     print("Cities (GHSL Urban Centre Database)")

@@ -87,7 +87,7 @@ class Reports:
         return None
 
     def latest_rows(self, i: str, pool=None):
-        pool = pool if pool is not None else self.big
+        pool = pool if pool is not None else (self.pool if getattr(self, "pool", None) is not None else self.big)
         rows = [(e, lt) for e in pool if (lt := self.m.latest(e["entity_id"], i, min_year=2015))]
         if not rows:
             return []
@@ -272,6 +272,58 @@ class Reports:
                            f"{gv(g0)} to {gv(g1)} ({y0}–{y1}).",
                 "title": f"Is the world converging on {lc(ind['name'])}?"}
 
+    # ------------------------------------------------------------------ region reports
+    REGION_INDS = ["gdp-per-capita-ppp", "life-expectancy", "under5-mortality", "fertility", "urban-share", "internet-users",
+                   "electricity-access", "clean-electricity-share", "co2-per-capita", "unemployment"]
+
+    def region_value(self, members: list[str], i: str):
+        ind = self.ind(i)
+        vals = [(x, lt) for x in members if (lt := self.m.latest(x, i, min_year=2015))]
+        if len(vals) < 3:
+            return None
+        if additive(ind):
+            return sum(lt[1] for _, lt in vals)
+        w = [(self.pop.get(x, 0), lt[1]) for x, lt in vals if self.pop.get(x, 0) > 0]
+        tot = sum(p for p, _ in w)
+        return sum(p * v for p, v in w) / tot if tot else None
+
+    def region_reports(self) -> list:
+        out = []
+        for g, members in self.regions.items():
+            pool = [e for e in self.countries if e["entity_id"] in members and self.pop.get(e["entity_id"], 0) >= MIN_POP]
+            if len(pool) < 4:
+                continue
+            region = self.by_id[g]
+            table = []
+            for i in self.REGION_INDS:
+                if i not in self.m.indicators:
+                    continue
+                ind = self.ind(i)
+                rv, w = self.region_value(members, i), self.m.latest("WLD", i)
+                if rv is None or not w:
+                    continue
+                better = (rv > w[1]) == (ind["direction"] == "higher_better") if ind["direction"] != "neutral" else None
+                table.append({"ind": ind, "region": self.v(rv, ind), "world": self.v(w[1], ind), "better": better})
+            self.pool = pool
+            secs = [x for x in (self.section({"kind": k, "indicator": i, **extra}) for k, i, extra in
+                                (("leaders", "gdp-per-capita-ppp", {}), ("movers", "gdp-per-capita-ppp", {"years": 10}),
+                                 ("leaders", "life-expectancy", {}), ("movers", "internet-users", {"years": 10}),
+                                 ("leaders", "clean-electricity-share", {})) if i in self.m.indicators) if x]
+            self.pool = None
+            for x in secs:                                     # region-scoped wording
+                x["title"] = x["title"].replace("Who leads in", "Who leads the region in").replace("Biggest movers in", "Biggest movers in the region:")
+            ahead = [t for t in table if t["better"]]
+            behind = [t for t in table if t["better"] is False]
+            findings = []
+            if ahead:
+                findings.append(f"{region['name']} is ahead of the world average on {len(ahead)} of {len(ahead) + len(behind)} measures, including {lc(ahead[0]['ind']['name'])}.")
+            if behind:
+                findings.append(f"It is behind on {lc(behind[0]['ind']['name'])} ({behind[0]['region']} against {behind[0]['world']} worldwide).")
+            findings += [x["finding"] for x in secs if x.get("finding")]
+            out.append({"id": region["slug"], "g": region, "title": f"{region['name']}: regional report", "n": len(members),
+                        "table": table, "sections": secs, "findings": findings, "kicker": "Region"})
+        return out
+
     # ------------------------------------------------------------------ custom report builder data
     def builder_files(self, hubs: list[dict], out: Path) -> None:
         """One small JSON per country, plus a meta file, for the in-browser report builder."""
@@ -290,6 +342,7 @@ class Reports:
             ranks[i] = {e["entity_id"]: (k + 1, len(rows)) for k, (e, _, _) in enumerate(rows)}
             w = self.m.latest("WLD", i)
             meta["inds"][i]["w"] = [w[0], round(w[1], 6)] if w else None
+            meta["inds"][i]["ws"] = [[y, round(v, 4)] for y, v, _ in self.m.series("WLD", i) if y >= 2000]
         (out / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         region_of = {x: g for g, mem in self.regions.items() for x in mem}
         reg_cache: dict[tuple, float | None] = {}
