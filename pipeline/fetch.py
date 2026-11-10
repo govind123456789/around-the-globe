@@ -279,6 +279,40 @@ def fetch_gdelt(refresh: bool, today: date | None = None) -> None:
         print(f"    {d}: {all_articles:,} articles, {len(totals)} countries")
 
 
+# Geopolitics: UCDP event data (final to last year, plus this year's preliminary 'candidate' events),
+# UN General Assembly voting (Voeten et al., CC0) and UNHCR refugee statistics (CC BY 4.0).
+UCDP_GED_URL = "https://ucdp.uu.se/downloads/ged/ged261-csv.zip"
+UCDP_CANDIDATE_URL = "https://ucdp.uu.se/downloads/candidateged/GEDEvent_v26_01_26_09.csv"
+UNVOTES_FILES = {"agreement.csv": 11837234, "idealpoints.csv": 14098429}     # Harvard Dataverse doi:10.7910/DVN/LEJUQZ
+UNHCR_API = "https://api.unhcr.org/population/v1/population/"
+
+
+def fetch_unhcr(name: str, params: dict, refresh: bool) -> None:
+    out = RAW / "unhcr" / f"{name}.json"
+    if out.exists() and not refresh:
+        return
+    rows, page = [], 1
+    while True:
+        d = _get(UNHCR_API, {**params, "limit": 10000, "page": page}).json()
+        rows += d["items"]
+        if page >= int(d.get("maxPages") or 1):
+            break
+        page += 1
+    _write(out, json.dumps(rows).encode(), f"{UNHCR_API}?{'&'.join(f'{k}={v}' for k, v in params.items())}")
+    print(f"  UNHCR {name}: {len(rows)} rows")
+
+
+def fetch_geopolitics(refresh: bool) -> None:
+    z = RAW / "ucdp" / "ged261-csv.zip"
+    fetch_file(UCDP_GED_URL, z, refresh)
+    fetch_file(UCDP_CANDIDATE_URL, RAW / "ucdp" / "candidate.csv", refresh)
+    for name, fid in UNVOTES_FILES.items():
+        fetch_file(f"https://dataverse.harvard.edu/api/access/datafile/{fid}", RAW / "unvotes" / name, refresh)
+    fetch_unhcr("by_origin", {"yearFrom": 2000, "yearTo": 2025, "coo_all": "true"}, refresh)
+    fetch_unhcr("by_asylum", {"yearFrom": 2000, "yearTo": 2025, "coa_all": "true"}, refresh)
+    fetch_unhcr("flows", {"yearFrom": 2024, "yearTo": 2025, "coo_all": "true", "coa_all": "true"}, refresh)
+
+
 def fetch_history(refresh: bool) -> None:
     """Sources for the historical timeline (Cliopatria, Maddison, Wikidata events, UCDP)."""
     out = RAW / "cliopatria" / "cliopatria.geojson.zip"
@@ -363,6 +397,8 @@ def main(argv: list[str] | None = None) -> None:
     for ind in cat["indicators"]:
         if ind["source"] == "oecd":
             fetch_oecd(ind, args.refresh)
+    print("Geopolitics (UCDP events, UN votes, UNHCR)")
+    fetch_geopolitics(args.refresh)
     print("History (Cliopatria, Maddison, UCDP, Wikidata)")
     fetch_history(args.refresh)
     print("Country facts (Wikidata)")

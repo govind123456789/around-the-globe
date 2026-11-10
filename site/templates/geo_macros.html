@@ -1,0 +1,30 @@
+{% macro subnav(url) -%}
+<nav class="geo-nav no-print" aria-label="Geopolitics">
+  {% for href, label in [('/geopolitics/', 'Overview'), ('/geopolitics/news/', 'Live news'), ('/geopolitics/briefing/', 'Weekly briefing'), ('/geopolitics/conflicts/', 'Conflicts'), ('/geopolitics/risk/', 'Risk index'), ('/geopolitics/un-votes/', 'UN alignment'), ('/geopolitics/displacement/', 'Displacement'), ('/geopolitics/relations/', 'Relations')] %}
+  <a href="{{ href }}"{% if url == href or (href == '/geopolitics/relations/' and url.startswith(href)) %} aria-current="page"{% endif %}>{{ label }}</a>
+  {% endfor %}
+</nav>
+{%- endmacro %}
+
+{% macro news(query='', max=20, tabs=True, compact=False, search=False, label='') -%}
+<div class="gd-news{% if compact %} compact{% endif %}" data-gdelt data-query="{{ query }}" data-max="{{ max }}" data-tabs="{{ 1 if tabs else 0 }}" data-search="{{ 1 if search else 0 }}" data-label="{{ label }}">
+  <p class="small muted gd-status">Loading live headlines…</p>
+</div>
+<noscript><p class="small muted">Live headlines need JavaScript. They come from the GDELT Project’s monitor of world news.</p></noscript>
+{%- endmacro %}
+
+{% macro news_note() -%}
+<p class="small muted gd-note">Headlines are found live by the <a href="https://www.gdeltproject.org/" rel="noopener">GDELT Project</a>, which monitors news in over 100 languages, and link to the original publishers. By default they come from five established international outlets (Reuters, AP, BBC, Al Jazeera and The Guardian), ranked by relevance and recency. They are third-party reporting and are not checked by this site; the statistics on these pages come from the named datasets below.</p>
+{%- endmacro %}
+
+{% macro sources(srcs) -%}
+<div class="geo-src small muted">
+  <b>Sources.</b> {% for s in srcs.values() %}{{ s.attribution_text }}{% if not loop.last %} {% endif %}{% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro risk_bars(rows) -%}
+<ol class="mk-bars geo-risk">
+  {% for r in rows %}<li><span class="rk">{{ r.rank }}</span><span class="nm">{{ flag(r.e.entity_id) }}<a href="/countries/{{ r.e.slug }}/">{{ r.e.name }}</a></span><span class="bar" aria-hidden="true"><i style="width:{{ '%.0f'|format(r.score) }}%"></i></span><span class="val">{{ '%.0f'|format(r.score) }}<small>{{ r.band }}</small></span></li>{% endfor %}
+</ol>
+{%- endmacro %}

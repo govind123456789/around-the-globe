@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% import "geo_macros.html" as g %}
+{% block title %}Wars and conflicts: deaths in organised violence by country{% endblock %}
+{% block description %}Deaths in wars, non-state conflicts and one-sided violence by country and year since 1989, the deadliest conflicts and this year's preliminary figures, from UCDP.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">Geopolitics · UCDP</span>
+  <h1>Conflicts</h1>
+  <p class="lede">Deaths in organised violence since 1989, from the Uppsala Conflict Data Program: state-based conflict (at least one side is a government), non-state conflict between armed groups, and one-sided violence against civilians.</p>
+</div>
+{{ g.subnav(url) }}
+<div class="stats mk-kpis">
+  <div class="card stat"><span class="l">Deaths, {{ ov.final_year }}</span><span class="v">{{ ov.total|fmt(0) }}</span><span class="small muted">best estimate · all three types</span></div>
+  <div class="card stat"><span class="l">Active state-based conflicts</span><span class="v">{{ ov.active }}</span><span class="small muted">25 or more deaths</span></div>
+  {% if ov.cand %}<div class="card stat"><span class="l">{{ ov.cand.year }} so far</span><span class="v">{{ ov.cand.ytd|fmt(0) }}</span><span class="small muted">to {{ ov.cand.last }} · preliminary</span></div>{% endif %}
+</div>
+<div class="grid g2">
+  <div class="card"><h3>By type of violence</h3>{{ ov.chart|safe }}</div>
+  <div>{{ m.map("conflict-map", ov.conflict_map, "Conflict deaths per 100,000 people a year, " ~ (ov.final_year - 2) ~ "–" ~ ov.final_year) }}</div>
+</div>
+
+<div class="section-head"><h2>Deadliest conflicts, {{ ov.final_year }}</h2></div>
+<div class="table-wrap"><table data-sortable>
+  <thead><tr><th class="sortable" data-type="text">Conflict</th><th class="sortable" data-type="text">Type</th><th>Where</th><th class="num sortable" data-type="num">Deaths</th></tr></thead>
+  <tbody>{% for c in ov.top_conflicts %}<tr><td>{{ c.name }}</td><td class="small">{{ c.type }}</td><td class="small">{% for e in c.countries %}<a href="/countries/{{ e.slug }}/">{{ e.name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</td><td class="num" data-v="{{ c.deaths }}">{{ c.deaths|fmt(0) }}</td></tr>{% endfor %}</tbody>
+</table></div>
+
+<div class="section-head"><h2>Countries with the most deaths, {{ ov.final_year }}</h2></div>
+<ol class="mk-bars">{% set peak = ov.by_country[0][1] if ov.by_country else 1 %}{% for e, d in ov.by_country %}<li><span class="rk">{{ loop.index }}</span><span class="nm">{{ flag(e.entity_id) }}<a href="/countries/{{ e.slug }}/">{{ e.name }}</a></span><span class="bar" aria-hidden="true"><i style="width:{{ '%.1f'|format(100 * d / peak) }}%"></i></span><span class="val">{{ d|fmt(0) }}</span></li>{% endfor %}</ol>
+
+{% if ov.cand %}
+<div class="section-head"><h2>{{ ov.cand.year }} so far (preliminary)</h2><a href="/geopolitics/briefing/">Weekly briefing →</a></div>
+<div class="table-wrap"><table>
+  <thead><tr><th>Country</th><th class="num">{{ ov.cand.year }}, to {{ ov.cand.last }}</th><th class="num">Same months {{ ov.final_year }}</th></tr></thead>
+  <tbody>{% for t in ov.cand.top %}<tr><td>{{ flag(t.e.entity_id) }}{{ t.e.name }}</td><td class="num">{{ t.d|fmt(0) }}</td><td class="num">{{ t.prev|fmt(0) }}</td></tr>{% endfor %}</tbody>
+</table></div>
+{% endif %}
+<p class="small muted" style="margin-top:14px">Counts are UCDP’s “best” estimates of deaths in events it could verify from news and other reports; true totals are higher in places with little reporting. Final yearly data cover 1989–{{ ov.final_year }}; candidate events for the current year are revised before release.</p>
+{{ g.sources({'ucdp': srcs.ucdp}) if srcs.ucdp }}
+{% endblock %}

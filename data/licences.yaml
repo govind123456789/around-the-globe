@@ -185,7 +185,7 @@ sources:
 
   - source_id: ucdp
     publisher: Uppsala Conflict Data Program
-    title: UCDP/PRIO Armed Conflict Dataset and Battle-Related Deaths Dataset v26.1
+    title: UCDP Georeferenced Event Dataset v26.1, Candidate Events 2026, Armed Conflict and Battle-Related Deaths v26.1
     url: https://ucdp.uu.se/downloads/
     licence: CC BY 4.0
     licence_url: https://ucdp.uu.se/downloads/
@@ -216,6 +216,14 @@ sources:
       attribution_text: "Ember (2026). Yearly Electricity Data. CC BY 4.0. https://ember-energy.org/data/yearly-electricity-data/",
       licence_checked_on: 2026-11-10,
       notes: "Licence read on Ember's yearly electricity data page on 2026-11-10 (Creative Commons Attribution Licence, CC-BY-4.0). Generation, capacity and emissions by country and source; emissions are life-cycle intensities." }
+  - { source_id: unvotes,       publisher: "Bailey, Strezhnev and Voeten (Harvard Dataverse)", title: United Nations General Assembly Voting Data, url: https://doi.org/10.7910/DVN/LEJUQZ, licence: CC0 1.0, licence_url: https://creativecommons.org/publicdomain/zero/1.0/, tier: green, commercial_ok: true, derivatives_ok: true, share_alike: false, no_modification: false,
+      attribution_text: "Voeten, Erik; Strezhnev, Anton; Bailey, Michael. United Nations General Assembly Voting Data. Harvard Dataverse, doi:10.7910/DVN/LEJUQZ. CC0. Bailey, Strezhnev and Voeten (2017), Journal of Conflict Resolution 61(2).",
+      licence_checked_on: 2026-11-10,
+      notes: "Dataverse metadata read 2026-11-10: licence CC0 1.0. Agreement is the share of roll-call votes where two countries voted the same way; ideal points place each country on one dimension, higher meaning closer to the United States and Western democracies." }
+  - { source_id: unhcr,         publisher: UNHCR,                       title: Refugee Population Statistics Database, url: https://www.unhcr.org/refugee-statistics/, licence: CC BY 4.0, licence_url: https://www.unhcr.org/terms-use-datasets, tier: green, commercial_ok: true, derivatives_ok: true, share_alike: false, no_modification: false,
+      attribution_text: "UNHCR Refugee Population Statistics Database (CC BY 4.0).",
+      licence_checked_on: 2026-11-10,
+      notes: "UNHCR's dataset terms license the Refugee Population Statistics Database under CC BY 4.0 except where otherwise provided; fetched through UNHCR's public population API. Displaced abroad = refugees + asylum seekers + others in need of international protection." }
   - { source_id: ghsl,          publisher: "European Commission, Joint Research Centre", title: GHS Urban Centre Database R2024A v1.2, url: https://human-settlement.emergency.copernicus.eu/ghs_ucdb_2024.php, licence: CC BY 4.0, licence_url: https://creativecommons.org/licenses/by/4.0/, tier: green, commercial_ok: true, derivatives_ok: true, share_alike: false, no_modification: false,
       attribution_text: "Mari Rivero, I., Melchiorri, M., Florio, P., et al. (2025). GHS Urban Centre Database 2025 (R2024A v1.2). European Commission, Joint Research Centre. CC BY 4.0.",
       licence_checked_on: 2026-11-09,

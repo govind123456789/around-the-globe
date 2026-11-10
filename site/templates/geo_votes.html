@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% import "geo_macros.html" as g %}
+{% block title %}UN alignment: who votes with whom at the General Assembly{% endblock %}
+{% block description %}How often each country votes with the United States, China, Russia, India and France at the UN General Assembly, and where every country sits between the West and the rest.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">Geopolitics · UN General Assembly votes</span>
+  <h1>UN alignment</h1>
+  <p class="lede">Every year the UN General Assembly holds dozens of recorded votes, on everything from Ukraine and Gaza to nuclear weapons and human rights. How often two countries vote the same way is one of the most-used measures of alignment in international relations research.</p>
+</div>
+{{ g.subnav(url) }}
+<div class="section-head"><h2>Between the West and the rest</h2><span class="muted small">Ideal points from roll-call votes, latest session</span></div>
+<div class="split">
+  <div>{{ m.map("ideal-map", al.ideal_map, "Voting position (higher = closer to the US and Western democracies)") }}</div>
+  <div class="card"><h3>Reading the map</h3><p class="small">Each country gets an “ideal point” estimated from all its General Assembly votes (Bailey, Strezhnev and Voeten 2017). Higher values mean voting closer to the United States and Western democracies; lower values, closer to the developing-world majority. Unlike raw agreement, ideal points are comparable across years.</p><p class="small"><a href="/geopolitics/relations/">Compare any two countries →</a></p></div>
+</div>
+
+<div class="section-head"><h2>Who votes with the major powers, {{ al.year }}</h2><span class="muted small">Share of recorded votes in agreement</span></div>
+<div class="grid g3">
+  {% for code, t in al.tables.items() %}
+  <div class="card">
+    <h3>{{ flag(code) }}{{ t.name }}</h3>
+    <p class="small muted" style="margin:0 0 4px">Closest</p>
+    <ol class="mk-list">{% for e, v in t.top %}<li><span>{{ flag(e.entity_id) }}<a href="/countries/{{ e.slug }}/">{{ e.name }}</a></span><span class="mono">{{ '%.0f'|format(100 * v) }}%</span></li>{% endfor %}</ol>
+    <p class="small muted" style="margin:10px 0 4px">Furthest</p>
+    <ol class="mk-list">{% for e, v in t.bottom[:5] %}<li><span>{{ flag(e.entity_id) }}<a href="/countries/{{ e.slug }}/">{{ e.name }}</a></span><span class="mono">{{ '%.0f'|format(100 * v) }}%</span></li>{% endfor %}</ol>
+  </div>
+  {% endfor %}
+</div>
+<p class="small muted" style="margin-top:12px">Agreement counts yes, no and abstain as positions; absences are left out. Most General Assembly resolutions pass with large majorities, so most pairs agree more often than not: compare a pair with others rather than with 50%.</p>
+{{ g.sources({'unvotes': srcs.unvotes}) if srcs.unvotes }}
+{% endblock %}

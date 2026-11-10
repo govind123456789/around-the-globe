@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% import "geo_macros.html" as g %}
+{% block title %}Geopolitics: conflict, UN alignment, displacement and risk{% endblock %}
+{% block description %}Verified data on wars and organised violence, who votes with whom at the UN, refugees and displacement, a transparent country risk index, and live geopolitical news.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">International relations · verified data, live news</span>
+  <h1>Geopolitics</h1>
+  <p class="lede">Wars and organised violence, alignment at the United Nations, forced displacement and country risk, from the datasets researchers cite: UCDP, UN voting records and UNHCR. Live headlines from world media sit alongside, clearly marked.</p>
+</div>
+{{ g.subnav(url) }}
+
+<div class="stats mk-kpis">
+  <div class="card stat"><span class="l">Deaths in organised violence, {{ ov.final_year }}</span><span class="v">{{ ov.total|fmt(0) }}</span><span class="small muted">{{ '%+.0f'|format(100 * (ov.total - ov.prev_total) / ov.prev_total) if ov.prev_total else '' }}% on {{ ov.final_year - 1 }} · UCDP</span></div>
+  <div class="card stat"><span class="l">Active state-based conflicts</span><span class="v">{{ ov.active }}</span><span class="small muted">25+ deaths in {{ ov.final_year }} · UCDP</span></div>
+  {% if ov.cand %}<div class="card stat"><span class="l">Deaths so far in {{ ov.cand.year }}</span><span class="v">{{ ov.cand.ytd|fmt(0) }}</span><span class="small muted">to {{ ov.cand.last }} · preliminary UCDP data</span></div>{% endif %}
+  <div class="card stat"><span class="l">People forcibly displaced</span><span class="v">{{ ov.displaced_total|fmt(0) }}</span><span class="small muted">{{ dp.year }} · UNHCR</span></div>
+</div>
+
+<div class="split geo-split">
+  <section>
+    <div class="section-head"><h2>Live geopolitical news</h2><a href="/geopolitics/news/">All news →</a></div>
+    {{ g.news(max=12, tabs=True, compact=True) }}
+    {{ g.news_note() }}
+  </section>
+  <aside class="grid" style="align-content:start">
+    <a class="card link geo-brief-card" href="/geopolitics/briefing/">
+      <span class="mk-kicker">Weekly briefing · {{ release }}</span>
+      <h3>What changed this week</h3>
+      <ul class="rp-preview">
+        {% if br.conflict %}<li>{{ br.conflict.ytd|fmt(0) }} deaths in organised violence in {{ br.conflict.year }} so far, against {{ br.conflict.same|fmt(0) }} in the same months of {{ br.final_year }}.</li>{% endif %}
+        {% if br.attention %}<li>Rising in world news: {{ br.attention[:3]|map(attribute='e.name')|join(', ') }}.</li>{% endif %}
+        {% if br.shifts %}<li>Biggest shift at the UN: {{ br.shifts[0].e.name }} with {{ br.shifts[0].p }} ({{ '%+.0f'|format(100 * br.shifts[0].d) }} points since {{ br.vote_year - 5 }}).</li>{% endif %}
+      </ul>
+      <span class="mk-more">Read the briefing →</span>
+    </a>
+    <div class="card">
+      <h3>Highest geopolitical risk</h3>
+      {{ g.risk_bars(risk[:8]) }}
+      <p class="small" style="margin:8px 0 0"><a href="/geopolitics/risk/">Full index of {{ risk|length }} countries and method →</a></p>
+    </div>
+  </aside>
+</div>
+
+<div class="section-head"><h2>Where the fighting is</h2><a href="/geopolitics/conflicts/">Conflict data →</a></div>
+<div class="split">
+  <div>{{ m.map("conflict-map", ov.conflict_map, "Conflict deaths per 100,000 people a year, " ~ (ov.final_year - 2) ~ "–" ~ ov.final_year) }}</div>
+  <div class="card">
+    <h3>Deadliest conflicts, {{ ov.final_year }}</h3>
+    <ol class="mk-list">{% for c in ov.top_conflicts[:8] %}<li><span>{{ c.name }}</span><span class="mono">{{ c.deaths|fmt(0) }}</span></li>{% endfor %}</ol>
+  </div>
+</div>
+
+<div class="grid g2" style="margin-top:18px">
+  <div class="card"><h3>Organised violence since 1989</h3>{{ ov.chart|safe }}</div>
+  <div class="card">
+    <h3>Who votes with whom at the UN</h3>
+    <p class="small muted" style="margin-top:0">Share of General Assembly votes in {{ al.year }} where each country voted the same way as:</p>
+    <div class="geo-powers">
+      {% for code, t in al.tables.items() %}<div><b>{{ t.name }}</b><ol class="mk-list">{% for e, v in t.top[:4] %}<li><span>{{ flag(e.entity_id) }}{{ e.name }}</span><span class="mono">{{ '%.0f'|format(100 * v) }}%</span></li>{% endfor %}</ol></div>{% endfor %}
+    </div>
+    <p class="small" style="margin:8px 0 0"><a href="/geopolitics/un-votes/">UN alignment map and tables →</a></p>
+  </div>
+</div>
+
+<div class="section-head"><h2>Forced displacement</h2><a href="/geopolitics/displacement/">Displacement data →</a></div>
+<div class="grid g2">
+  <div class="card"><h3>Largest displaced populations, {{ dp.year }}</h3><ol class="mk-list">{% for e, d in dp.origins[:8] %}<li><span>{{ flag(e.entity_id) }}{{ e.name }}</span><span class="mono">{{ (d.abroad + d.idps)|fmt(0) }}</span></li>{% endfor %}</ol></div>
+  <div class="card"><h3>Largest host countries, {{ dp.year }}</h3><ol class="mk-list">{% for e, d in dp.hosts[:8] %}<li><span>{{ flag(e.entity_id) }}{{ e.name }}</span><span class="mono">{{ d.hosted|fmt(0) }}</span></li>{% endfor %}</ol></div>
+</div>
+
+<div class="section-head"><h2>Relations</h2><a href="/geopolitics/relations/">Compare any two countries →</a></div>
+<nav class="mk-others">{% for a, b in pairs %}<a href="/geopolitics/relations/{{ a.slug }}-and-{{ b.slug }}/">{{ a.name }} · {{ b.name }}</a>{% endfor %}</nav>
+
+{{ g.sources(srcs) }}
+{% endblock %}
+{% block scripts %}<script src="/static/js/geo-news.js?v={{ asset_v }}" defer></script>{% endblock %}

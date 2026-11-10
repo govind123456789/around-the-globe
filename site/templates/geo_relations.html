@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% import "geo_macros.html" as g %}
+{% block title %}Country relations: compare any two countries{% endblock %}
+{% block description %}Pick any two countries to see how often they vote together at the UN, any fighting between their governments, refugees between them and live news about both.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">Geopolitics · relations</span>
+  <h1>Country relations</h1>
+  <p class="lede">Pick any two countries: UN vote agreement since 2000, armed conflict between their governments, refugees between them, their risk scores and live news about both.</p>
+</div>
+{{ g.subnav(url) }}
+<form class="card rb-form no-print" id="rel-form">
+  <div class="rb-row">
+    <label class="rb-field"><span>First country</span><select name="a">{% for c in countries %}<option value="{{ c.entity_id }}" data-name="{{ c.name }}" data-slug="{{ c.slug }}"{% if c.entity_id == 'IND' %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></label>
+    <label class="rb-field"><span>Second country</span><select name="b">{% for c in countries %}<option value="{{ c.entity_id }}" data-name="{{ c.name }}" data-slug="{{ c.slug }}"{% if c.entity_id == 'CHN' %} selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></label>
+    <div class="rb-actions"><button class="btn" type="submit">Compare</button></div>
+  </div>
+</form>
+<div id="rel-out" aria-live="polite"></div>
+<div class="section-head"><h2>Featured relationships</h2></div>
+<nav class="mk-others">{% for x, y in pairs %}<a href="/geopolitics/relations/{{ x.slug }}-and-{{ y.slug }}/">{{ x.name }} · {{ y.name }}</a>{% endfor %}</nav>
+{{ g.news_note() }}
+{{ g.sources(srcs) }}
+{% endblock %}
+{% block scripts %}<script src="/static/js/geo-news.js?v={{ asset_v }}" defer></script><script src="/static/js/geo-relations.js?v={{ asset_v }}" defer></script>{% endblock %}

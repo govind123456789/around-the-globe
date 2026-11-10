@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% import "geo_macros.html" as g %}
+{% block title %}Live geopolitical news from world media{% endblock %}
+{% block description %}Live headlines on war, diplomacy, sanctions and elections from news outlets worldwide, filterable by country and theme, with links to the original reporting.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">Geopolitics · live</span>
+  <h1>Geopolitical news</h1>
+  <p class="lede">The latest headlines on war, diplomacy, sanctions and elections from news outlets around the world, found live by the GDELT Project. Choose a theme, a country or search your own terms.</p>
+</div>
+{{ g.subnav(url) }}
+<div class="gd-controls card no-print">
+  <label class="rb-field"><span>Country</span>
+    <select data-gd-country><option value="">All countries</option>{% for c in countries %}<option value="{{ c.name }}">{{ c.name }}</option>{% endfor %}</select>
+  </label>
+  <label class="rb-field"><span>Search</span><input type="search" data-gd-q placeholder="e.g. ceasefire, South China Sea, tariffs"></label>
+  <label class="gd-check"><input type="checkbox" data-gd-trusted checked> Major international outlets only</label>
+  <label class="gd-check"><input type="checkbox" data-gd-en checked> English only (when showing all media)</label>
+</div>
+{{ g.news(max=50, tabs=True, search=True) }}
+{{ g.news_note() }}
+{{ g.sources({'gdelt': srcs.gdelt}) if srcs.gdelt }}
+{% endblock %}
+{% block scripts %}<script src="/static/js/geo-news.js?v={{ asset_v }}" defer></script>{% endblock %}

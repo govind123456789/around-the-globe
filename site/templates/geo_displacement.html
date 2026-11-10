@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% import "geo_macros.html" as g %}
+{% block title %}Refugees and displacement by country{% endblock %}
+{% block description %}Refugees, asylum seekers and internally displaced people by country of origin and host country, and the largest refugee flows, from UNHCR.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">Geopolitics · UNHCR</span>
+  <h1>Displacement</h1>
+  <p class="lede">People forced from their homes by war, persecution and violence: those who crossed a border (refugees, asylum seekers and others in need of international protection) and those displaced inside their own country.</p>
+</div>
+{{ g.subnav(url) }}
+<div class="grid g2">
+  <div class="card"><h3>Worldwide since 2000</h3>{{ dp.chart|safe }}</div>
+  <div class="card"><h3>Largest refugee movements, {{ dp.flow_year }}</h3><ol class="mk-list">{% for a, b, v in dp.flows %}<li><span>{{ flag(a.entity_id) }}{{ a.name }} → {{ flag(b.entity_id) }}{{ b.name }}</span><span class="mono">{{ v|fmt(0) }}</span></li>{% endfor %}</ol></div>
+</div>
+<div class="section-head"><h2>Where people are displaced from, {{ dp.year }}</h2></div>
+<div class="table-wrap"><table data-sortable>
+  <thead><tr><th class="sortable" data-type="text">Country of origin</th><th class="num sortable" data-type="num">Displaced abroad</th><th class="num sortable" data-type="num">Displaced at home</th><th class="num sortable" data-type="num">Total</th></tr></thead>
+  <tbody>{% for e, d in dp.origins %}<tr><td>{{ flag(e.entity_id) }}<a href="/countries/{{ e.slug }}/">{{ e.name }}</a></td><td class="num" data-v="{{ d.abroad }}">{{ d.abroad|fmt(0) }}</td><td class="num" data-v="{{ d.idps }}">{{ d.idps|fmt(0) }}</td><td class="num" data-v="{{ d.abroad + d.idps }}"><b>{{ (d.abroad + d.idps)|fmt(0) }}</b></td></tr>{% endfor %}</tbody>
+</table></div>
+<div class="section-head"><h2>Who hosts them, {{ dp.year }}</h2></div>
+<ol class="mk-bars">{% set peak = dp.hosts[0][1].hosted if dp.hosts else 1 %}{% for e, d in dp.hosts %}<li><span class="rk">{{ loop.index }}</span><span class="nm">{{ flag(e.entity_id) }}<a href="/countries/{{ e.slug }}/">{{ e.name }}</a></span><span class="bar" aria-hidden="true"><i style="width:{{ '%.1f'|format(100 * d.hosted / peak) }}%"></i></span><span class="val">{{ d.hosted|fmt(0) }}</span></li>{% endfor %}</ol>
+<p class="small muted" style="margin-top:12px">“Displaced abroad” adds refugees, asylum seekers and others in need of international protection; “displaced at home” is internally displaced people under UNHCR’s mandate. Palestine refugees under UNRWA’s mandate are not included.</p>
+{{ g.sources({'unhcr': srcs.unhcr}) if srcs.unhcr }}
+{% endblock %}

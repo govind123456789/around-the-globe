@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% import "geo_macros.html" as g %}
+{% block title %}Weekly world briefing{% endblock %}
+{% block description %}What changed in world affairs this week: conflict deaths against last year, countries rising in world news, shifts at the UN and new displacement, from verified data.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">Weekly briefing · release {{ release }}</span>
+  <h1>The world this week</h1>
+  <p class="lede">What the data says has changed: fighting this year against last, which countries the world’s media is turning to, shifts in UN alignment and new displacement. Written from the data each week; live headlines at the end.</p>
+  <div class="mk-actions no-print"><button class="btn sm" type="button" onclick="window.print()">Save as PDF</button></div>
+</div>
+{{ g.subnav(url) }}
+
+<section class="rp-summary"><h2>In brief</h2><ol class="rp-findings">
+  {% set n = namespace(i=0) %}
+  {% if br.conflict %}{% set n.i = n.i + 1 %}<li class="rp-finding"><span class="rp-n">{{ '%02d'|format(n.i) }}</span><span>UCDP’s preliminary data count {{ br.conflict.ytd|fmt(0) }} deaths in organised violence from January to {{ br.conflict.last }}, {{ 'up' if br.conflict.ytd >= br.conflict.same else 'down' }} from {{ br.conflict.same|fmt(0) }} in the same months of {{ br.final_year }}.</span></li>{% endif %}
+  {% if br.conflict and br.conflict.top %}{% set t = br.conflict.top[0] %}{% set n.i = n.i + 1 %}<li class="rp-finding"><span class="rp-n">{{ '%02d'|format(n.i) }}</span><span>{{ t.e.name }} has seen the most deaths this year ({{ t.d|fmt(0) }}, against {{ t.prev|fmt(0) }} a year earlier).</span></li>{% endif %}
+  {% if br.attention %}{% set n.i = n.i + 1 %}<li class="rp-finding"><span class="rp-n">{{ '%02d'|format(n.i) }}</span><span>Rising fastest in world news coverage: {{ br.attention[:3]|map(attribute='e.name')|join(', ') }}.</span></li>{% endif %}
+  {% if br.shifts %}{% set s = br.shifts[0] %}{% set n.i = n.i + 1 %}<li class="rp-finding"><span class="rp-n">{{ '%02d'|format(n.i) }}</span><span>The biggest change in UN voting: {{ s.e.name }} now votes with {{ s.p }} {{ '%.0f'|format(100 * s.now) }}% of the time, from {{ '%.0f'|format(100 * s.then) }}% in {{ br.vote_year - 5 }}.</span></li>{% endif %}
+  {% if br.displacement %}{% set d = br.displacement[0] %}{% set n.i = n.i + 1 %}<li class="rp-finding"><span class="rp-n">{{ '%02d'|format(n.i) }}</span><span>The largest rise in displacement in {{ br.unhcr_year }}: {{ d.e.name }}, to {{ d.now|fmt(0) }} people from {{ d.then|fmt(0) }}.</span></li>{% endif %}
+</ol></section>
+
+{% if br.conflict %}
+<section class="rp-section"><div class="rp-label"><span class="rp-n">01</span>Conflict · UCDP preliminary events</div>
+  <h2>Fighting in {{ br.conflict.year }} against {{ br.final_year }}</h2>
+  <div class="table-wrap"><table data-sortable>
+    <thead><tr><th class="sortable" data-type="text">Country</th><th class="num sortable" data-type="num">{{ br.conflict.year }}, Jan–{{ br.conflict.last[5:] }}</th><th class="num sortable" data-type="num">Same months {{ br.final_year }}</th><th class="num sortable" data-type="num">Change</th></tr></thead>
+    <tbody>{% for t in br.conflict.top %}<tr><td>{{ flag(t.e.entity_id) }}<a href="/countries/{{ t.e.slug }}/">{{ t.e.name }}</a></td><td class="num" data-v="{{ t.d }}">{{ t.d|fmt(0) }}</td><td class="num" data-v="{{ t.prev }}">{{ t.prev|fmt(0) }}</td><td class="num" data-v="{{ t.d - t.prev }}">{{ '%+d'|format((t.d - t.prev)|int) }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  <p class="small muted">UCDP candidate events are released monthly and revised before the final yearly dataset.</p>
+</section>
+{% endif %}
+
+{% if br.attention %}
+<section class="rp-section"><div class="rp-label"><span class="rp-n">02</span>News attention · GDELT</div>
+  <h2>Who the world is talking about</h2>
+  <div class="grid g2">
+    <div class="card"><h3>Rising in coverage</h3><p class="small muted" style="margin-top:0">Share of world news events in the latest samples against the previous three months.</p><ol class="mk-list">{% for x in br.attention %}<li><span>{{ flag(x.e.entity_id) }}{{ x.e.name }}</span><span class="mono">{{ '%.1f'|format(x.x) }}×</span></li>{% endfor %}</ol></div>
+    <div class="card"><h3>Most covered</h3><p class="small muted" style="margin-top:0">Share of all events in world news ({{ br.news_to[:4] }}-{{ br.news_to[4:6] }}-{{ br.news_to[6:] }}).</p><ol class="mk-list">{% for x in br.most_covered %}<li><span>{{ flag(x.e.entity_id) }}{{ x.e.name }}</span><span class="mono">{{ '%.1f'|format(x.now) }}%</span></li>{% endfor %}</ol></div>
+  </div>
+</section>
+{% endif %}
+
+{% if br.shifts %}
+<section class="rp-section"><div class="rp-label"><span class="rp-n">03</span>UN General Assembly · Voeten et al.</div>
+  <h2>Shifts in alignment, {{ br.vote_year - 5 }} to {{ br.vote_year }}</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Country</th><th>With</th><th class="num">{{ br.vote_year - 5 }}</th><th class="num">{{ br.vote_year }}</th><th class="num">Change</th></tr></thead>
+    <tbody>{% for s in br.shifts %}<tr><td>{{ flag(s.e.entity_id) }}{{ s.e.name }}</td><td>{{ s.p }}</td><td class="num">{{ '%.0f'|format(100 * s.then) }}%</td><td class="num">{{ '%.0f'|format(100 * s.now) }}%</td><td class="num">{{ '%+.0f'|format(100 * s.d) }} pts</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endif %}
+
+{% if br.displacement %}
+<section class="rp-section"><div class="rp-label"><span class="rp-n">04</span>Displacement · UNHCR</div>
+  <h2>Where displacement grew in {{ br.unhcr_year }}</h2>
+  <ol class="mk-list">{% for d in br.displacement %}<li><span>{{ flag(d.e.entity_id) }}{{ d.e.name }}</span><span class="mono">{{ d.then|fmt(0) }} → {{ d.now|fmt(0) }}</span></li>{% endfor %}</ol>
+</section>
+{% endif %}
+
+<section class="rp-section no-print"><div class="rp-label"><span class="rp-n">05</span>Live</div>
+  <h2>Latest headlines</h2>
+  {{ g.news(max=15, tabs=False, compact=True) }}
+  {{ g.news_note() }}
+</section>
+{{ g.sources(srcs) }}
+{% endblock %}
+{% block scripts %}<script src="/static/js/geo-news.js?v={{ asset_v }}" defer></script>{% endblock %}

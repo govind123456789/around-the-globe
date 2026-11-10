@@ -11,7 +11,7 @@ import markdown
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
 
-from . import beyond, history, lab, live, markets, og, reports, stories, svg
+from . import beyond, geopolitics, history, lab, live, markets, og, reports, stories, svg
 from .build_data import Model
 from .config import CONTENT, DIST, RAW, SITE, load_yaml, site_config
 
@@ -146,14 +146,23 @@ class Site:
     @staticmethod
     def nav():
         # (label, url, submenu): the submenu is [(label, url, one-line description)]
+        geo = [("Overview", "/geopolitics/", "Conflict, alignment, displacement and risk"),
+               ("Live news", "/geopolitics/news/", "Geopolitical headlines from world media, live"),
+               ("Weekly briefing", "/geopolitics/briefing/", "What changed this week"),
+               ("Conflicts", "/geopolitics/conflicts/", "Deaths in organised violence (UCDP)"),
+               ("Risk index", "/geopolitics/risk/", "Our transparent country risk score"),
+               ("UN alignment", "/geopolitics/un-votes/", "Who votes with whom at the UN"),
+               ("Displacement", "/geopolitics/displacement/", "Refugees and the internally displaced"),
+               ("Relations", "/geopolitics/relations/", "Any two countries: votes, war, refugees, news")]
         explore = [("Map explorer", "/explore/", "Any indicator on the world map"),
                    ("Topics", "/topics/", "Indicators grouped by theme"),
                    ("Cities", "/cities/", "524 cities over one million people"),
                    ("Universities", "/universities/", "The 2,000 most-cited universities"),
+                   ("Compare", "/compare/", "Any two countries side by side"),
                    ("Index Builder", "/index-builder/", "Weight indicators into your own ranking"),
                    ("Insights", "/insights/", "Stories and release notes")]
         return [("World", "/world/", None), ("Countries", "/countries/", None), ("Rankings", "/rankings/", None),
-                ("Markets", "/markets/", "mega"), ("Compare", "/compare/", None), ("Reports", "/reports/", None),
+                ("Markets", "/markets/", "mega"), ("Geopolitics", "/geopolitics/", geo), ("Reports", "/reports/", None),
                 ("Explore", "/explore/", explore), ("Lab", "/lab/", None)]
 
     def render(self, url: str, template: str, sitemap: bool = True, **ctx) -> None:
@@ -193,7 +202,7 @@ class Site:
         # Pages are rebuilt from scratch so renamed URLs don't linger. v1/ and history/ are data outputs.
         for name in ("countries", "regions", "rankings", "compare", "topics", "data", "methodology",
                      "insights", "about", "explore", "world", "index-builder", "ask", "static", "og", "embed", "lab",
-                     "universities", "cities", "markets", "reports"):
+                     "universities", "cities", "markets", "reports", "geopolitics"):
             if (DIST / name).exists():
                 shutil.rmtree(DIST / name)
         shutil.copytree(SITE / "static", DIST / "static")
@@ -224,6 +233,8 @@ class Site:
         self.rankings()
         self.markets_pages()
         self.reports_pages()
+        self.geo = geopolitics.Geo(self.m, self.countries, self.by_id, self.mk.show)
+        self.geopolitics_pages()
         self.countries_pages()
         self.history_pages()
         self.world_page()
@@ -281,6 +292,42 @@ class Site:
                     n_countries=len(self.countries), n_indicators=len(self.m.indicators),
                     n_rankings=len(self.rk), hdi_check=self.m.hdi_check,
                     markets=[h for h in self.mk.hubs if h["id"] != "economy"][:6], n_markets=len(self.mk.hubs))
+
+    def geopolitics_pages(self) -> None:
+        g = self.geo
+        if g.unmatched:
+            print(f"  geopolitics: unmatched UCDP names: {sorted(g.unmatched)[:12]}")
+        ov, al, dp, br = g.overview(), g.alignment(), g.displacement(), g.briefing()
+        srcs = {s: self.m.sources[s] for s in ("ucdp", "unvotes", "unhcr", "gdelt", "wb-wgi") if s in self.m.sources}
+        common = dict(ov=ov, al=al, dp=dp, risk=g.risk, risk_map={r["e"]["entity_id"]: round(r["score"], 1) for r in g.risk}, weights=geopolitics.RISK_WEIGHTS, srcs=srcs, types=geopolitics.TYPES,
+                      powers=geopolitics.POWER_NAMES, pairs=[(self.by_id[a], self.by_id[b]) for a, b in geopolitics.PAIRS
+                                                             if a in self.by_id and b in self.by_id])
+        og.card(DIST / "og" / "geopolitics.png", self.cfg["name"], "Geopolitics",
+                "Conflict, alignment and risk", [f"{fmt(ov['total'], 0)} deaths in organised violence in {ov['final_year']} (UCDP)",
+                                                  f"{ov['active']} active state-based conflicts",
+                                                  f"Highest risk: {', '.join(r['e']['name'] for r in g.risk[:3])}"])
+        pages = [("/geopolitics/", "geo_hub.html", "Geopolitics", "Conflict, UN alignment, displacement and risk"),
+                 ("/geopolitics/news/", "geo_news.html", "Geopolitical news", "Live headlines from world media"),
+                 ("/geopolitics/briefing/", "geo_briefing.html", "Weekly world briefing", "What changed this week"),
+                 ("/geopolitics/conflicts/", "geo_conflicts.html", "Conflicts", "Deaths in organised violence"),
+                 ("/geopolitics/risk/", "geo_risk.html", "Geopolitical risk index", "Country risk scores"),
+                 ("/geopolitics/un-votes/", "geo_votes.html", "UN alignment", "Who votes with whom"),
+                 ("/geopolitics/displacement/", "geo_displacement.html", "Displacement", "Refugees and the displaced"),
+                 ("/geopolitics/relations/", "geo_relations.html", "Country relations", "Any two countries")]
+        for url, tpl, t, s in pages:
+            self.render(url, tpl, og_image="/og/geopolitics.png", br=br, countries=self.countries, **common)
+            self.search.append({"t": t, "u": url, "k": "Geopolitics", "s": s,
+                                "o": ["geopolitics", "international relations", "war", "conflict", "news"]})
+        for a, b in geopolitics.PAIRS:
+            if a not in self.by_id or b not in self.by_id:
+                continue
+            ea, eb = self.by_id[a], self.by_id[b]
+            self.render(f"/geopolitics/relations/{ea['slug']}-and-{eb['slug']}/", "geo_pair.html", og_image="/og/geopolitics.png",
+                        a=ea, b=eb, p=g.pair(a, b), srcs=srcs, pairs=common["pairs"])
+            self.search.append({"t": f"{ea['name']} and {eb['name']}", "u": f"/geopolitics/relations/{ea['slug']}-and-{eb['slug']}/",
+                                "k": "Relations", "s": "UN votes, conflict, refugees and news",
+                                "o": [f"{ea['name']} {eb['name']} relations", f"{ea['name']} vs {eb['name']}"]})
+        g.write_files(DIST / "geopolitics" / "data")
 
     def reports_pages(self) -> None:
         rp = reports.Reports(self.m, self.countries, self.by_id, self.mk.show)
@@ -448,7 +495,8 @@ class Site:
                 lines.append(f"Human Development Index {key['hdi'][1]:.3f}")
             og.card(DIST / "og" / "countries" / f"{c['slug']}.png", self.cfg["name"], c["region"], c["name"], lines)
             self.render(f"/countries/{c['slug']}/", "country.html", og_image=f"/og/countries/{c['slug']}.png", c=c, key=key, dims=self.country_dims(c),
-                        positions=self.positions(eid), peers=peers, mk=self.mk.country_shares(eid), region=self.by_id[c["region_id"]],
+                        positions=self.positions(eid), peers=peers, mk=self.mk.country_shares(eid), geo=self.geo.country(eid),
+                        geo_powers=geopolitics.POWER_NAMES, region=self.by_id[c["region_id"]],
                         income=self.by_id.get(c["income_id"]) if c["income_id"] else None,
                         cap=cap, cap_row=cr, pillar_bars=pb, composites=composites, charts=charts, pair_links=pair_links,
                         chips={k: self.chip(k, v[0], v[2]) for k, v in key.items() if v},

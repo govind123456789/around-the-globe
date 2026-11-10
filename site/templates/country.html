@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import "macros.html" as m %}
+{% import "geo_macros.html" as g %}
 {% block title %}{{ c.name }}{% endblock %}
 {% block description %}{{ c.name }}: rankings, {{ dims|length }} topics of indicators and trends, with sources. {{ c.region }}, {{ c.income }}.{% endblock %}
 {% block band %}
@@ -111,6 +112,29 @@
 </div>
 {% endif %}
 
+{% if geo %}
+<div class="section-head"><h2>Geopolitics</h2><a href="/geopolitics/">Geopolitics hub →</a></div>
+<div class="grid g2 geo-country">
+  <div class="card">
+    <ol class="mk-list">
+      {% if geo.risk %}<li><span><a href="/geopolitics/risk/">Geopolitical risk index</a></span><span class="mono"><b>{{ '%.0f'|format(geo.risk.score) }}</b> · {{ geo.risk.band }} · #{{ geo.risk.rank }} of {{ geo.n_risk }}</span></li>{% endif %}
+      <li><span><a href="/geopolitics/conflicts/">Deaths in organised violence, {{ geo.years[0] }}–{{ geo.years[1] }}</a></span><span class="mono">{{ geo.deaths3|fmt(0) }}</span></li>
+      {% if geo.cand %}<li><span>Deaths so far in {{ geo.cand_year }} (preliminary)</span><span class="mono">{{ geo.cand|fmt(0) }}</span></li>{% endif %}
+      {% if geo.disp %}<li><span><a href="/geopolitics/displacement/">Displaced from {{ c.name }}, {{ geo.disp.year }}</a></span><span class="mono">{{ geo.disp.abroad|fmt(0) }} abroad · {{ geo.disp.idps|fmt(0) }} at home</span></li>{% endif %}
+      {% if geo.host and geo.host.hosted %}<li><span>Refugees and asylum seekers hosted, {{ geo.host.year }}</span><span class="mono">{{ geo.host.hosted|fmt(0) }}</span></li>{% endif %}
+    </ol>
+    {% if geo.align %}<h3 style="margin-top:16px">UN votes in agreement with</h3>
+    <ol class="mk-list">{% for p, la in geo.align.items() %}<li><span>{{ flag(p) }}<a href="/geopolitics/relations/?a={{ c.entity_id }}&amp;b={{ p }}">{{ geo_powers[p] }}</a></span><span class="mono">{{ '%.0f'|format(100 * la[1]) }}% · {{ la[0] }}</span></li>{% endfor %}</ol>{% endif %}
+  </div>
+  <div class="card">
+    <h3>Live news about {{ c.name }}</h3>
+    {{ g.news(query='"' ~ c.name ~ '"', max=8, tabs=False, compact=True) }}
+    <p class="small"><a href="/geopolitics/news/?c={{ c.name|urlencode }}">More news about {{ c.name }} →</a></p>
+  </div>
+</div>
+{{ g.news_note() }}
+{% endif %}
+
 {% set bx = beyond.get(c.entity_id) %}
 {% if bx and (bx.cities or bx.unis) %}
 <div class="section-head"><h2>Cities and universities</h2><span class="muted small">Largest urban centres (GHSL) and most-cited universities (OpenAlex)</span></div>
@@ -192,4 +216,4 @@
 </div>
 <p class="small muted" style="margin-top:24px">Spotted a problem with a value? <a href="mailto:{{ site.contact_email }}?subject=Data%20issue%3A%20{{ c.name|urlencode }}">Report a data issue</a>. Corrections are logged on the <a href="/about/errata/">errata page</a>.</p>
 {% endblock %}
-{% block scripts %}<script src="/static/js/globe.js?v={{ asset_v }}" defer></script>{% endblock %}
+{% block scripts %}<script src="/static/js/globe.js?v={{ asset_v }}" defer></script><script src="/static/js/geo-news.js?v={{ asset_v }}" defer></script>{% endblock %}

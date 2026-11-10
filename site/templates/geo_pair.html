@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% import "geo_macros.html" as g %}
+{% block title %}{{ a.name }} and {{ b.name }}: relations, UN votes, conflict and news{% endblock %}
+{% block description %}How {{ a.name }} and {{ b.name }} relate: how often they vote together at the UN, any armed conflict between them, refugees between them, and live news about both.{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/geopolitics/">Geopolitics</a> › <a href="/geopolitics/relations/">Relations</a></p>
+<div class="page-head">
+  <span class="eyebrow">Country relations</span>
+  <h1>{{ flag(a.entity_id) }}{{ a.name }} and {{ flag(b.entity_id) }}{{ b.name }}</h1>
+  <p class="lede">How the two countries line up at the United Nations, whether their governments have fought each other, how many refugees have moved between them, and what the world’s media is saying about both.</p>
+</div>
+{{ g.subnav(url) }}
+<div class="stats mk-kpis">
+  {% if p.latest %}<div class="card stat"><span class="l">UN votes in agreement, {{ p.latest[0] }}</span><span class="v">{{ '%.0f'|format(100 * p.latest[1]) }}%</span><span class="small muted">{% if p.first %}{{ '%.0f'|format(100 * p.first[1]) }}% in {{ p.first[0] }}{% endif %}</span></div>{% endif %}
+  {% if p.rank_a %}<div class="card stat"><span class="l">Among {{ a.name }}’s partners</span><span class="v">#{{ p.rank_a[0] }}</span><span class="small muted">of {{ p.rank_a[1] }} by agreement</span></div>{% endif %}
+  <div class="card stat"><span class="l">Deaths in fighting between their governments</span><span class="v">{{ p.war_deaths|fmt(0) }}</span><span class="small muted">since 1989 · UCDP</span></div>
+  <div class="card stat"><span class="l">Refugees and asylum seekers</span><span class="v">{{ (p.ab + p.ba)|fmt(0) }}</span><span class="small muted">{{ a.name }} → {{ b.name }} {{ p.ab|fmt(0) }} · reverse {{ p.ba|fmt(0) }}</span></div>
+</div>
+<div class="grid g2">
+  <div class="card"><h3>UN General Assembly agreement over time</h3>{{ p.chart|safe if p.chart else '<p class="muted small">Not enough shared votes.</p>'|safe }}</div>
+  <div class="card">
+    <h3>Risk and alignment</h3>
+    <ol class="mk-list">
+      {% for e, r in [(a, p.risk_a), (b, p.risk_b)] %}<li><span>{{ flag(e.entity_id) }}{{ e.name }} risk index</span><span class="mono">{{ '%.0f'|format(r.score) ~ ' · ' ~ r.band if r else '—' }}</span></li>{% endfor %}
+      {% for e, s in [(a, p.ideal_a), (b, p.ideal_b)] %}{% if s %}{% set y = s|max %}<li><span>{{ e.name }} UN voting position, {{ y }}</span><span class="mono">{{ '%.2f'|format(s[y]) }}</span></li>{% endif %}{% endfor %}
+    </ol>
+    {% if p.war %}<h3 style="margin-top:16px">Years of armed conflict between the governments</h3><ol class="mk-list">{% for y, d in p.war[-8:]|reverse %}<li><span>{{ y }}</span><span class="mono">{{ d|fmt(0) }} deaths</span></li>{% endfor %}</ol>{% endif %}
+    <p class="small muted" style="margin:10px 0 0">Voting position: higher is closer to the United States and Western democracies.</p>
+  </div>
+</div>
+<div class="section-head"><h2>Live news about both</h2></div>
+{{ g.news(query='"' ~ a.name ~ '" "' ~ b.name ~ '"', max=15, tabs=False, compact=True, label=a.name ~ ' and ' ~ b.name) }}
+{{ g.news_note() }}
+<div class="section-head"><h2>Other relations</h2><a href="/geopolitics/relations/">Compare any two →</a></div>
+<nav class="mk-others">{% for x, y in pairs %}<a href="/geopolitics/relations/{{ x.slug }}-and-{{ y.slug }}/">{{ x.name }} · {{ y.name }}</a>{% endfor %}</nav>
+{{ g.sources(srcs) }}
+{% endblock %}
+{% block scripts %}<script src="/static/js/geo-news.js?v={{ asset_v }}" defer></script>{% endblock %}
