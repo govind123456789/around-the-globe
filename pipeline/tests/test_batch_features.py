@@ -62,3 +62,17 @@ def test_ilostat_and_faostat_indicators_have_data():
     for ind in ("youth-neet", "informal-employment", "severe-food-insecurity", "adult-obesity"):
         d = json.loads((DIST / "v1" / "latest" / "indicators" / f"{ind}.json").read_text(encoding="utf-8"))
         assert len(d["data"]) > 60, ind
+
+
+@built
+def test_quiz_city_pages_home_and_grouped_nav():
+    quiz = json.loads((DIST / "quiz" / "data.json").read_text(encoding="utf-8"))
+    assert len(quiz["inds"]) >= 15 and len(quiz["c"]) > 80
+    cities = list((DIST / "cities").glob("*/index.html"))
+    assert len(cities) > 500
+    tokyo = next(p for p in cities if p.parent.name.startswith("tokyo"))
+    assert "Population since 1975" in tokyo.read_text(encoding="utf-8")
+    home = (DIST / "index.html").read_text(encoding="utf-8")
+    assert "This week" in home and "/geopolitics/crises/" in home
+    power = (DIST / "geopolitics" / "power" / "index.html").read_text(encoding="utf-8")
+    assert 'class="geo-groups"' in power and "Power &amp; alignment" in power

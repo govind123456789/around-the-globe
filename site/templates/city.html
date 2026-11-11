@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ c.name }}: population, growth and density{% endblock %}
+{% block description %}{{ c.name }}{% if country %}, {{ country.name }}{% endif %}: {{ c.people|fmt(0) }} people in its urban centre in 2025, the world's #{{ c.rank }} largest; growth since 1975 and the 2030 projection (GHSL).{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/cities/">Cities</a>{% if country %} › <a href="/countries/{{ country.slug }}/">{{ country.name }}</a>{% endif %}</p>
+<div class="page-head">
+  <span class="eyebrow">Urban centre · #{{ c.rank }} in the world</span>
+  <h1>{{ c.name }}</h1>
+  <p class="lede">{% if c.also and c.also != c.name %}Also covering {{ c.also }}. {% endif %}The contiguous built-up urban centre around {{ c.name }}{% if country %} in {{ country.name }}{% endif %}{% if c.capital %}, the national capital{% endif %}, as mapped from satellite data by the European Commission’s Global Human Settlement Layer.</p>
+</div>
+<div class="stats mk-kpis">
+  <div class="card stat"><span class="l">People, 2025</span><span class="v">{{ c.people|fmt(0) }}</span><span class="small muted">#{{ c.rank }} of {{ n }} urban centres over 1 million</span></div>
+  {% if c.pop1975 %}<div class="card stat"><span class="l">Growth since 1975</span><span class="v">{{ '%.1f'|format(c.people / c.pop1975) }}×</span><span class="small muted">from {{ c.pop1975|fmt(0) }}</span></div>{% endif %}
+  {% if c.pop2030 %}<div class="card stat"><span class="l">Projected for 2030</span><span class="v">{{ c.pop2030|fmt(0) }}</span><span class="small muted">{{ '%+.0f'|format(100 * (c.pop2030 - c.people) / c.people) }}% on 2025</span></div>{% endif %}
+  {% if c.density %}<div class="card stat"><span class="l">Density</span><span class="v">{{ c.density|fmt(0) }}</span><span class="small muted">people per km² · {{ c.area|fmt(0) }} km²</span></div>{% endif %}
+</div>
+<div class="grid g2">
+  <div class="card"><h3>Population since 1975</h3>{{ chart|safe }}</div>
+  <div class="card">
+    <h3>{% if country %}Largest urban centres in {{ country.name }}{% else %}Similar in size{% endif %}</h3>
+    <ol class="mk-list">{% for x in same %}<li><span>{% if x.id == c.id %}<b>{{ x.name }}</b>{% else %}<a href="/cities/{{ x.slug }}/">{{ x.name }}</a>{% endif %}</span><span class="mono">{{ x.people|fmt(0) }}</span></li>{% endfor %}</ol>
+    <h3 style="margin-top:16px">Similar in size worldwide</h3>
+    <ol class="mk-list">{% for x in near %}<li><span>{{ flag(x.iso3) if x.iso3 }}<a href="/cities/{{ x.slug }}/">{{ x.name }}</a></span><span class="mono">{{ x.people|fmt(0) }}</span></li>{% endfor %}</ol>
+  </div>
+</div>
+<p class="small muted" style="margin-top:12px">An urban centre is a contiguous area of dense built-up cells (at least 1,500 people per km²), so it can be larger or smaller than the official city limits. Source: Mari Rivero et al. (2025), GHS Urban Centre Database R2024A v1.2, European Commission JRC, CC BY 4.0.</p>
+{% endblock %}

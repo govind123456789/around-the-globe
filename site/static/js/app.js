@@ -58,6 +58,14 @@
   function score(item, q) {
     let best = scoreText(item, norm(item.t), q);
     for (const alias of item.o || []) best = Math.max(best, scoreText(item, norm(alias), q) - 5);
+    // several words in any order: "sudan war", "india exports", "nato members"
+    const words = q.split(/\s+/).filter(w => w.length > 1);
+    if (best < 35 && words.length > 1) {
+      const hay = norm([item.t, item.s || "", item.k || "", ...(item.o || [])].join(" "));
+      const hayWords = hay.split(/[\s,()·-]+/);
+      const hit = w => hay.includes(w) || (w.length > 4 && hayWords.some(h => Math.abs(h.length - w.length) <= 1 && lev(h, w) <= 1));
+      if (words.every(hit)) best = 35;
+    }
     return Math.max(best, 0);
   }
   function scoreText(item, t, q) {
@@ -67,7 +75,8 @@
     if (t.includes(q)) return 40;
     // tolerate one typo for longer queries
     if (q.length > 3) {
-      for (const w of t.split(/\s+/)) if (Math.abs(w.length - q.length) <= 1 && lev(w, q) <= 1) return 30;
+      const tol = q.length > 7 ? 2 : 1;
+      for (const w of t.split(/\s+/)) if (Math.abs(w.length - q.length) <= tol && lev(w, q) <= tol) return 30;
     }
     return 0;
   }

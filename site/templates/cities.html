@@ -27,7 +27,7 @@
   {% for c in cities %}
     <tr data-c="{{ c.iso3 or c.country }}">
       <td class="num rank" data-v="{{ c.rank }}">{{ c.rank }}</td>
-      <td><b>{{ c.name }}</b>{% if c.capital %} <span class="badge" title="Capital city">capital</span>{% endif %}</td>
+      <td><a href="/cities/{{ c.slug }}/"><b>{{ c.name }}</b></a>{% if c.capital %} <span class="badge" title="Capital city">capital</span>{% endif %}</td>
       <td class="country-cell">{% if c.iso3 %}<a href="/countries/{{ by_id[c.iso3].slug }}/">{{ flag(c.iso3) }}{{ by_id[c.iso3].name }}</a>{% else %}{{ c.country }}{% endif %}</td>
       <td class="num" data-v="{{ c.people }}">{{ c.people|fmt(0) }}</td>
       <td class="num" data-v="{{ c.pop1975 or 0 }}">{{ c.pop1975|fmt(0) if c.pop1975 else '—' }}</td>

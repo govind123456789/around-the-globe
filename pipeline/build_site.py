@@ -11,7 +11,7 @@ import markdown
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
 
-from . import beyond, geopolitics, history, lab, live, markets, og, reports, standout, stories, svg
+from . import beyond, geopolitics, history, india, lab, live, markets, og, reports, standout, stories, svg
 from .build_data import Model
 from .config import CONTENT, DIST, RAW, SITE, load_yaml, site_config
 
@@ -146,23 +146,25 @@ class Site:
     @staticmethod
     def nav():
         # (label, url, submenu): the submenu is [(label, url, one-line description)]
-        geo = [("Overview", "/geopolitics/", "Conflict, alignment, displacement and risk"),
-               ("Live news", "/geopolitics/news/", "Geopolitical headlines from world media, live"),
-               ("Weekly briefing", "/geopolitics/briefing/", "What changed this week"),
-               ("Crisis tracker", "/geopolitics/crises/", "Ukraine, Sudan, Gaza, Myanmar and more"),
-               ("Conflicts", "/geopolitics/conflicts/", "Deaths in organised violence (UCDP)"),
-               ("Power index", "/geopolitics/power/", "The world's most powerful countries"),
-               ("Sanctions", "/geopolitics/sanctions/", "US sanctions by country (OFAC)"),
-               ("Risk index", "/geopolitics/risk/", "Our transparent country risk score"),
-               ("UN alignment", "/geopolitics/un-votes/", "Who votes with whom at the UN"),
-               ("Displacement", "/geopolitics/displacement/", "Refugees and the internally displaced"),
-               ("Blocs", "/geopolitics/blocs/", "NATO, EU, BRICS, SCO, G20 and more compared"),
-               ("Defence", "/geopolitics/defence/", "Nuclear warheads, armed forces and treaties"),
-               ("Relations", "/geopolitics/relations/", "Any two countries: votes, war, refugees, news"),
-               ("Watchlist", "/geopolitics/watchlist/", "Follow countries, with RSS feeds")]
+        geo = {"groups": [
+            ("Overview", [("Overview", "/geopolitics/", "Conflict, alignment, displacement and risk"),
+                          ("Live news", "/geopolitics/news/", "Headlines from world media, live"),
+                          ("Weekly briefing", "/geopolitics/briefing/", "What changed this week"),
+                          ("Watchlist", "/geopolitics/watchlist/", "Follow countries, with RSS feeds")]),
+            ("Conflict & risk", [("Crisis tracker", "/geopolitics/crises/", "Ukraine, Sudan, Gaza, Myanmar and more"),
+                                 ("Conflicts", "/geopolitics/conflicts/", "Deaths in organised violence"),
+                                 ("Risk index", "/geopolitics/risk/", "Transparent country risk score"),
+                                 ("Displacement", "/geopolitics/displacement/", "Refugees and the displaced")]),
+            ("Power & alignment", [("Power index", "/geopolitics/power/", "The most powerful countries"),
+                                   ("Blocs", "/geopolitics/blocs/", "NATO, EU, BRICS, SCO, G20"),
+                                   ("UN alignment", "/geopolitics/un-votes/", "Who votes with whom"),
+                                   ("Relations", "/geopolitics/relations/", "Any two countries"),
+                                   ("Sanctions", "/geopolitics/sanctions/", "US sanctions by country"),
+                                   ("Defence", "/geopolitics/defence/", "Warheads, forces, treaties")])]}
         explore = [("Map explorer", "/explore/", "Any indicator on the world map"),
                    ("Timeline map", "/explore/timeline/", "Watch the world change since 1990"),
                    ("Where would I fit?", "/lab/fit/", "Countries that match what you value"),
+                   ("Daily quiz", "/quiz/", "Which country has more?"),
                    ("Topics", "/topics/", "Indicators grouped by theme"),
                    ("Cities", "/cities/", "524 cities over one million people"),
                    ("Universities", "/universities/", "The 2,000 most-cited universities"),
@@ -210,7 +212,7 @@ class Site:
         # Pages are rebuilt from scratch so renamed URLs don't linger. v1/ and history/ are data outputs.
         for name in ("countries", "regions", "rankings", "compare", "topics", "data", "methodology",
                      "insights", "about", "explore", "world", "index-builder", "ask", "static", "og", "embed", "lab",
-                     "universities", "cities", "markets", "reports", "geopolitics", "feeds"):
+                     "universities", "cities", "markets", "reports", "geopolitics", "feeds", "quiz", "india"):
             if (DIST / name).exists():
                 shutil.rmtree(DIST / name)
         shutil.copytree(SITE / "static", DIST / "static")
@@ -236,7 +238,6 @@ class Site:
                      ("Data & API", "/data/", "Bulk downloads, CSV and JSON")],
             "hubs": self.mk.hubs,
             "popular": [(label, f"/rankings/{rid}/") for rid, label in popular if rid in self.rk]}
-        self.home()
         self.explore()
         self.rankings()
         self.markets_pages()
@@ -245,6 +246,9 @@ class Site:
         self.geopolitics_pages()
         self.so = standout.Standout(self.m, self.countries, self.by_id)
         self.standout_pages()
+        self.quiz_page()
+        self.india_pages()
+        self.home()
         self.countries_pages()
         self.history_pages()
         self.world_page()
@@ -301,7 +305,81 @@ class Site:
                     map_label=cap["name"], pairs=pairs, countries=self.countries,
                     n_countries=len(self.countries), n_indicators=len(self.m.indicators),
                     n_rankings=len(self.rk), hdi_check=self.m.hdi_check,
-                    markets=[h for h in self.mk.hubs if h["id"] != "economy"][:6], n_markets=len(self.mk.hubs))
+                    markets=[h for h in self.mk.hubs if h["id"] != "economy"][:6], n_markets=len(self.mk.hubs),
+                    week=self.this_week())
+
+    QUIZ = [("life-expectancy", "Which country has the higher life expectancy?"), ("gdp-per-capita-ppp", "Which country is richer per person (GDP per capita, PPP)?"),
+            ("population", "Which country has more people?"), ("internet-users", "Which country has a larger share of its people online?"),
+            ("co2-per-capita", "Which country emits more CO₂ per person?"), ("fertility", "In which country do women have more children on average?"),
+            ("urban-share", "Which country is more urban?"), ("median-age", "Which country has the older population (median age)?"),
+            ("electricity-generation", "Which country generates more electricity?"), ("clean-electricity-share", "Which country gets more of its electricity from clean sources?"),
+            ("exports-value", "Which country exports more?"), ("manufacturing-output", "Which country makes more (manufacturing output)?"),
+            ("air-passengers", "Whose airlines carry more passengers?"), ("women-parliament", "Which parliament has the larger share of women?"),
+            ("homicide-rate", "Which country has the higher murder rate?"), ("forest-area", "Which country is more forested?"),
+            ("tertiary-enrolment", "Which country sends more young people to university?"), ("surface-area", "Which country is larger by area?"),
+            ("solar-capacity", "Which country has more solar power capacity?"), ("market-cap", "Which country has the bigger stock market?"),
+            ("armed-forces", "Which country has more people in its armed forces?"), ("adult-obesity", "Which country has the higher adult obesity rate?")]
+
+    def india_pages(self) -> None:
+        """Indian states from data.gov.in; pages appear only once the build has fetched the tables."""
+        from .build_data import slugify
+        ind = india.India()
+        if ind.unmatched:
+            print(f"  india: unmatched state names: {sorted(ind.unmatched)[:12]}")
+        if not ind.inds:
+            print("  india: no data.gov.in tables yet (DATA_GOV_IN_KEY not set or fetch failed)")
+            return
+        for s in ind.states:
+            s["slug"] = slugify(s["name"])
+        rankings = [{"ind": i, "rows": ind.ranking(i)} for i in ind.inds]
+        self.render("/india/", "india_index.html", states=ind.states, inds=ind.inds, rankings=rankings,
+                    head=ind.inds[:10], latest=ind.latest)
+        for r in rankings:
+            self.render(f"/india/rankings/{r['ind']['id']}/", "india_ranking.html", ind=r["ind"], rows=r["rows"], inds=ind.inds,
+                        national=ind.latest(r["ind"]["id"], "IN"))
+            self.search.append({"t": f"{r['ind']['name']} by Indian state", "u": f"/india/rankings/{r['ind']['id']}/", "k": "India",
+                                "s": r["ind"]["unit"], "o": ["india states", "state ranking", r["ind"]["name"] + " india"]})
+        for s in ind.states:
+            prof = ind.profile(s["id"])
+            if not prof:
+                continue
+            scored = [p for p in prof if p["rank"] and p["ind"]["direction"] != "neutral"]
+            strong = sorted(scored, key=lambda p: p["rank"] / p["of"])[:2]
+            weak = [p for p in sorted(scored, key=lambda p: -p["rank"] / p["of"])[:2] if p["rank"] / p["of"] > 0.6]
+            self.render(f"/india/{s['slug']}/", "india_state.html", st=s, prof=prof, states=ind.states,
+                        strong=[p for p in strong if p["rank"] / p["of"] <= 0.34], weak=weak)
+            self.search.append({"t": s["name"], "u": f"/india/{s['slug']}/", "k": "Indian state", "s": s["kind"].capitalize(),
+                                "o": [s["id"], f"{s['name']} data", f"{s['name']} ranking"] + s.get("aliases", [])})
+        self.search.append({"t": "Indian states", "u": "/india/", "k": "India", "s": "State data and rankings",
+                            "o": ["india states", "state wise", "union territories"]})
+        self.env.globals["india_states_ready"] = True
+
+    def quiz_page(self) -> None:
+        big = [e for e in self.countries if (self.m.latest(e["entity_id"], "population") or (0, 0, ""))[1] >= 5e6]
+        inds, vals = [], {}
+        for ind_id, q in self.QUIZ:
+            if ind_id not in self.m.indicators:
+                continue
+            ind = self.m.indicators[ind_id]
+            v = {e["entity_id"]: [lt[0], round(lt[1], 4)] for e in big if (lt := self.m.latest(e["entity_id"], ind_id, min_year=2018))}
+            if len(v) >= 20:
+                src = self.m.sources.get(ind["source"], {})
+                inds.append({"id": ind_id, "q": q, "unit": ind["unit"], "d": ind.get("decimals", 1),
+                             "src": f"{SOURCE_SHORT.get(ind['source'], src.get('publisher', ind['source']))}"})
+                vals[ind_id] = v
+        data = {"inds": inds, "v": vals, "c": {e["entity_id"]: {"n": e["name"], "f": (e.get("iso2") or "").lower()} for e in big}}
+        (DIST / "quiz").mkdir(parents=True, exist_ok=True)
+        (DIST / "quiz" / "data.json").write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        self.render("/quiz/", "quiz.html", n=len(inds))
+        self.search.append({"t": "Daily world quiz", "u": "/quiz/", "k": "Quiz", "s": "Which country has more?", "o": ["quiz", "game", "trivia"]})
+
+    def this_week(self) -> dict:
+        g = getattr(self, "geo", None)
+        crises = sorted(g.crises(), key=lambda c: -c["last12"])[:4] if g else []
+        rp = getattr(self, "rp", None)
+        report = next((r for r in rp.reports if r["id"] == "energy-transition"), rp.reports[0]) if rp and rp.reports else None
+        return {"crises": crises, "alerts": (g.alerts if g else [])[:5], "report": report,
+                "risers": (g.risers if g else [])[:3], "power": (g.power if g else [])[:5]}
 
     def geo_embeds(self, g, crises) -> None:
         """Small self-contained widgets that journalists and bloggers can put in an iframe."""
@@ -832,7 +910,7 @@ class Site:
                         lower_better=ind["direction"] == "lower_better")
             self.search.append({"t": ind["name"], "u": f"/data/indicators/{ind['id']}/", "k": "Indicator",
                                 "s": self.dims[ind["dimension"]]["name"]})
-        used = sorted({i["source"] for i in inds} | {"natural-earth", "wikidata", "cliopatria", "maddison", "ucdp"})
+        used = sorted(({i["source"] for i in inds} | {"natural-earth", "wikidata", "cliopatria", "maddison", "ucdp", "unvotes", "unhcr", "ofac", "fas", "openalex", "ghsl"}) & set(self.m.sources))
         excluded = [s for s in self.m.sources.values() if s["source_id"] not in used]
         self.render("/data/sources/", "sources.html", used=[self.m.sources[s] for s in used], excluded=excluded,
                     counts={s: sum(1 for i in inds if i["source"] == s) for s in used}, warnings=self.m.warnings)
@@ -873,6 +951,16 @@ class Site:
         self.env.globals["beyond"] = by_c
         self.env.globals["beyond_counts"] = {"unis": len(self.unis), "cities": len(self.cities)}
 
+        from .build_data import slugify
+        used = set()
+        for c in self.cities:
+            base = slugify(f"{c['name']}-{c['iso3'] or c['country']}")
+            slug, k = base, 2
+            while slug in used:
+                slug, k = f"{base}-{k}", k + 1
+            used.add(slug)
+            c["slug"] = slug
+
     def beyond_pages(self) -> None:
         def countries_of(items):
             isos = {x["iso3"] for x in items if x["iso3"]}
@@ -890,10 +978,17 @@ class Site:
         if self.cities:
             self.render("/cities/", "cities.html", cities=self.cities, countries=countries_of(self.cities), by_id=self.by_id)
             self.search.append({"t": "The world's largest cities", "u": "/cities/", "k": "List", "s": "GHSL urban centres"})
-            for c in self.cities[:300]:
-                if c["iso3"]:
-                    self.search.append({"t": c["name"], "u": f"/cities/#{c['iso3']}", "k": "City",
-                                        "s": f"{self.by_id[c['iso3']]['name']} · {fmt(c['people'], 0)} people"})
+            for c in self.cities:
+                same = [x for x in self.cities if x["iso3"] == c["iso3"]][:8] if c["iso3"] else []
+                i = c["rank"] - 1
+                near = [x for x in self.cities[max(0, i - 3):i + 4] if x["id"] != c["id"]]
+                chart = svg.line_chart([{"label": c["name"], "points": c["series"]}], "people", decimals=0,
+                                       title=f"{c['name']} population") if len(c["series"]) > 1 else ""
+                self.render(f"/cities/{c['slug']}/", "city.html", c=c, country=self.by_id.get(c["iso3"]), same=same, near=near,
+                            chart=chart, n=len(self.cities))
+                country = self.by_id[c["iso3"]]["name"] if c["iso3"] else c["country"]
+                self.search.append({"t": c["name"], "u": f"/cities/{c['slug']}/", "k": "City",
+                                    "s": f"{country} · {fmt(c['people'], 0)} people", "o": [x.strip() for x in c["also"].split(";") if x.strip()][:3]})
         out = DIST / "data"
         out.mkdir(parents=True, exist_ok=True)
         (out / "universities.json").write_text(json.dumps({"source": "OpenAlex, CC0", "results": self.unis}, ensure_ascii=False,
@@ -1009,7 +1104,7 @@ class Site:
         (DIST / "_headers").write_text(
             "/v1/releases/*\n  Access-Control-Allow-Origin: *\n  Cache-Control: public, max-age=31536000, immutable\n"
             "/v1/latest/*\n  Access-Control-Allow-Origin: *\n  Cache-Control: public, max-age=3600\n"
-            "/static/*\n  Cache-Control: public, max-age=86400\n")
+            "/static/*\n  Cache-Control: public, max-age=604800\n")
 
 
 def build(model: Model) -> None:

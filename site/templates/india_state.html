@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ st.name }}: data and how it ranks among Indian states{% endblock %}
+{% block description %}{{ st.name }} compared with India's other states and union territories on income, tax, poverty, literacy, health, safety and environment, from official data.{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/countries/india/">India</a> › <a href="/india/">States</a></p>
+<div class="page-head">
+  <span class="eyebrow">Indian {{ 'state' if st.kind == 'state' else 'union territory' }}</span>
+  <h1>{{ st.name }}</h1>
+  <p class="lede">How {{ st.name }} compares with India’s other states and union territories{% if strong %}: strongest on {{ strong|map(attribute='ind.name')|map('lower')|join(' and ') }}{% endif %}{% if weak %}, weakest on {{ weak|map(attribute='ind.name')|map('lower')|join(' and ') }}{% endif %}.</p>
+</div>
+<div class="india-grid">
+  {% for p in prof %}
+  <div class="card india-item{% if p.rank and p.ind.direction != 'neutral' %}{% if p.rank <= (p.of / 4)|round(0, 'ceil') %} good{% elif p.rank > p.of * 3 / 4 %} weak{% endif %}{% endif %}">
+    <div class="small"><a href="/india/rankings/{{ p.ind.id }}/">{{ p.ind.name }}</a></div>
+    <div class="rb-val">{{ p.value|fmt(p.ind.decimals) }}</div>
+    <div class="small muted">{{ p.ind.unit }} · {{ p.period }}</div>
+    {% if p.rank %}<div class="small">#{{ p.rank }} of {{ p.of }}{% if p.india %} · All India {{ p.india[1]|fmt(p.ind.decimals) }}{% endif %}</div>{% endif %}
+    {% if p.first %}<div class="small muted">{{ p.first[0] }}: {{ p.first[1]|fmt(p.ind.decimals) }}</div>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+<div class="section-head"><h2>Other states and union territories</h2></div>
+<nav class="mk-others">{% for s in states if s.id != st.id %}<a href="/india/{{ s.slug }}/">{{ s.name }}</a>{% endfor %}</nav>
+<p class="small muted" style="margin-top:12px">Ranks are among states and union territories with data for that measure. Data: Open Government Data Platform India (data.gov.in), Government Open Data License – India; the ministry behind each figure is named on its ranking page.</p>
+{% endblock %}

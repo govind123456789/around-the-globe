@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Indian states and union territories: data and rankings{% endblock %}
+{% block description %}Compare India's states and union territories on income, tax, jobs, poverty, literacy, health, safety, internet and environment, from official data on data.gov.in.{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/countries/india/">India</a></p>
+<div class="page-head">
+  <span class="eyebrow">India · {{ states|length }} states and union territories</span>
+  <h1>Indian states</h1>
+  <p class="lede">How India’s states and union territories compare on {{ inds|length }} measures, from income and tax to poverty, health, safety and forests. Every figure comes from a ministry’s table on data.gov.in, with its period shown.</p>
+</div>
+<div class="section-head"><h2>Rankings</h2></div>
+<div class="grid g3">
+  {% for r in rankings %}
+  <a class="card link rank-card" href="/india/rankings/{{ r.ind.id }}/" style="color:inherit;text-decoration:none">
+    <span class="mk-kicker">{{ r.ind.topic }}</span>
+    <h3 style="margin:4px 0 6px">{{ r.ind.name }}</h3>
+    <ol>{% for x in r.rows[:5] %}<li><span><b>{{ x.rank }}</b>{{ x.s.name }}</span><span class="mono">{{ x.value|fmt(r.ind.decimals) }}</span></li>{% endfor %}</ol>
+    <span class="small muted">{{ r.ind.unit }} · {{ r.rows[0].period if r.rows }}</span>
+  </a>
+  {% endfor %}
+</div>
+<div class="section-head"><h2>All states at a glance</h2><span class="muted small">Latest period for each measure</span></div>
+<div class="table-wrap"><table data-sortable>
+  <thead><tr><th class="sortable" data-type="text">State / UT</th>{% for i in head %}<th class="num sortable" data-type="num" title="{{ i.name }} ({{ i.unit }})">{{ i.name }}</th>{% endfor %}</tr></thead>
+  <tbody>{% for st in states %}<tr><td><a href="/india/{{ st.slug }}/">{{ st.name }}</a>{% if st.kind != 'state' %} <span class="small muted">UT</span>{% endif %}</td>{% for i in head %}{% set lt = latest(i.id, st.id) %}<td class="num" data-v="{{ lt[1] if lt else '' }}">{{ lt[1]|fmt(i.decimals) if lt else '—' }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+</table></div>
+<p class="small muted" style="margin-top:12px">Source tables on the Open Government Data Platform India (data.gov.in), Government Open Data License – India. Periods differ between measures: financial years such as 2023-24, survey rounds such as NFHS-5 (2019-21), and census years.</p>
+{% endblock %}

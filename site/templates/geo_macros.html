@@ -1,13 +1,18 @@
+{% set GEO_GROUPS = [
+  ('Overview', [('/geopolitics/', 'Overview'), ('/geopolitics/news/', 'Live news'), ('/geopolitics/briefing/', 'Weekly briefing'), ('/geopolitics/watchlist/', 'Watchlist')]),
+  ('Conflict & risk', [('/geopolitics/crises/', 'Crisis tracker'), ('/geopolitics/conflicts/', 'Conflicts'), ('/geopolitics/risk/', 'Risk index'), ('/geopolitics/displacement/', 'Displacement')]),
+  ('Power & alignment', [('/geopolitics/power/', 'Power index'), ('/geopolitics/blocs/', 'Blocs'), ('/geopolitics/un-votes/', 'UN alignment'), ('/geopolitics/relations/', 'Relations'), ('/geopolitics/sanctions/', 'Sanctions'), ('/geopolitics/defence/', 'Defence')])] %}
 {% macro subnav(url) -%}
-<nav class="geo-nav no-print" aria-label="Geopolitics">
-  {% for href, label in [('/geopolitics/', 'Overview'), ('/geopolitics/news/', 'Live news'), ('/geopolitics/briefing/', 'Weekly briefing'), ('/geopolitics/crises/', 'Crises'), ('/geopolitics/conflicts/', 'Conflicts'), ('/geopolitics/risk/', 'Risk index'), ('/geopolitics/power/', 'Power'), ('/geopolitics/sanctions/', 'Sanctions'), ('/geopolitics/un-votes/', 'UN alignment'), ('/geopolitics/displacement/', 'Displacement'), ('/geopolitics/blocs/', 'Blocs'), ('/geopolitics/defence/', 'Defence'), ('/geopolitics/relations/', 'Relations'), ('/geopolitics/watchlist/', 'Watchlist')] %}
-  <a href="{{ href }}"{% if url == href or (href in ('/geopolitics/relations/', '/geopolitics/blocs/', '/geopolitics/crises/') and url.startswith(href)) %} aria-current="page"{% endif %}>{{ label }}</a>
-  {% endfor %}
+{% set ns = namespace(group=GEO_GROUPS[0]) %}
+{% for g in GEO_GROUPS %}{% for href, label in g[1] %}{% if url == href or (href != '/geopolitics/' and url.startswith(href)) %}{% set ns.group = g %}{% endif %}{% endfor %}{% endfor %}
+<nav class="geo-nav no-print" aria-label="Geopolitics sections">
+  <div class="geo-groups">{% for g in GEO_GROUPS %}<a href="{{ g[1][0][0] }}"{% if g == ns.group %} aria-current="true"{% endif %}>{{ g[0] }}</a>{% endfor %}</div>
+  <div class="geo-items">{% for href, label in ns.group[1] %}<a href="{{ href }}"{% if url == href or (href != '/geopolitics/' and url.startswith(href)) %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}</div>
 </nav>
 {%- endmacro %}
 
 {% macro news(query='', max=20, tabs=True, compact=False, search=False, label='') -%}
-<div class="gd-news{% if compact %} compact{% endif %}" data-gdelt data-query="{{ query }}" data-max="{{ max }}" data-tabs="{{ 1 if tabs else 0 }}" data-search="{{ 1 if search else 0 }}" data-label="{{ label }}">
+<div class="gd-news{% if compact %} compact{% endif %}" aria-live="polite" data-gdelt data-query="{{ query }}" data-max="{{ max }}" data-tabs="{{ 1 if tabs else 0 }}" data-search="{{ 1 if search else 0 }}" data-label="{{ label }}">
   <p class="small muted gd-status">Loading live headlines…</p>
 </div>
 <noscript><p class="small muted">Live headlines need JavaScript. They come from the GDELT Project’s monitor of world news.</p></noscript>

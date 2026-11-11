@@ -1,0 +1,206 @@
+# Indian states and union territories: indicators from data.gov.in (Open Government Data Platform India),
+# licensed under the Government Open Data License - India (GODL). Each indicator names its data.gov.in
+# resource, the column holding the state name and the value columns with the period each describes.
+# Fetched with the DATA_GOV_IN_KEY secret during the GitHub build; the key is never stored or published.
+
+states:
+  - { id: AP, name: Andhra Pradesh, kind: state }
+  - { id: AR, name: Arunachal Pradesh, kind: state }
+  - { id: AS, name: Assam, kind: state }
+  - { id: BR, name: Bihar, kind: state }
+  - { id: CG, name: Chhattisgarh, kind: state, aliases: [Chattisgarh, Chhatisgarh] }
+  - { id: GA, name: Goa, kind: state }
+  - { id: GJ, name: Gujarat, kind: state }
+  - { id: HR, name: Haryana, kind: state }
+  - { id: HP, name: Himachal Pradesh, kind: state }
+  - { id: JH, name: Jharkhand, kind: state }
+  - { id: KA, name: Karnataka, kind: state }
+  - { id: KL, name: Kerala, kind: state }
+  - { id: MP, name: Madhya Pradesh, kind: state }
+  - { id: MH, name: Maharashtra, kind: state }
+  - { id: MN, name: Manipur, kind: state }
+  - { id: ML, name: Meghalaya, kind: state }
+  - { id: MZ, name: Mizoram, kind: state }
+  - { id: NL, name: Nagaland, kind: state }
+  - { id: OD, name: Odisha, kind: state, aliases: [Orissa] }
+  - { id: PB, name: Punjab, kind: state }
+  - { id: RJ, name: Rajasthan, kind: state }
+  - { id: SK, name: Sikkim, kind: state }
+  - { id: TN, name: Tamil Nadu, kind: state }
+  - { id: TS, name: Telangana, kind: state }
+  - { id: TR, name: Tripura, kind: state }
+  - { id: UP, name: Uttar Pradesh, kind: state }
+  - { id: UK, name: Uttarakhand, kind: state, aliases: [Uttaranchal] }
+  - { id: WB, name: West Bengal, kind: state }
+  - { id: AN, name: Andaman and Nicobar Islands, kind: union territory, aliases: [Andaman & Nicobar Islands, A & N Islands, Andaman & Nicobar, A&N Islands] }
+  - { id: CH, name: Chandigarh, kind: union territory }
+  - { id: DH, name: Dadra and Nagar Haveli and Daman and Diu, kind: union territory, aliases: [Dadra & Nagar Haveli and Daman & Diu, DNH and DD, Dadra and Nagar Haveli & Daman and Diu, "Dadra & Nagar Haveli & Daman & Diu"] }
+  - { id: DL, name: Delhi, kind: union territory, aliases: [NCT of Delhi, Delhi (NCT), National Capital Territory of Delhi, Delhi UT] }
+  - { id: JK, name: Jammu and Kashmir, kind: union territory, aliases: [Jammu & Kashmir, J&K, Jammu & Kashmir (UT)] }
+  - { id: LA, name: Ladakh, kind: union territory }
+  - { id: LD, name: Lakshadweep, kind: union territory }
+  - { id: PY, name: Puducherry, kind: union territory, aliases: [Pondicherry] }
+  - { id: IN, name: All India, kind: total, aliases: [India, All-India, All India Total, Total, All India Average] }
+
+indicators:
+  - id: gsdp-per-capita
+    name: GSDP per person
+    unit: "₹ per person, current prices"
+    decimals: 0
+    direction: higher_better
+    topic: Economy
+    resource: af17f25b-3bdf-4eeb-b3e3-b0fc93df16a7
+    state_field: state
+    values: { per_capita_gsdp___2019_2020: 2019-20, per_capita_gsdp___2020_2021: 2020-21, per_capita_gsdp___2021_22: 2021-22, per_capita_gsdp___2022_23: 2022-23, per_capita_gsdp___2023_24: 2023-24 }
+    source: "Ministry of Statistics and Programme Implementation, via data.gov.in"
+  - id: nsdp-per-capita
+    name: Net state domestic product per person
+    unit: "₹ per person, current prices"
+    decimals: 0
+    direction: higher_better
+    topic: Economy
+    resource: c9bfd3c0-b9de-4a5b-8752-f72a4f2932ad
+    state_field: state_ut
+    values: { _2019_20: 2019-20, _2020_21: 2020-21, _2021_22: 2021-22, _2022_23: 2022-23 }
+    source: "Ministry of Statistics and Programme Implementation, via data.gov.in"
+  - id: gst-collection
+    name: GST collection
+    unit: "₹ crore"
+    decimals: 0
+    direction: neutral
+    topic: Economy
+    resource: 5d0b81aa-d513-4dfd-9f57-84571829c049
+    state_field: state_ut
+    values: { _2020_21: 2020-21, _2021_22: 2021-22, _2022_23: 2022-23, _2023_24: 2023-24, _2024_25: 2024-25 }
+    source: "Ministry of Finance, via data.gov.in"
+  - id: unemployment
+    name: Unemployment rate (PLFS)
+    unit: "% of labour force"
+    decimals: 1
+    direction: lower_better
+    topic: Economy
+    resource: 609b476a-cdfe-4701-b00e-40da86d1ef41
+    state_field: state_ut
+    values: { ur__in_percent__according_to_usual_status__ps_ss_: 2021-22 }
+    source: "Periodic Labour Force Survey, Ministry of Statistics and Programme Implementation, via data.gov.in"
+  - id: poverty-mpi
+    name: Multidimensional poverty
+    unit: "% of people"
+    decimals: 1
+    direction: lower_better
+    topic: Living standards
+    resource: 5748c160-f99d-4614-99b7-9cb785a4e05d
+    state_field: state_ut
+    values: { headcount_ratio_______2013_14: 2013-14, headcount_ratio_______2022_23: 2022-23 }
+    source: "NITI Aayog, via data.gov.in"
+  - id: literacy
+    name: Literacy rate (Census)
+    unit: "% of people"
+    decimals: 1
+    direction: higher_better
+    topic: Education
+    resource: 4462bd51-65e5-44c1-a4f0-7cd22a51925c
+    state_field: state_uts
+    values: { _1951: "1951", _1961: "1961", _1971: "1971", _1981: "1981", _1991: "1991", _2001: "2001", _2011: "2011" }
+    source: "Census of India, via data.gov.in"
+  - id: rural-literacy
+    name: Rural literacy rate
+    unit: "% of people"
+    decimals: 1
+    direction: higher_better
+    topic: Education
+    resource: ebb33c4b-ed21-4f69-8896-571b55523447
+    state_field: state_ut
+    values: { _2019_20: 2019-20, _2020_21: 2020-21, _2021_22: 2021-22, _2022_23: 2022-23, _2023_24: 2023-24 }
+    source: "Ministry of Education, via data.gov.in"
+  - id: infant-mortality
+    name: Infant mortality rate (SRS)
+    unit: "per 1,000 live births"
+    decimals: 0
+    direction: lower_better
+    topic: Health
+    resource: 1daba3f8-2e66-4b04-b025-f43ccba8587a
+    state_field: state_ut
+    values: { infant_mortality_rate__2020_: "2020" }
+    source: "Sample Registration System, Registrar General of India, via data.gov.in"
+  - id: stunting
+    name: Child stunting (NFHS)
+    unit: "% of children under 5"
+    decimals: 1
+    direction: lower_better
+    topic: Health
+    resource: 552520f4-93d4-481e-8a1b-b5adda3f7e27
+    state_field: state_ut
+    values: { stunting___nfhs_4: 2015-16, stunting___nfhs_5: 2019-21 }
+    source: "National Family Health Survey, Ministry of Health and Family Welfare, via data.gov.in"
+  - id: anaemia-women
+    name: Anaemia in women (NFHS)
+    unit: "% of women aged 15–49"
+    decimals: 1
+    direction: lower_better
+    topic: Health
+    resource: 9f2f3b78-26fd-419c-a0e5-f3b08274c15e
+    state_field: state
+    values: { all_women_age_15_49_years_who_are_anaemic_______nfhs_4: 2015-16, all_women_age_15_49_years_who_are_anaemic_______nfhs_5: 2019-21 }
+    source: "National Family Health Survey, Ministry of Health and Family Welfare, via data.gov.in"
+  - id: sex-ratio
+    name: Sex ratio (Census)
+    unit: "females per 1,000 males"
+    decimals: 0
+    direction: neutral
+    topic: Society
+    resource: 2320f4d4-85b6-46bb-86b6-36824b87cd08
+    state_field: state_union_territory
+    values: { sex_ratio___2011: "2011" }
+    source: "Census of India, via data.gov.in"
+  - id: internet
+    name: Internet subscribers per 100 people
+    unit: "per 100 people"
+    decimals: 1
+    direction: higher_better
+    topic: Technology
+    resource: d441cbd3-2143-4c4d-927d-f168ad8a1eb7
+    state_field: state_ut
+    values: { teledensity_______total: "2024" }
+    source: "Telecom Regulatory Authority of India, via data.gov.in"
+  - id: crime-rate
+    name: Crime rate (IPC + SLL)
+    unit: "cognizable crimes per 100,000 people"
+    decimals: 1
+    direction: lower_better
+    topic: Safety
+    resource: 531ba9ca-2f65-42f7-a005-8ab941403d76
+    state_field: state_ut
+    values: { _2016___rate: "2016", _2017___rate: "2017", _2018___rate: "2018", _2019___rate: "2019", _2020___rate: "2020" }
+    source: "National Crime Records Bureau, via data.gov.in"
+    note: "Recorded crime depends on how readily people report and police register cases."
+  - id: road-deaths
+    name: Road accident deaths
+    unit: "deaths"
+    decimals: 0
+    direction: lower_better
+    topic: Safety
+    resource: c8ff79cb-2dcb-4855-be05-eb926b16d2ff
+    state_field: state_ut
+    sums: { "2023": [national_highways__nh____2023, state_highways__sh____2023, other_roads___2023], "2024": [national_highways__nh____2024, state_highways__sh____2024, other_roads___2024] }
+    source: "Ministry of Road Transport and Highways, via data.gov.in"
+  - id: forest-cover
+    name: Forest cover
+    unit: "% of geographical area"
+    decimals: 1
+    direction: higher_better
+    topic: Environment
+    resource: bd170c36-ab14-4c70-8eff-f44c357b43c9
+    state_field: state_uts
+    values: { percentage_of_geographical_area: "2021" }
+    source: "India State of Forest Report, Forest Survey of India, via data.gov.in"
+  - id: renewable-capacity
+    name: Renewable power capacity
+    unit: "MW"
+    decimals: 0
+    direction: higher_better
+    topic: Environment
+    resource: cbd8f272-0533-450b-9fbd-5f439adb08d2
+    state_field: state___uts
+    values: { total_capacity: "2023" }
+    source: "Ministry of New and Renewable Energy, via data.gov.in"

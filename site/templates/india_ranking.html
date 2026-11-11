@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ ind.name }} by Indian state{% endblock %}
+{% block description %}{{ ind.name }} ({{ ind.unit }}) for India's states and union territories, ranked, from {{ ind.source }}.{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/countries/india/">India</a> › <a href="/india/">States</a></p>
+<div class="page-head">
+  <span class="eyebrow">Indian states · {{ ind.topic }}</span>
+  <h1>{{ ind.name }}</h1>
+  <p class="lede">{{ ind.unit|capitalize }}. {{ 'Lower is better.' if ind.direction == 'lower_better' else 'Higher is better.' if ind.direction == 'higher_better' else '' }}{% if national %} All India: <b>{{ national[1]|fmt(ind.decimals) }}</b> ({{ national[0] }}).{% endif %}</p>
+</div>
+<ol class="mk-bars india-bars">
+  {% for r in rows %}<li><span class="rk">{{ r.rank }}</span><span class="nm"><a href="/india/{{ r.s.slug }}/">{{ r.s.name }}</a></span><span class="bar" aria-hidden="true"><i style="width:{{ r.bar }}%"></i></span><span class="val">{{ r.value|fmt(ind.decimals) }}<small>{{ r.period }}</small></span></li>{% endfor %}
+</ol>
+{% if ind.note %}<p class="small muted">{{ ind.note }}</p>{% endif %}
+<p class="small muted" style="margin-top:12px">Source: {{ ind.source }} (resource <a href="https://data.gov.in/resource/{{ ind.resource }}" rel="noopener">{{ ind.resource[:8] }}</a>), Government Open Data License – India.</p>
+<div class="section-head"><h2>Other state rankings</h2></div>
+<nav class="mk-others">{% for i in inds if i.id != ind.id %}<a href="/india/rankings/{{ i.id }}/">{{ i.name }}</a>{% endfor %}</nav>
+{% endblock %}

@@ -388,6 +388,9 @@ def main(argv: list[str] | None = None) -> None:
         if ind["source"] == "v-dem":
             fetch_file(f"https://ourworldindata.org/grapher/{ind['owid']}.csv?v=1&csvType=full&useColumnShortNames=true",
                        RAW / "vdem" / f"{ind['id']}.csv", args.refresh)
+    print("Indian states (data.gov.in)")
+    from . import india
+    india.fetch(args.refresh, _get, _write)
     print("ILOSTAT and FAOSTAT")
     for ind in cat["indicators"]:
         if ind["source"] == "ilostat":

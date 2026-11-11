@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Daily world quiz: which country has more?{% endblock %}
+{% block description %}Ten questions a day comparing countries on real data: life expectancy, income, emissions, internet use and more. Same questions for everyone; share your score.{% endblock %}
+{% block main %}
+<div class="page-head">
+  <span class="eyebrow">Daily quiz · new questions every day</span>
+  <h1>Which country has more?</h1>
+  <p class="lede">Ten questions, the same for everyone today. Each answer shows the real figures, their year and their source. How well do you know the world?</p>
+</div>
+<div class="quiz card" id="quiz" aria-live="polite"><p class="muted">Loading today’s questions…</p></div>
+<p class="small muted" style="margin-top:12px">Questions are drawn from {{ n }} indicators for countries of five million people or more, using the latest data since 2018. Your score and streak are kept only in this browser.</p>
+{% endblock %}
+{% block scripts %}<script src="/static/js/quiz.js?v={{ asset_v }}" defer></script>{% endblock %}

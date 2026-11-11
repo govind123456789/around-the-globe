@@ -63,6 +63,13 @@
             </div>
           </div>
         </details>
+        {% elif sub is mapping %}
+        <details class="nav-more nav-mega{% if url.startswith(href) %} current{% endif %}">
+          <summary>{{ label }}</summary>
+          <div class="nav-panel mega geo-mega">
+            {% for gname, items in sub.groups %}<div class="mega-col"><h4>{{ gname }}</h4>{% for l, h, d in items %}<a class="mega-item" href="{{ h }}"{% if url == h %} aria-current="page"{% endif %}>{{ l }}<small>{{ d }}</small></a>{% endfor %}</div>{% endfor %}
+          </div>
+        </details>
         {% elif sub and sub != 'mega' %}
         <details class="nav-more{% for s in sub if url.startswith(s[1]) %}{% if loop.first %} current{% endif %}{% endfor %}">
           <summary>{{ label }}</summary>

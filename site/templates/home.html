@@ -28,6 +28,30 @@
 </section>
 {% endblock %}
 {% block main %}
+{% if week %}
+<div class="section-head"><h2>This week</h2><a href="/geopolitics/briefing/">Weekly briefing →</a></div>
+<div class="grid g3 week-grid">
+  {% if week.crises %}<a class="card link week-card week-crises" href="/geopolitics/crises/">
+    <span class="mk-kicker">Crisis tracker</span><h3>Deadliest crises, last 12 months</h3>
+    <ol class="mk-list">{% for c in week.crises %}<li><span>{{ c.name }}</span><span class="mono">{{ c.last12|fmt(0) }}</span></li>{% endfor %}</ol>
+    <span class="mk-more">All crises →</span></a>{% endif %}
+  {% if week.alerts %}<a class="card link week-card" href="/geopolitics/risk/">
+    <span class="mk-kicker">Alerts</span><h3>Countries to watch</h3>
+    <ol class="mk-list">{% for a in week.alerts %}<li><span>{{ flag(a.e.entity_id) }}{{ a.e.name }}</span><span class="small muted">{{ 'risk up' if a.kind == 'risk' else 'deaths up' }}</span></li>{% endfor %}</ol>
+    <span class="mk-more">Risk index →</span></a>{% endif %}
+  {% if week.report %}<a class="card link week-card" href="/reports/{{ week.report.id }}/">
+    <span class="mk-kicker">Report</span><h3>{{ week.report.title }}</h3>
+    <ul class="rp-preview">{% for f in week.report.findings[:3] %}<li>{{ f }}</li>{% endfor %}</ul>
+    <span class="mk-more">Read the report →</span></a>{% endif %}
+</div>
+<div class="grid g4 week-tools">
+  <a class="card link" href="/explore/timeline/"><span class="mk-kicker">Animated</span><h3>Timeline map</h3><p class="small muted">Watch the world change since 1990.</p></a>
+  <a class="card link" href="/lab/fit/"><span class="mk-kicker">Tool</span><h3>Where would I fit?</h3><p class="small muted">Countries that match what you value.</p></a>
+  <a class="card link" href="/geopolitics/power/"><span class="mk-kicker">Power index</span><h3>{% for r in week.power[:3] %}{{ r.e.name }}{% if not loop.last %}, {% endif %}{% endfor %}</h3><p class="small muted">The most powerful countries.</p></a>
+  <a class="card link" href="/reports/build/"><span class="mk-kicker">Custom</span><h3>Build a country report</h3><p class="small muted">Any country, your topics, PDF.</p></a>
+</div>
+{% endif %}
+
 <div class="section-head"><h2>Featured rankings</h2><a href="/rankings/">All rankings →</a></div>
 <div class="grid g4">
   {% for f in featured %}

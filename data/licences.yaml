@@ -240,6 +240,10 @@ sources:
       attribution_text: "FAO. 2026. FAOSTAT: Suite of Food Security Indicators. Licence: CC-BY-4.0.",
       licence_checked_on: 2026-11-10,
       notes: "FAO Statistical Database Terms of Use: datasets in FAO corporate statistical databases are CC BY 4.0 unless their metadata says otherwise. Three-year averages are dated to their last year; values reported as '<2.5' are left out." }
+  - { source_id: datagovin,     publisher: "Open Government Data Platform India (data.gov.in)", title: "State-wise statistics from Indian ministries", url: https://data.gov.in/, licence: GODL-India, licence_url: https://data.gov.in/government-open-data-license-india, tier: green, commercial_ok: true, derivatives_ok: true, share_alike: false, no_modification: false,
+      attribution_text: "Data from the Open Government Data (OGD) Platform India, data.gov.in, under the Government Open Data License - India.",
+      licence_checked_on: 2026-11-11,
+      notes: "GODL-India allows use, adaptation and redistribution, including commercial, with attribution. Each state indicator also credits the ministry that published it." }
   - { source_id: ghsl,          publisher: "European Commission, Joint Research Centre", title: GHS Urban Centre Database R2024A v1.2, url: https://human-settlement.emergency.copernicus.eu/ghs_ucdb_2024.php, licence: CC BY 4.0, licence_url: https://creativecommons.org/licenses/by/4.0/, tier: green, commercial_ok: true, derivatives_ok: true, share_alike: false, no_modification: false,
       attribution_text: "Mari Rivero, I., Melchiorri, M., Florio, P., et al. (2025). GHS Urban Centre Database 2025 (R2024A v1.2). European Commission, Joint Research Centre. CC BY 4.0.",
       licence_checked_on: 2026-11-09,
