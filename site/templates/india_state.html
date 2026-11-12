@@ -6,7 +6,7 @@
 <div class="page-head">
   <span class="eyebrow">Indian {{ 'state' if st.kind == 'state' else 'union territory' }}</span>
   <h1>{{ st.name }}</h1>
-  <p class="lede">How {{ st.name }} compares with India’s other states and union territories{% if strong %}: strongest on {{ strong|map(attribute='ind.name')|map('lower')|join(' and ') }}{% endif %}{% if weak %}, weakest on {{ weak|map(attribute='ind.name')|map('lower')|join(' and ') }}{% endif %}.</p>
+  <p class="lede">How {{ st.name }} compares with India’s other states and union territories{% if strong %}: strongest on {{ strong|map(attribute='ind.name')|map('lc')|join(' and ') }}{% endif %}{% if weak %}, weakest on {{ weak|map(attribute='ind.name')|map('lc')|join(' and ') }}{% endif %}.</p>
 </div>
 <div class="india-grid">
   {% for p in prof %}

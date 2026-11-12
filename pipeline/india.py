@@ -12,10 +12,11 @@ import re
 import unicodedata
 from pathlib import Path
 
-from .config import RAW, load_yaml
+from .config import DATA, RAW, load_yaml
 
 API = "https://api.data.gov.in/resource/"
 OUT = RAW / "datagovin"
+SNAPSHOT = DATA / "india"        # committed copy: data.gov.in does not answer requests from GitHub's servers
 
 
 def _norm(s: str) -> str:
@@ -32,6 +33,10 @@ def fetch(refresh: bool, get, write) -> None:
     cfg = load_yaml("india_states.yaml")
     if not key:
         print("  data.gov.in: DATA_GOV_IN_KEY not set, skipped")
+        return
+    if os.environ.get("GITHUB_ACTIONS") and SNAPSHOT.exists():
+        # data.gov.in does not accept connections from GitHub's servers; the committed snapshot is used
+        print("  data.gov.in: unreachable from GitHub Actions, using the committed data/india snapshot")
         return
     for ind in cfg["indicators"]:
         out = OUT / f"{ind['resource']}.json"
@@ -71,7 +76,7 @@ def _year(label: str) -> int:
 class India:
     def __init__(self):
         cfg = load_yaml("india_states.yaml")
-        self.states = [s for s in cfg["states"] if s["kind"] != "total"]
+        self.states = [s for s in cfg["states"] if s["kind"] not in ("total", "ignore")]
         self.lookup = {}
         for s in cfg["states"]:
             for n in [s["name"], *s.get("aliases", [])]:
@@ -79,6 +84,8 @@ class India:
         self.inds, self.data, self.unmatched = [], {}, set()
         for ind in cfg["indicators"]:
             path = OUT / f"{ind['resource']}.json"
+            if not path.exists():
+                path = SNAPSHOT / f"{ind['resource']}.json"
             if not path.exists():
                 continue
             vals = self._load(ind, json.loads(path.read_text(encoding="utf-8")))
@@ -113,6 +120,10 @@ class India:
                 parts = [_num(row.get(f)) for f in fields]
                 if any(p is not None for p in parts):
                     series[str(label)] = sum(p for p in parts if p is not None)
+        out.pop("XX", None)
+        if ind.get("swap"):                          # documented correction of rows swapped in the source table
+            a, b = ind["swap"]
+            out[a], out[b] = out.get(b, {}), out.get(a, {})
         return {sid: sorted(s.items(), key=lambda kv: _year(kv[0])) for sid, s in out.items() if s}
 
     # ------------------------------------------------------------------ views
@@ -146,3 +157,22 @@ class India:
             out.append({"ind": ind, "period": series[-1][0], "value": series[-1][1], "rank": rk["rank"] if rk else None,
                         "of": len(self.ranking(ind)), "india": nat, "first": first, "series": series})
         return out
+
+
+if __name__ == "__main__":
+    # Run from a computer that can reach data.gov.in, with the key in the environment:
+    #   PowerShell:  $env:DATA_GOV_IN_KEY = "<your key>";  .venv\Scripts\python -m pipeline.india
+    # Downloads every configured table and copies it into data/india/ (data only, never the key).
+    import shutil
+    from . import fetch as _f
+    fetch(True, _f._get, _f._write)
+    SNAPSHOT.mkdir(parents=True, exist_ok=True)
+    n = 0
+    for f in OUT.glob("*.json"):
+        if not f.name.endswith(".meta.json"):
+            shutil.copy2(f, SNAPSHOT / f.name)
+            meta = f.with_name(f.name + ".meta.json")
+            if meta.exists():
+                shutil.copy2(meta, SNAPSHOT / meta.name)
+            n += 1
+    print(f"Saved {n} tables to {SNAPSHOT}")

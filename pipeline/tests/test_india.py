@@ -11,6 +11,7 @@ from pipeline.config import DATA
 def test_config_has_36_states_and_valid_indicators():
     cfg = yaml.safe_load((DATA / "india_states.yaml").read_text(encoding="utf-8"))
     states = [s for s in cfg["states"] if s["kind"] != "total"]
+    states = [s for s in states if s["kind"] != "ignore"]
     assert len(states) == 36 and len({s["id"] for s in states}) == 36
     for ind in cfg["indicators"]:
         assert ind["resource"] and ind["state_field"] and (ind.get("values") or ind.get("sums")), ind["id"]
@@ -42,3 +43,16 @@ def test_parsing_values_sums_and_periods(tmp_path, monkeypatch):
     top = i.ranking(next(x for x in i.inds if x["id"] == "gsdp-per-capita"))[0]
     assert top["rank"] == 1 and top["value"] == 200011
     assert india._year("2023-24") == 2024 and india._year("2011") == 2011
+
+
+def test_snapshot_loads_real_tables_with_all_states_and_no_key():
+    from pathlib import Path
+    snap = Path(india.SNAPSHOT)
+    if not snap.exists():
+        pytest.skip("no data/india snapshot")
+    for f in snap.iterdir():
+        assert "api-key=" not in f.read_text(encoding="utf-8", errors="ignore"), f.name   # the key is never saved
+    i = india.India()
+    assert len(i.inds) >= 12 and not i.unmatched
+    stunting = {r["s"]["id"]: r["value"] for r in i.ranking(next(x for x in i.inds if x["id"] == "stunting"))}
+    assert stunting["ML"] > stunting["MN"]                                                   # source swap corrected

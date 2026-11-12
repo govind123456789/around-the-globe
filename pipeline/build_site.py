@@ -52,6 +52,7 @@ class Site:
         self.env.filters["fmt"] = fmt
         self.env.filters["unit_short"] = unit_short
         self.env.filters["compact"] = svg.compact
+        self.env.filters["lc"] = lambda n: n if n[:2].isupper() else n[:1].lower() + n[1:]   # keeps GSDP, CO2 etc.
         self.env.filters["tojson_safe"] = lambda o: Markup(json.dumps(o, ensure_ascii=False).replace("<", "\\u003c"))
         self.env.globals.update(year_label=svg.year_label, SOURCE_SHORT=SOURCE_SHORT, site=self.cfg, release=model.release, KIND_LABEL=KIND_LABEL,
                                 EXCLUDED_LABEL=EXCLUDED_LABEL, nav=self.nav())

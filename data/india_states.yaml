@@ -19,7 +19,7 @@ states:
   - { id: MP, name: Madhya Pradesh, kind: state }
   - { id: MH, name: Maharashtra, kind: state }
   - { id: MN, name: Manipur, kind: state }
-  - { id: ML, name: Meghalaya, kind: state }
+  - { id: ML, name: Meghalaya, kind: state, aliases: [Meghalava] }
   - { id: MZ, name: Mizoram, kind: state }
   - { id: NL, name: Nagaland, kind: state }
   - { id: OD, name: Odisha, kind: state, aliases: [Orissa] }
@@ -40,6 +40,8 @@ states:
   - { id: LA, name: Ladakh, kind: union territory }
   - { id: LD, name: Lakshadweep, kind: union territory }
   - { id: PY, name: Puducherry, kind: union territory, aliases: [Pondicherry] }
+  # names found in source tables that are not states today: older separate UTs, tax categories, notes
+  - { id: XX, name: Ignored, kind: ignore, aliases: [Dadra and Nagar Haveli, Dadra & Nagar Haveli, Dadar and Nagar Haveli, Daman and Diu, Daman & Diu, Centre Jurisdiction, GST Collection (Domestic), Imports, Other Territory, Others] }
   - { id: IN, name: All India, kind: total, aliases: [India, All-India, All India Total, Total, All India Average] }
 
 indicators:
@@ -133,6 +135,8 @@ indicators:
     state_field: state_ut
     values: { stunting___nfhs_4: 2015-16, stunting___nfhs_5: 2019-21 }
     source: "National Family Health Survey, Ministry of Health and Family Welfare, via data.gov.in"
+    swap: [MN, ML]
+    note: "This data.gov.in table gives Manipur's figures under Meghalaya and the reverse; they are swapped back here to match the NFHS-5 state factsheets (Meghalaya 46.5%, Manipur 23.4%)."
   - id: anaemia-women
     name: Anaemia in women (NFHS)
     unit: "% of women aged 15–49"
@@ -178,7 +182,7 @@ indicators:
     name: Road accident deaths
     unit: "deaths"
     decimals: 0
-    direction: lower_better
+    direction: neutral
     topic: Safety
     resource: c8ff79cb-2dcb-4855-be05-eb926b16d2ff
     state_field: state_ut
