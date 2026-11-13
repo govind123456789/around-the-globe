@@ -119,7 +119,11 @@ def fetch_wb_licence(code: str, source: str, refresh: bool) -> None:
         except (RuntimeError, KeyError, IndexError, ValueError):
             time.sleep(10 * (attempt + 1))         # the metadata API rate-limits bursts
     else:
-        raise RuntimeError(f"could not read the licence of World Bank series {code}")
+        # The metadata API sometimes rate-limits for minutes. Keep the licence already on file; with none on
+        # file the series is left out by the licence gate (check_series_licences), so nothing unchecked is published.
+        print(f"  {code}: licence metadata unavailable, {'keeping the stored licence' if out.exists() else 'series will be excluded'}",
+              file=sys.stderr)
+        return
     rec = {k: vals.get(k) for k in ("License_Type", "License_URL", "Source")}
     _write(out, json.dumps(rec).encode(), url)
 
