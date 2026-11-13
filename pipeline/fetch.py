@@ -135,7 +135,13 @@ def fetch_wb_indicator(code: str, refresh: bool, source: str = "wb-wdi") -> None
         return
     url = f"{WB_API}/country/all/indicator/{code}"
     params = {"format": "json", "per_page": 20000, "date": "1990:2026", "source": WB_SOURCE_ID[source]}
-    r = _get(url, params)
+    try:
+        r = _get(url, params)
+    except RuntimeError:
+        if out.exists():                      # a short World Bank outage keeps last week's copy instead of failing the build
+            print(f"  {code}: World Bank API unavailable, keeping the stored copy", file=sys.stderr)
+            return
+        raise
     body = r.json()
     if not isinstance(body, list) or len(body) < 2 or body[1] is None:
         raise RuntimeError(f"unexpected World Bank response for {code}: {str(body)[:200]}")
