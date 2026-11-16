@@ -104,6 +104,32 @@ def fetch_wb_countries(refresh: bool) -> None:
 WB_SOURCE_ID = {"wb-wdi": 2, "wb-wgi": 3}     # World Bank API source ids
 
 
+WB_PREV = RAW / "wb.prev"          # last week's World Bank files, moved aside by the workflow before refreshing
+_wb_failures = 0                    # consecutive World Bank failures; after WB_GIVE_UP the rest use last week's copy
+WB_GIVE_UP = 3
+
+
+def _wb_down() -> bool:
+    return _wb_failures >= WB_GIVE_UP
+
+
+def _wb_fallback(out: Path, what: str) -> bool:
+    """Use last week's copy of a World Bank file when the API fails. True if one was found."""
+    if out.exists():
+        print(f"  {what}: World Bank API unavailable, keeping the stored copy", file=sys.stderr)
+        return True
+    prev = WB_PREV / out.relative_to(RAW / "wb")
+    if prev.exists():
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_bytes(prev.read_bytes())
+        meta = prev.with_name(prev.name + ".meta.json")
+        if meta.exists():
+            out.with_name(out.name + ".meta.json").write_bytes(meta.read_bytes())
+        print(f"  {what}: World Bank API unavailable, using last week's copy", file=sys.stderr)
+        return True
+    return False
+
+
 def fetch_wb_licence(code: str, source: str, refresh: bool) -> None:
     """Per-series licence from the World Bank metadata API. A few WDI series carry a licence
     other than CC BY 4.0; build_data excludes those."""
@@ -111,7 +137,9 @@ def fetch_wb_licence(code: str, source: str, refresh: bool) -> None:
     if out.exists() and not refresh:
         return
     url = f"{WB_API}/sources/{WB_SOURCE_ID[source]}/series/{code}/metadata"
-    for attempt in range(6):
+    if _wb_down() and _wb_fallback(out, f"{code} licence"):
+        return
+    for attempt in range(6 if not _wb_down() else 1):
         try:
             d = _get(url, {"format": "json"}, attempts=2).json()
             vals = {m["id"]: m["value"] for v in d["source"][0]["concept"][0]["variable"] for m in v["metatype"]}
@@ -121,8 +149,8 @@ def fetch_wb_licence(code: str, source: str, refresh: bool) -> None:
     else:
         # The metadata API sometimes rate-limits for minutes. Keep the licence already on file; with none on
         # file the series is left out by the licence gate (check_series_licences), so nothing unchecked is published.
-        print(f"  {code}: licence metadata unavailable, {'keeping the stored licence' if out.exists() else 'series will be excluded'}",
-              file=sys.stderr)
+        if not _wb_fallback(out, f"{code} licence"):
+            print(f"  {code}: licence metadata unavailable and none stored, series will be excluded", file=sys.stderr)
         return
     rec = {k: vals.get(k) for k in ("License_Type", "License_URL", "Source")}
     _write(out, json.dumps(rec).encode(), url)
@@ -135,21 +163,25 @@ def fetch_wb_indicator(code: str, refresh: bool, source: str = "wb-wdi") -> None
         return
     url = f"{WB_API}/country/all/indicator/{code}"
     params = {"format": "json", "per_page": 20000, "date": "1990:2026", "source": WB_SOURCE_ID[source]}
+    global _wb_failures
+    if _wb_down() and _wb_fallback(out, code):
+        return
     try:
-        r = _get(url, params)
-    except RuntimeError:
-        if out.exists():                      # a short World Bank outage keeps last week's copy instead of failing the build
-            print(f"  {code}: World Bank API unavailable, keeping the stored copy", file=sys.stderr)
+        r = _get(url, params, attempts=2 if _wb_down() else 5)
+        body = r.json()
+        if not isinstance(body, list) or len(body) < 2 or body[1] is None:
+            raise RuntimeError(f"unexpected World Bank response for {code}: {str(body)[:200]}")
+        pages = body[0].get("pages", 1)
+        rows = body[1]
+        for page in range(2, pages + 1):
+            rows += _get(url, {**params, "page": page}).json()[1]
+        meta_resp = _get(f"{WB_API}/indicator/{code}", {"format": "json"}).json()
+        _wb_failures = 0
+    except (RuntimeError, ValueError):
+        _wb_failures += 1
+        if _wb_fallback(out, code):          # an outage keeps last week's copy instead of failing the build
             return
         raise
-    body = r.json()
-    if not isinstance(body, list) or len(body) < 2 or body[1] is None:
-        raise RuntimeError(f"unexpected World Bank response for {code}: {str(body)[:200]}")
-    pages = body[0].get("pages", 1)
-    rows = body[1]
-    for page in range(2, pages + 1):
-        rows += _get(url, {**params, "page": page}).json()[1]
-    meta_resp = _get(f"{WB_API}/indicator/{code}", {"format": "json"}).json()
     payload = {"indicator_meta": meta_resp[1][0] if len(meta_resp) > 1 else None, "rows": rows}
     _write(out, json.dumps(payload).encode(), r.url)
     print(f"  {code}: {len(rows)} rows")
