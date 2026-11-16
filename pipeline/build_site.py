@@ -11,7 +11,7 @@ import markdown
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
 
-from . import beyond, geopolitics, history, india, lab, live, markets, og, reports, standout, stories, svg
+from . import beyond, defence, geopolitics, history, india, lab, live, markets, og, reports, standout, stories, svg
 from .build_data import Model
 from .config import CONTENT, DIST, RAW, SITE, load_yaml, site_config
 
@@ -161,7 +161,7 @@ class Site:
                                    ("UN alignment", "/geopolitics/un-votes/", "Who votes with whom"),
                                    ("Relations", "/geopolitics/relations/", "Any two countries"),
                                    ("Sanctions", "/geopolitics/sanctions/", "US sanctions by country"),
-                                   ("Defence", "/geopolitics/defence/", "Warheads, forces, treaties")])]}
+                                   ("Defence", "/geopolitics/defence/", "Military spending, forces, profiles")])]}
         explore = [("Map explorer", "/explore/", "Any indicator on the world map"),
                    ("Timeline map", "/explore/timeline/", "Watch the world change since 1990"),
                    ("Where would I fit?", "/lab/fit/", "Countries that match what you value"),
@@ -244,6 +244,8 @@ class Site:
         self.markets_pages()
         self.reports_pages()
         self.geo = geopolitics.Geo(self.m, self.countries, self.by_id, self.mk.show)
+        self.defence = defence.load({e["entity_id"] for e in self.countries}, lambda n: self.geo.names.get(geopolitics._norm(n)))
+        print(f"  defence profiles (CIA World Factbook): {len(self.defence)} countries")
         self.geopolitics_pages()
         self.so = standout.Standout(self.m, self.countries, self.by_id)
         self.standout_pages()
@@ -436,14 +438,17 @@ class Site:
         if g.unmatched:
             print(f"  geopolitics: unmatched UCDP names: {sorted(g.unmatched)[:12]}")
         ov, al, dp, br = g.overview(), g.alignment(), g.displacement(), g.briefing()
-        srcs = {s: self.m.sources[s] for s in ("ucdp", "unvotes", "unhcr", "gdelt", "wb-wgi", "fas", "ofac") if s in self.m.sources}
+        srcs = {s: self.m.sources[s] for s in ("ucdp", "unvotes", "unhcr", "gdelt", "wb-wgi", "fas", "ofac", "factbook") if s in self.m.sources}
         forces = sorted(((e, *lt[:2]) for e in self.countries if (lt := self.m.latest(e["entity_id"], "armed-forces", min_year=2015))),
                         key=lambda x: -x[2]) if "armed-forces" in self.m.indicators else []
-        srcs_all = {s: self.m.sources[s] for s in ("ucdp", "unvotes", "unhcr", "gdelt", "wb-wgi", "fas", "ofac") if s in self.m.sources}
+        srcs_all = {s: self.m.sources[s] for s in ("ucdp", "unvotes", "unhcr", "gdelt", "wb-wgi", "fas", "ofac", "factbook") if s in self.m.sources}
         crises = g.crises()
         sanction_rows = sorted(((self.by_id[i], v) for i, v in g.sanctions["by_country"].items() if i in self.by_id), key=lambda x: -x[1]["n"])
         common_extra = dict(crises=crises, power=g.power, power_weights=geopolitics.POWER_WEIGHTS, sanctions=g.sanctions,
                             sanction_rows=sanction_rows, sanctions_map={e["entity_id"]: v["n"] for e, v in sanction_rows}, alerts=g.alerts)
+        dsum = defence.summary(self.defence, self.by_id)
+        common_extra["dsum"] = dsum
+        common_extra["dprofiles"] = sorted((self.by_id[i] for i in self.defence if i in self.by_id), key=lambda e: e["name"])
         common = dict(**common_extra, blocs=g.blocs, as_of=g.blocs_as_of, treaties=g.treaties, nuclear=g.nuclear_rows(), nuclear_src=g.nuclear,
                       forces=forces, by_id=self.by_id, risers=g.risers, fallers=g.fallers, risk_year=g.risk_year,
                       events=g.events, risk_from=geopolitics.RISK_FROM,
@@ -463,7 +468,7 @@ class Site:
                  ("/geopolitics/displacement/", "geo_displacement.html", "Displacement", "Refugees and the displaced"),
                  ("/geopolitics/relations/", "geo_relations.html", "Country relations", "Any two countries"),
                  ("/geopolitics/blocs/", "geo_blocs.html", "Alliances and blocs", "NATO, EU, BRICS, SCO, G20 compared"),
-                 ("/geopolitics/defence/", "geo_defence.html", "Defence and nuclear forces", "Warheads, armed forces, treaties"),
+                 ("/geopolitics/defence/", "geo_defence.html", "Defence and military", "Military spending, armed forces, warheads, country profiles"),
                  ("/geopolitics/watchlist/", "geo_watchlist.html", "Watchlist", "Follow countries"),
                  ("/geopolitics/crises/", "geo_crises.html", "Crisis tracker", "Major wars and emergencies"),
                  ("/geopolitics/power/", "geo_power.html", "Power index", "Most powerful countries"),
@@ -495,6 +500,21 @@ class Site:
                         blocs=g.blocs, as_of=g.blocs_as_of, al=al, powers=geopolitics.POWER_NAMES, srcs=srcs_all)
             self.search.append({"t": b["full"], "u": f"/geopolitics/blocs/{b['id']}/", "k": "Bloc", "s": b["kind"],
                                 "o": [b["name"], f"{b['name']} members", f"{b['name']} countries"]})
+        spend_by = {r["e"]["entity_id"]: r for r in dsum["spend"]}
+        dsrcs = {s: self.m.sources[s] for s in ("factbook", "wb-wdi", "fas", "ucdp") if s in self.m.sources}
+        for iso, prof in self.defence.items():
+            e = self.by_id[iso]
+            forces = self.m.latest(iso, "armed-forces", min_year=2015) if "armed-forces" in self.m.indicators else None
+            share = self.m.latest(iso, "armed-forces-share", min_year=2015) if "armed-forces-share" in self.m.indicators else None
+            self.render(f"/geopolitics/defence/{e['slug']}/", "geo_defence_country.html", og_image="/og/geopolitics.png", c=e, d=prof,
+                        spend=spend_by.get(iso), n_spend=len(dsum["spend"]), forces=forces, share=share,
+                        nuclear=g.nuclear["states"].get(iso), nuclear_src=g.nuclear, treaties=g.treaty_status(iso),
+                        power=g.power_by.get(iso), n_power=len(g.power), blocs=g.bloc_of.get(iso, []),
+                        deaths3=g.deaths(iso, range((g.final_year or 2025) - 2, (g.final_year or 2025) + 1)), fy=g.final_year or 2025,
+                        srcs=dsrcs)
+            self.search.append({"t": f"{e['name']} military and defence", "u": f"/geopolitics/defence/{e['slug']}/", "k": "Defence",
+                                "s": "Forces, spending, equipment, service, space",
+                                "o": [f"{e['name']} military", f"{e['name']} army", f"{e['name']} defence budget", f"{e['name']} weapons"]})
         self.geo_embeds(g, crises)
         g.write_files(DIST / "geopolitics" / "data")
         (DIST / "geopolitics" / "data" / "events.json").write_text(json.dumps(g.events, separators=(",", ":")), encoding="utf-8")
@@ -722,7 +742,7 @@ class Site:
                 lines.append(f"Human Development Index {key['hdi'][1]:.3f}")
             og.card(DIST / "og" / "countries" / f"{c['slug']}.png", self.cfg["name"], c["region"], c["name"], lines)
             self.render(f"/countries/{c['slug']}/", "country.html", og_image=f"/og/countries/{c['slug']}.png", c=c, key=key, dims=self.country_dims(c),
-                        positions=self.positions(eid), peers=peers, mk=self.mk.country_shares(eid), geo=self.geo.country(eid), so_twins=self.so.twins.get(eid),
+                        positions=self.positions(eid), peers=peers, mk=self.mk.country_shares(eid), geo=self.geo.country(eid), dfc=self.defence.get(eid), so_twins=self.so.twins.get(eid),
                         so_targets=self.so.targets.get(eid, []), so_cov=self.so.coverage.get(eid),
                         geo_powers=geopolitics.POWER_NAMES, region=self.by_id[c["region_id"]],
                         income=self.by_id.get(c["income_id"]) if c["income_id"] else None,
@@ -911,7 +931,7 @@ class Site:
                         lower_better=ind["direction"] == "lower_better")
             self.search.append({"t": ind["name"], "u": f"/data/indicators/{ind['id']}/", "k": "Indicator",
                                 "s": self.dims[ind["dimension"]]["name"]})
-        used = sorted(({i["source"] for i in inds} | {"natural-earth", "wikidata", "cliopatria", "maddison", "ucdp", "unvotes", "unhcr", "ofac", "fas", "openalex", "ghsl"}) & set(self.m.sources))
+        used = sorted(({i["source"] for i in inds} | {"natural-earth", "wikidata", "cliopatria", "maddison", "ucdp", "unvotes", "unhcr", "ofac", "fas", "factbook", "openalex", "ghsl"}) & set(self.m.sources))
         excluded = [s for s in self.m.sources.values() if s["source_id"] not in used]
         self.render("/data/sources/", "sources.html", used=[self.m.sources[s] for s in used], excluded=excluded,
                     counts={s: sum(1 for i in inds if i["source"] == s) for s in used}, warnings=self.m.warnings)

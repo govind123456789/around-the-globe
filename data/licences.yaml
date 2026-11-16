@@ -232,6 +232,10 @@ sources:
       attribution_text: "US Department of the Treasury, Office of Foreign Assets Control (OFAC), SDN list.",
       licence_checked_on: 2026-11-10,
       notes: "Works of the US federal government are not subject to copyright in the US. Counts are of SDN entries by the country of their listed address; one sanctioned person can have addresses in several countries." }
+  - { source_id: factbook,      publisher: Central Intelligence Agency, title: The World Factbook, url: https://www.cia.gov/the-world-factbook/, licence: Public domain (US government work), licence_url: https://www.cia.gov/the-world-factbook/about/copyright-and-contributors/, tier: green, commercial_ok: true, derivatives_ok: true, share_alike: false, no_modification: false,
+      attribution_text: "Central Intelligence Agency, The World Factbook (public domain), via the factbook.json mirror.",
+      licence_checked_on: 2026-11-17,
+      notes: "The Factbook is in the public domain and may be copied freely without permission (CIA copyright notice); the CIA seal may not be used. Military, space and terrorism sections; texts carry the Factbook's own year stamps (mostly 2025)." }
   - { source_id: ilostat,       publisher: International Labour Organization, title: ILOSTAT, url: https://ilostat.ilo.org/, licence: CC BY 4.0, licence_url: https://www.ilo.org/node/9321, tier: green, commercial_ok: true, derivatives_ok: true, share_alike: false, no_modification: false,
       attribution_text: "International Labour Organization, ILOSTAT database (CC BY 4.0).",
       licence_checked_on: 2026-11-10,

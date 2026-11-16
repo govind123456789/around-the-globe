@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% import "geo_macros.html" as g %}
+{% macro block(f) -%}
+{% for p in f.text %}<p>{{ p }}</p>{% endfor %}
+{% for p in f.note %}<p class="small muted">{{ p }}</p>{% endfor %}
+{%- endmacro %}
+{% set status_label = {'conscription': 'Conscription', 'voluntary': 'Voluntary service', 'none': 'No standing military'} %}
+{% block title %}{{ c.name }}: military, defence spending, equipment and forces{% endblock %}
+{% block description %}{{ c.name }}'s armed forces and branches, personnel, military spending as a share of GDP, equipment and arms suppliers, military service, deployments{% if d.space %}, space programme{% endif %}{% if nuclear %}, nuclear warheads{% endif %} and treaties.{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/geopolitics/">Geopolitics</a> › <a href="/geopolitics/defence/">Defence</a> › <a href="/countries/{{ c.slug }}/">{{ c.name }}</a></p>
+<div class="page-head">
+  <span class="eyebrow">Defence profile</span>
+  <h1>{{ flag(c.entity_id) }}{{ c.name }}: military and defence</h1>
+  <p class="lede">Forces, spending, equipment, service rules{% if d.space %}, space programme{% endif %} and commitments, from the CIA World Factbook{% if nuclear %}, the World Bank and the Federation of American Scientists{% else %} and the World Bank{% endif %}.</p>
+  <div class="mk-actions no-print"><button type="button" class="btn ghost sm" data-watch="{{ c.entity_id }}">☆ Watch</button> <a class="btn ghost sm" href="/countries/{{ c.slug }}/">Country profile</a></div>
+</div>
+{{ g.subnav('/geopolitics/defence/') }}
+
+<div class="stats mk-kpis">
+  {% if spend %}<div class="card stat"><span class="l">Military spending, {{ spend.year }}</span><span class="v">{{ '%g'|format(spend.v) }}%</span><span class="small muted">of GDP · #{{ spend.rank }} of {{ n_spend }}{% if spend.change is not none %} · {{ '%+.1f'|format(spend.change) }} pts in 5 years{% endif %}</span></div>{% endif %}
+  {% if forces %}<div class="card stat"><span class="l">Armed forces, {{ forces[0] }}</span><span class="v">{{ forces[1]|fmt(0) }}</span><span class="small muted">active, incl. paramilitary · World Bank{% if share %} · {{ '%.1f'|format(share[1]) }}% of labour force{% endif %}</span></div>{% endif %}
+  <div class="card stat"><span class="l">Nuclear warheads</span><span class="v">{{ nuclear.inventory|fmt(0) if nuclear else 'None' }}</span><span class="small muted">{% if nuclear %}{{ nuclear.stockpile|fmt(0) }} in the military stockpile · FAS estimate{% else %}not a nuclear-armed state{% endif %}</span></div>
+  {% if d.status %}<div class="card stat"><span class="l">Military service</span><span class="v" style="font-size:1.35rem">{{ status_label[d.status] }}</span><span class="small muted">from the Factbook text below</span></div>{% endif %}
+  {% if power %}<div class="card stat"><span class="l"><a href="/geopolitics/power/">Power index</a></span><span class="v">#{{ power.rank }}</span><span class="small muted">of {{ n_power }} · score {{ '%.0f'|format(power.score) }}</span></div>{% endif %}
+</div>
+
+<div class="grid g2">
+  {% if d.forces %}<div class="card"><h3>Forces and branches</h3>{{ block(d.forces) }}</div>{% endif %}
+  <div class="card">
+    {% if d.personnel %}<h3>Personnel</h3>{{ block(d.personnel) }}{% endif %}
+    {% if d.service %}<h3{% if d.personnel %} style="margin-top:16px"{% endif %}>Service age and obligation</h3>{{ block(d.service) }}{% endif %}
+    {% if not d.personnel and not d.service %}<h3>Personnel</h3><p class="small muted">The Factbook gives no personnel figures for {{ c.name }}.</p>{% endif %}
+  </div>
+</div>
+
+{% if d.equipment %}
+<div class="section-head"><h2>Equipment and arms suppliers</h2></div>
+<div class="card">{{ block(d.equipment) }}</div>
+{% endif %}
+
+{% if d.milex %}
+<div class="section-head"><h2>Military spending</h2><a href="/geopolitics/defence/#spending">Compare all countries →</a></div>
+<div class="card">
+  <h3>Share of GDP spent on the military</h3>
+  {% set peak = d.milex|map(attribute=1)|max %}
+  <ol class="mk-bars">{% for y, v in d.milex|reverse %}<li><span class="rk">{{ y }}</span><span class="nm"></span><span class="bar" aria-hidden="true"><i style="width:{{ '%.1f'|format(100 * v / (peak or 1)) }}%"></i></span><span class="val">{{ '%g'|format(v) }}%</span></li>{% endfor %}</ol>
+  <p class="small muted" style="margin:10px 0 0">CIA World Factbook estimates. Totals in money, and budgets for individual weapons programmes, are not given here: the main databases of them (SIPRI) do not allow reuse on this site.</p>
+</div>
+{% endif %}
+
+<div class="grid g2" style="margin-top:18px">
+  {% if d.deployments %}<div class="card"><h3>Deployed abroad</h3>{{ block(d.deployments) }}</div>{% endif %}
+  {% if d.note %}<div class="card"><h3>Missions and focus</h3>{{ block(d.note) }}</div>{% endif %}
+</div>
+
+{% if d.space %}
+<div class="section-head" id="space"><h2>Space programme</h2></div>
+<div class="grid g2">
+  <div class="card">
+    {% if d.space.agency %}<h3>Agencies</h3>{{ block(d.space.agency) }}{% endif %}
+    {% if d.space.sites %}<h3 style="margin-top:16px">Launch sites</h3>{{ block(d.space.sites) }}{% endif %}
+  </div>
+  {% if d.space.overview %}<div class="card"><h3>Programme</h3>{{ block(d.space.overview) }}</div>{% endif %}
+</div>
+{% if d.space.milestones %}<details class="more-ranks"><summary>Key space milestones</summary><div class="card">{{ block(d.space.milestones) }}</div></details>{% endif %}
+{% endif %}
+
+<div class="section-head"><h2>Commitments and threats</h2></div>
+<div class="grid g2">
+  <div class="card">
+    <h3>Arms-control treaties</h3>
+    <ol class="mk-list">{% for t in treaties %}<li><span><a href="{{ t.t.url }}" rel="noopener">{{ t.t.name }}</a></span><span class="small">{{ 'Party' if t.status == 'party' else t.status|capitalize }}</span></li>{% endfor %}</ol>
+    {% if blocs %}<h3 style="margin-top:16px">Alliances and groups</h3><div class="geo-chips">{% for b in blocs %}<a class="chip" href="/geopolitics/blocs/{{ b.id }}/">{{ b.name }}{% if b.status %} · {{ b.status }}{% endif %}</a>{% endfor %}</div>{% endif %}
+  </div>
+  <div class="card">
+    <h3>Deaths in organised violence, {{ fy - 2 }}–{{ fy }}</h3>
+    <p class="v" style="font-family:var(--serif);font-size:1.8rem;margin:4px 0">{{ deaths3|fmt(0) }}</p>
+    <p class="small muted"><a href="/geopolitics/conflicts/">UCDP</a> best estimate, all conflict types on {{ c.name }}’s territory.</p>
+    {% if d.terror %}<h3 style="margin-top:16px">Terrorist groups active here</h3>
+    <ul class="small" style="columns:2;padding-left:18px;margin:6px 0">{% for t in d.terror %}<li>{{ t }}</li>{% endfor %}</ul>
+    <p class="small muted">As listed by the CIA World Factbook.</p>{% endif %}
+  </div>
+</div>
+
+<div class="section-head"><h2>Defence news</h2><a href="/geopolitics/news/?c={{ c.name|urlencode }}">All news about {{ c.name }} →</a></div>
+{{ g.news(query='"' ~ c.name ~ '" (military OR army OR navy OR missile)', max=8, tabs=False, compact=True) }}
+{{ g.news_note() }}
+
+<div class="card" style="margin-top:24px">
+  <h3>What this page does not show</h3>
+  <p class="small">Ammunition stocks, counts of tanks, aircraft or ships by type, and classified or “special” projects are not published as open data. Governments rarely disclose them, and the databases that estimate them (IISS, SIPRI, Janes) do not allow reuse here. The equipment section above is the Factbook’s own summary of what each military operates and where it buys it.</p>
+</div>
+{{ g.sources(srcs) }}
+{% endblock %}

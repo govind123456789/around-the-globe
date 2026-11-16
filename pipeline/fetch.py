@@ -358,6 +358,23 @@ def fetch_geopolitics(refresh: bool) -> None:
         fetch_file(f"https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/{f}", RAW / "ofac" / f.lower(), refresh)
 
 
+def fetch_factbook(refresh: bool) -> None:
+    """CIA World Factbook (public domain) via the weekly factbook.json mirror; refreshed when a week old.
+    A failed download keeps the stored copy."""
+    from . import defence
+    out = defence.ZIP
+    if out.exists() and not refresh and time.time() - out.stat().st_mtime < 6 * 86400:
+        return
+    try:
+        r = _get(defence.URL)
+        _write(out, r.content, defence.URL)
+        print(f"  factbook.zip: {len(r.content):,} bytes")
+    except RuntimeError:
+        if not out.exists():
+            raise
+        print("  Factbook mirror unavailable, keeping the stored copy", file=sys.stderr)
+
+
 def fetch_history(refresh: bool) -> None:
     """Sources for the historical timeline (Cliopatria, Maddison, Wikidata events, UCDP)."""
     out = RAW / "cliopatria" / "cliopatria.geojson.zip"
@@ -454,6 +471,8 @@ def main(argv: list[str] | None = None) -> None:
             fetch_oecd(ind, args.refresh)
     print("Geopolitics (UCDP events, UN votes, UNHCR)")
     fetch_geopolitics(args.refresh)
+    print("Defence profiles (CIA World Factbook)")
+    fetch_factbook(args.refresh)
     print("History (Cliopatria, Maddison, UCDP, Wikidata)")
     fetch_history(args.refresh)
     print("Country facts (Wikidata)")

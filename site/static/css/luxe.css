@@ -551,3 +551,8 @@ footer.site a { line-height: 1.9; }
   :root { --space-section: 44px; --card-pad: 18px; }
   .pos .rk { font-size: 1.7rem; }
 }
+
+/* defence */
+.def-find { margin-top: 14px; max-width: 420px; }
+.def-find input { width: 100%; padding: 11px 16px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--surface); color: var(--text); font: inherit; }
+.def-find input:focus { outline: 2px solid var(--champagne); outline-offset: 1px; }
