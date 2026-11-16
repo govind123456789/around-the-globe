@@ -473,3 +473,81 @@ svg.chart .lbl-s1 { fill: var(--series-1); } svg.chart .lbl-s2 { fill: var(--ser
 .quiz-score { font-family: var(--serif); font-size: 4rem; line-height: 1; margin: 8px 0; color: var(--accent); }
 .quiz-score small { font-size: 1.4rem; color: var(--muted); }
 .quiz-grid { font-size: 1.6rem; letter-spacing: 2px; margin: 4px 0; }
+
+/* =====================================================================
+   Polish: one type scale, one card, calmer rhythm, clean numbers
+   ===================================================================== */
+:root { --space-section: 64px; --card-pad: 22px; --card-radius: 12px; }
+body { line-height: 1.6; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { text-wrap: balance; }
+p, li { text-wrap: pretty; }
+.lede { max-width: 64ch; }
+
+/* sections: more air between them, a quieter rule */
+.section-head { margin-top: var(--space-section); padding-top: 18px; border-top-width: 1px; }
+.section-head h2 { font-size: clamp(1.45rem, 2.4vw, 1.85rem); letter-spacing: -.012em; }
+.section-head > a, .section-head > span > a { font-size: .9rem; font-weight: 500; }
+main:not(.has-band) > .wrap > .page-head + .section-head, .geo-nav + .section-head, .lab-nav + .section-head { margin-top: 28px; }
+
+/* one card */
+.card { border-radius: var(--card-radius); padding: var(--card-pad); }
+.card h3 { font-size: 1.12rem; letter-spacing: -.005em; margin-top: 0; }
+.stats .card, .stats.overlap .card { padding: 16px 18px; }
+.rank-card ol li, .mk-list li, .mk-top3 li { border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+.rank-card ol li:last-child, .mk-list li:last-child, .mk-top3 li:last-child { border-bottom: 0; }
+.mk-bars li { border-bottom-style: solid; border-bottom-color: color-mix(in srgb, var(--border) 70%, transparent); }
+
+/* numbers: clean, aligned sans-serif digits instead of a typewriter face */
+.mono:not(code):not(pre), .mk-list .mono, .mk-top3 .mono, .rank-card .mono, .val, .rb-val, .num {
+  font-family: var(--font); font-variant-numeric: tabular-nums lining-nums; letter-spacing: 0;
+}
+.mk-list .mono, .mk-top3 .mono, .rank-card .mono { font-weight: 600; color: var(--text); }
+code, pre, .lab-code pre { font-family: var(--mono); }
+
+/* tables: calmer header, comfortable rows */
+th { font-size: .74rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+td, th { padding-top: 11px; padding-bottom: 11px; }
+tbody tr { transition: background .15s; }
+.table-wrap { border-radius: var(--card-radius); }
+
+/* pills */
+.pill { display: inline-block; font-size: .72rem; font-weight: 600; letter-spacing: .04em; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+.pill.risk { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); }
+.pill.conflict { background: color-mix(in srgb, var(--bad) 14%, transparent); color: var(--bad); }
+
+/* folded rankings */
+.more-ranks { margin-top: 12px; }
+.more-ranks > summary { cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border: 1px solid var(--border-strong);
+  border-radius: 999px; font-size: .9rem; font-weight: 500; color: var(--text-2); list-style: none; background: var(--surface); }
+.more-ranks > summary::-webkit-details-marker { display: none; }
+.more-ranks > summary::after { content: ""; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg) translateY(-2px); }
+.more-ranks[open] > summary::after { transform: rotate(-135deg); }
+.more-ranks[open] > summary { margin-bottom: 12px; }
+.more-ranks > summary:hover { border-color: var(--champagne); color: var(--text); }
+
+/* rankings grid cards: a touch more air and a clear hierarchy */
+.pos { padding: 16px 18px; border-radius: var(--card-radius); }
+.pos .nm { font-size: .86rem; color: var(--text-2); line-height: 1.35; min-height: 2.7em; }
+.pos .rk { font-family: var(--serif); font-size: 2rem; line-height: 1.1; margin: 4px 0 2px; }
+
+/* live news while it loads */
+.gd-skeleton { display: grid; gap: 14px; padding: 6px 0; }
+.gd-skeleton i { display: block; height: 14px; border-radius: 6px; background: linear-gradient(90deg, var(--surface-2) 25%, color-mix(in srgb, var(--surface-2) 40%, var(--surface)) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%; animation: gd-shimmer 1.4s ease-in-out infinite; }
+.gd-skeleton i:nth-child(2n) { width: 82%; } .gd-skeleton i:nth-child(3n) { width: 64%; }
+@keyframes gd-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .gd-skeleton i { animation: none; } }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* chips and badges: slightly softer */
+.chip { border-radius: 999px; }
+.badge { letter-spacing: .06em; }
+
+/* footer: a little more breathing room */
+footer.site { padding-top: 64px; }
+footer.site a { line-height: 1.9; }
+
+@media (max-width: 700px) {
+  :root { --space-section: 44px; --card-pad: 18px; }
+  .pos .rk { font-size: 1.7rem; }
+}

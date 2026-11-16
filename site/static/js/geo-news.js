@@ -87,10 +87,12 @@
 
   function load(el, theme) {
     const status = el.querySelector(".gd-status");
-    if (status) { status.textContent = "Loading live headlines…"; status.hidden = false; }
+    if (status) { status.hidden = true; }
+    if (!el.querySelector(".gd-list") && !el.querySelector(".gd-skeleton")) el.insertAdjacentHTML("beforeend", '<div class="gd-skeleton" aria-hidden="true"><i></i><i></i><i></i><i></i></div>');
     const url = query(el, theme);
-    const show = d => { if (status) status.hidden = true; render(el, d); };
+    const show = d => { if (status) status.hidden = true; el.querySelector(".gd-skeleton")?.remove(); render(el, d); };
     return get(url).then(show).catch(err => {
+      el.querySelector(".gd-skeleton")?.remove();
       // a query GDELT finds too long falls back to all English-language media
       if (err.message === "toolong" && url.includes("domain%3A")) {
         return get(url.replace(encodeURIComponent(" " + TRUSTED), encodeURIComponent(" sourcelang:english"))).then(show);

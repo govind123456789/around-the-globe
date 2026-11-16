@@ -37,7 +37,7 @@
     <span class="mk-more">All crises →</span></a>{% endif %}
   {% if week.alerts %}<a class="card link week-card" href="/geopolitics/risk/">
     <span class="mk-kicker">Alerts</span><h3>Countries to watch</h3>
-    <ol class="mk-list">{% for a in week.alerts %}<li><span>{{ flag(a.e.entity_id) }}{{ a.e.name }}</span><span class="small muted">{{ 'risk up' if a.kind == 'risk' else 'deaths up' }}</span></li>{% endfor %}</ol>
+    <ol class="mk-list">{% for a in week.alerts %}<li><span>{{ flag(a.e.entity_id) }}{{ a.e.name }}</span><span class="pill {{ a.kind }}">{{ 'Risk up' if a.kind == 'risk' else 'Deaths up' }}</span></li>{% endfor %}</ol>
     <span class="mk-more">Risk index →</span></a>{% endif %}
   {% if week.report %}<a class="card link week-card" href="/reports/{{ week.report.id }}/">
     <span class="mk-kicker">Report</span><h3>{{ week.report.title }}</h3>

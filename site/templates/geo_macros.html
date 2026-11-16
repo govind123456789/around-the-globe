@@ -13,7 +13,8 @@
 
 {% macro news(query='', max=20, tabs=True, compact=False, search=False, label='') -%}
 <div class="gd-news{% if compact %} compact{% endif %}" aria-live="polite" data-gdelt data-query="{{ query }}" data-max="{{ max }}" data-tabs="{{ 1 if tabs else 0 }}" data-search="{{ 1 if search else 0 }}" data-label="{{ label }}">
-  <p class="small muted gd-status">Loading live headlines…</p>
+  <p class="small muted gd-status"><span class="sr-only">Loading live headlines…</span></p>
+  <div class="gd-skeleton" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
 </div>
 <noscript><p class="small muted">Live headlines need JavaScript. They come from the GDELT Project’s monitor of world news.</p></noscript>
 {%- endmacro %}

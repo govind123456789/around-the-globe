@@ -85,7 +85,7 @@
 
 <div class="section-head"><h2>Where {{ c.name }} ranks</h2><a href="/rankings/">All rankings →</a></div>
 <div class="pos-grid">
-  {% for p in positions %}
+  {% for p in positions[:10] %}
   <a class="pos" href="/rankings/{{ p.r.ranking_id }}/">
     <div class="nm">{{ p.r.name }}</div>
     {% if p.row.rank %}
@@ -98,6 +98,25 @@
   </a>
   {% endfor %}
 </div>
+{% if positions|length > 10 %}
+<details class="more-ranks">
+  <summary>Show all {{ positions|length }} rankings</summary>
+  <div class="pos-grid">
+  {% for p in positions[10:] %}
+  <a class="pos" href="/rankings/{{ p.r.ranking_id }}/">
+    <div class="nm">{{ p.r.name }}</div>
+    {% if p.row.rank %}
+      <div class="rk">{% if p.row.is_tied %}={% endif %}{{ p.row.rank }}<small> of {{ p.r.ranked_count }}</small></div>
+      <div class="small muted">{% if p.r.kind == 'original_composite' %}<span class="badge original">Original</span> range {{ p.row.rank_low }}–{{ p.row.rank_high }}{% elif p.r.kind == 'official_reproduction' %}<span class="badge official">UNDP</span>{% if p.row.movement is not none %} {{ m.movement(p.row.movement) }}{% endif %}{% else %}{{ m.score(p.r, p.row.score) }}{% if p.row.year %} · {{ p.row.year }}{% endif %}{% endif %}</div>
+    {% else %}
+      <div class="rk muted">—</div>
+      <div class="small muted">{{ EXCLUDED_LABEL.get(p.row.excluded_reason, 'Not ranked') }}</div>
+    {% endif %}
+  </a>
+  {% endfor %}
+  </div>
+</details>
+{% endif %}
 
 {% if mk %}
 <div class="section-head"><h2>{{ c.name }} in world markets</h2><a href="/markets/">All markets →</a></div>
