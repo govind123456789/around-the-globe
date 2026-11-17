@@ -162,6 +162,20 @@ nuclear:
     PAK: { stockpile: 170, inventory: 170 }
     ISR: { stockpile: 90, inventory: 90 }
     PRK: { stockpile: 60, inventory: 60 }
+  # Nuclear test explosions by state. US Congressional Research Service, "Comprehensive Nuclear-Test-Ban Treaty:
+  # Background and Current Developments" (RL33548; US government work); North Korea's six tests 2006-2017.
+  # Russia's figure is the Soviet Union's. India's 1998 and Pakistan's tests each set off several devices at once.
+  tests_source: "US Congressional Research Service, Comprehensive Nuclear-Test-Ban Treaty: Background and Current Developments (RL33548)"
+  tests_url: https://sgp.fas.org/crs/nuke/RL33548.pdf
+  tests:
+    USA: { n: 1030, first: 1945, last: 1992 }
+    RUS: { n: 715, first: 1949, last: 1990, note: "as the Soviet Union" }
+    FRA: { n: 210, first: 1960, last: 1996 }
+    GBR: { n: 45, first: 1952, last: 1991 }
+    CHN: { n: 45, first: 1964, last: 1996 }
+    PRK: { n: 6, first: 2006, last: 2017 }
+    IND: { n: 3, first: 1974, last: 1998, note: "1998 tests set off several devices" }
+    PAK: { n: 2, first: 1998, last: 1998, note: "several devices" }
 
 # Crisis pages: ongoing wars and emergencies. Deaths count UCDP events located in the listed countries
 # (and, where named, events of conflicts whose UCDP name matches). News queries run live in the browser.

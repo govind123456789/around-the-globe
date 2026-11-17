@@ -25,7 +25,23 @@
     <p class="small muted" style="margin:10px 0 0">Active personnel including paramilitary forces. World Bank (CC BY 4.0), from IISS, The Military Balance.</p>
   </div>
 </div>
-<div class="section-head" id="spending"><h2>Military spending</h2><span class="small muted">% of GDP · latest estimate since 2022</span></div>
+<div class="section-head" id="spending"><h2>Military spending</h2><span class="small muted">latest estimate since 2022 · about {{ (dsum.world_usd / 1e12)|round(1) }} trillion US$ across {{ dsum.usd|length }} countries</span></div>
+<div class="grid g2">
+  <div class="card">
+    <h3>Biggest military budgets, US$</h3>
+    {% set top = dsum.usd[0].usd if dsum.usd else 1 %}
+    <ol class="mk-bars">{% for r in dsum.usd[:15] %}<li><span class="rk">{{ loop.index }}</span><span class="nm">{{ flag(r.e.entity_id) }}<a href="/geopolitics/defence/{{ r.e.slug }}/">{{ r.e.name }}</a></span><span class="bar" aria-hidden="true"><i style="width:{{ '%.1f'|format(100 * r.usd / top) }}%"></i></span><span class="val">{{ r.usd|fmt(0, 'current US$') }}<small>{{ r.year }}</small></span></li>{% endfor %}</ol>
+    <details class="more-ranks"><summary>All {{ dsum.usd|length }} countries</summary>
+      <ol class="mk-list">{% for r in dsum.usd %}<li><span>{{ loop.index }}. {{ flag(r.e.entity_id) }}<a href="/geopolitics/defence/{{ r.e.slug }}/">{{ r.e.name }}</a></span><span class="mono">{{ r.usd|fmt(0, 'current US$') }} <small class="muted">{{ r.year }}</small></span></li>{% endfor %}</ol>
+    </details>
+  </div>
+  <div class="card">
+    <h3>Spending per person, US$</h3>
+    <ol class="mk-list">{% for r in dsum.per[:15] %}<li><span>{{ flag(r.e.entity_id) }}<a href="/geopolitics/defence/{{ r.e.slug }}/">{{ r.e.name }}</a></span><span class="mono">${{ r.per|fmt(0) }} <small class="muted">{{ r.year }}</small></span></li>{% endfor %}</ol>
+    <p class="small muted" style="margin:10px 0 0">Estimates: the Factbook’s share of GDP times World Bank GDP in current US$ (the year before when that year’s GDP is not yet out), divided by population. They will differ from budgets reported in national currency.</p>
+  </div>
+</div>
+<div class="section-head"><h2>Share of the economy</h2><span class="small muted">% of GDP</span></div>
 <div class="grid g2">
   <div class="card">
     <h3>Highest share of GDP</h3>
@@ -41,6 +57,13 @@
   </div>
 </div>
 <p class="small muted" style="margin-top:10px">CIA World Factbook estimates (public domain). The Factbook does not give spending in money, and SIPRI’s figures cannot be reused here.</p>
+
+<div class="section-head" id="tests"><h2>Nuclear tests</h2><span class="small muted">{{ tests|sum(attribute='1.n')|fmt(0) }} test explosions since 1945</span></div>
+<div class="card">
+  {% set tpeak = tests[0][1].n if tests else 1 %}
+  <ol class="mk-bars">{% for e, t in tests %}<li><span class="rk">{{ loop.index }}</span><span class="nm">{{ flag(e.entity_id) }}<a href="/geopolitics/defence/{{ e.slug }}/">{{ e.name }}</a></span><span class="bar" aria-hidden="true"><i style="width:{{ '%.1f'|format(100 * t.n / tpeak) }}%"></i></span><span class="val">{{ t.n|fmt(0) }}<small>{{ t.first }}{% if t.last != t.first %}–{{ t.last }}{% endif %}{% if t.note %} · {{ t.note }}{% endif %}</small></span></li>{% endfor %}</ol>
+  <p class="small muted" style="margin:10px 0 0">Test explosions by state: <a href="{{ nuclear_src.tests_url }}" rel="noopener">{{ nuclear_src.tests_source }}</a>; North Korea’s six declared tests. No state has tested since 2017 except North Korea, and most have signed the Comprehensive Nuclear-Test-Ban Treaty.</p>
+</div>
 
 <div class="section-head"><h2>Military service</h2></div>
 <div class="grid g3">

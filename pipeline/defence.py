@@ -151,19 +151,27 @@ def load(ids: set, by_name=None, path: Path = ZIP) -> dict:
     return out
 
 
-def summary(profiles: dict, by_id: dict) -> dict:
-    """Index-page tables: latest spending ranking, service status counts, space programmes."""
+def summary(profiles: dict, by_id: dict, gdp=None, pop=None) -> dict:
+    """Index-page tables: latest spending rankings (share of GDP, US$, per person), service status, space programmes.
+    `gdp(iso, year)` and `pop(iso, year)` give World Bank values for the dollar estimates."""
     spend = []
     for iso, p in profiles.items():
         mx = [x for x in p["milex"] if x[0] >= 2022]
         if mx and iso in by_id:
             y, v = mx[-1]
             prev = next((b for a, b in p["milex"] if a == y - 5), p["milex"][0][1] if p["milex"][0][0] < y else None)
-            spend.append({"e": by_id[iso], "year": y, "v": v, "change": (v - prev) if prev is not None else None})
+            g = gdp(iso, y) if gdp else None
+            p = pop(iso, y) if pop else None
+            usd = g * v / 100 if g else None
+            spend.append({"e": by_id[iso], "year": y, "v": v, "change": (v - prev) if prev is not None else None,
+                          "usd": usd, "per": usd / p if usd and p else None})
     spend.sort(key=lambda r: -r["v"])
     for i, r in enumerate(spend, 1):
         r["rank"] = i
+    usd = sorted((r for r in spend if r["usd"]), key=lambda r: -r["usd"])
+    per = sorted((r for r in spend if r["per"]), key=lambda r: -r["per"])
     status = {k: sorted((by_id[i] for i, p in profiles.items() if p.get("status") == k and i in by_id), key=lambda e: e["name"])
               for k in ("conscription", "voluntary", "none")}
     space = sorted((by_id[i] for i, p in profiles.items() if p["space"].get("agency") and i in by_id), key=lambda e: e["name"])
-    return {"spend": spend, "status": status, "space": space, "n": len(profiles)}
+    return {"spend": spend, "usd": usd, "per": per, "status": status, "space": space, "n": len(profiles),
+            "world_usd": sum(r["usd"] for r in usd)}

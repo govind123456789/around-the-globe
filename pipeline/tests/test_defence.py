@@ -55,3 +55,23 @@ def test_load_maps_codes_and_names(tmp_path, monkeypatch):
 
 def test_missing_file_is_empty(tmp_path):
     assert defence.load({"NLD"}, None, tmp_path / "missing.zip") == {}
+
+
+def test_summary_dollars_and_per_person():
+    profiles = {"AAA": {"milex": [(2019, 1.0), (2024, 2.0)], "status": None, "space": {}},
+                "BBB": {"milex": [(2024, 4.0)], "status": None, "space": {}}}
+    by_id = {i: {"entity_id": i, "name": i} for i in profiles}
+    sm = defence.summary(profiles, by_id, gdp=lambda i, y: {"AAA": 1e12, "BBB": 1e11}[i], pop=lambda i, y: 1e7)
+    assert [r["e"]["entity_id"] for r in sm["usd"]] == ["AAA", "BBB"]
+    assert sm["usd"][0]["usd"] == 2e10 and sm["usd"][0]["per"] == 2000
+    assert sm["world_usd"] == 2e10 + 4e9
+    assert sm["spend"][0]["e"]["entity_id"] == "BBB" and sm["spend"][1]["change"] == 1.0
+
+
+def test_nuclear_tests_are_well_formed():
+    import yaml
+    from pipeline.config import DATA
+    nuc = yaml.safe_load(open(DATA / "blocs.yaml", encoding="utf-8"))["nuclear"]
+    assert nuc["tests"]["USA"]["n"] == 1030 and nuc["tests_source"]
+    for t in nuc["tests"].values():
+        assert t["n"] > 0 and 1945 <= t["first"] <= t["last"] <= 2026

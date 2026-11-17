@@ -26,8 +26,9 @@ RISK_WEIGHTS = [("conflict", "Conflict deaths per 100,000 people, last 3 years (
                 ("lawless", "Weak rule of law (World Bank WGI, inverted)", .15),
                 ("displaced", "People displaced from the country per 1,000 (UNHCR)", .20)]
 RISK_FROM = 2015
-POWER_WEIGHTS = [("economy", "Economic size: GDP (World Bank)", .25), ("nuclear", "Nuclear warheads (FAS)", .15),
-                 ("forces", "Armed forces personnel (World Bank/IISS)", .10), ("population", "Population (World Bank)", .10),
+POWER_WEIGHTS = [("economy", "Economic size: GDP (World Bank)", .25), ("nuclear", "Nuclear warheads (FAS)", .10),
+                 ("spending", "Military spending in US$: CIA World Factbook share of GDP times World Bank GDP (the median share where none is published)", .10),
+                 ("forces", "Armed forces personnel (World Bank/IISS)", .05), ("population", "Population (World Bank)", .10),
                  ("trade", "Exports of goods and services (World Bank)", .10), ("tech", "Resident patent applications (World Bank/WIPO)", .05),
                  ("hightech", "High-technology exports (World Bank)", .05),
                  ("diplomacy", "Diplomatic reach: permanent UN Security Council seat and membership of major groupings", .20)]
@@ -82,8 +83,9 @@ def _num(v) -> float:
 
 
 class Geo:
-    def __init__(self, model, countries: list[dict], by_id: dict, show):
+    def __init__(self, model, countries: list[dict], by_id: dict, show, milex: dict | None = None):
         self.m, self.countries, self.by_id, self.show = model, countries, by_id, show
+        self.milex = milex or {}            # {iso3: [(year, % of GDP)]} from the CIA World Factbook
         self.ids = {e["entity_id"] for e in countries}
         self.pop = {e["entity_id"]: (model.latest(e["entity_id"], "population") or (0, 0, ""))[1] for e in countries}
         self.names = {}
@@ -469,6 +471,8 @@ class Geo:
         diplo_w = {"g7": 3, "g20": 3, "nato": 2, "brics": 2, "sco": 2, "oecd": 1, "eu": 1, "quad": 1, "aukus": 1}
         permanent = {i for b in self.blocs if b["id"] == "unsc" for i, st in b["status"].items() if st == "permanent"}
         raw = {}
+        shares = sorted(v[-1][1] for v in self.milex.values() if v)
+        median_share = shares[len(shares) // 2] if shares else 1.5
         for e in self.countries:
             i = e["entity_id"]
             if self.pop.get(i, 0) < 1e6:
@@ -483,7 +487,10 @@ class Geo:
             if not gdp:
                 continue
             reach = sum(diplo_w.get(b["id"], 0) for b in self.bloc_of.get(i, []))
+            mx = [v for y, v in self.milex.get(i, []) if y >= 2018]
+            share = mx[-1] if mx else median_share
             raw[i] = {"economy": math.log10(gdp), "population": math.log10(self.pop[i]),
+                      "spending": math.log10(1 + gdp * share / 100),
                       "forces": math.log10(1 + (g("armed-forces") or 0)), "nuclear": math.log10(1 + nuc.get(i, {}).get("inventory", 0)),
                       "trade": math.log10(1 + (g("exports-value") or 0)), "tech": math.log10(1 + (g("patents-residents") or 0)),
                       "hightech": math.log10(1 + (g("high-tech-exports-value") or 0)),

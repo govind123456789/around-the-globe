@@ -19,8 +19,9 @@
 
 <div class="stats mk-kpis">
   {% if spend %}<div class="card stat"><span class="l">Military spending, {{ spend.year }}</span><span class="v">{{ '%g'|format(spend.v) }}%</span><span class="small muted">of GDP · #{{ spend.rank }} of {{ n_spend }}{% if spend.change is not none %} · {{ '%+.1f'|format(spend.change) }} pts in 5 years{% endif %}</span></div>{% endif %}
+  {% if spend and spend.usd %}<div class="card stat"><span class="l">Military budget, {{ spend.year }}</span><span class="v">{{ spend.usd|fmt(0, 'current US$') }}</span><span class="small muted">estimate · #{{ usd_rank }} of {{ n_usd }}{% if spend.per %} · ${{ spend.per|fmt(0) }} per person{% endif %}</span></div>{% endif %}
   {% if forces %}<div class="card stat"><span class="l">Armed forces, {{ forces[0] }}</span><span class="v">{{ forces[1]|fmt(0) }}</span><span class="small muted">active, incl. paramilitary · World Bank{% if share %} · {{ '%.1f'|format(share[1]) }}% of labour force{% endif %}</span></div>{% endif %}
-  <div class="card stat"><span class="l">Nuclear warheads</span><span class="v">{{ nuclear.inventory|fmt(0) if nuclear else 'None' }}</span><span class="small muted">{% if nuclear %}{{ nuclear.stockpile|fmt(0) }} in the military stockpile · FAS estimate{% else %}not a nuclear-armed state{% endif %}</span></div>
+  <div class="card stat"><span class="l">Nuclear warheads</span><span class="v">{{ nuclear.inventory|fmt(0) if nuclear else 'None' }}</span><span class="small muted">{% if nuclear %}{{ nuclear.stockpile|fmt(0) }} in the military stockpile · FAS estimate{% else %}not a nuclear-armed state{% endif %}{% if tests %} · <a href="/geopolitics/defence/#tests">{{ tests.n|fmt(0) }} test{{ 's' if tests.n != 1 }}</a> {{ tests.first }}{% if tests.last != tests.first %}–{{ tests.last }}{% endif %}{% if tests.note %} ({{ tests.note }}){% endif %}{% endif %}</span></div>
   {% if d.status %}<div class="card stat"><span class="l">Military service</span><span class="v" style="font-size:1.35rem">{{ status_label[d.status] }}</span><span class="small muted">from the Factbook text below</span></div>{% endif %}
   {% if power %}<div class="card stat"><span class="l"><a href="/geopolitics/power/">Power index</a></span><span class="v">#{{ power.rank }}</span><span class="small muted">of {{ n_power }} · score {{ '%.0f'|format(power.score) }}</span></div>{% endif %}
 </div>
@@ -45,7 +46,7 @@
   <h3>Share of GDP spent on the military</h3>
   {% set peak = d.milex|map(attribute=1)|max %}
   <ol class="mk-bars">{% for y, v in d.milex|reverse %}<li><span class="rk">{{ y }}</span><span class="nm"></span><span class="bar" aria-hidden="true"><i style="width:{{ '%.1f'|format(100 * v / (peak or 1)) }}%"></i></span><span class="val">{{ '%g'|format(v) }}%</span></li>{% endfor %}</ol>
-  <p class="small muted" style="margin:10px 0 0">CIA World Factbook estimates. Totals in money, and budgets for individual weapons programmes, are not given here: the main databases of them (SIPRI) do not allow reuse on this site.</p>
+  <p class="small muted" style="margin:10px 0 0">CIA World Factbook estimates.{% if spend and spend.usd %} In money that is about {{ spend.usd|fmt(0, 'current US$') }} in {{ spend.year }}: the share times World Bank GDP, an estimate that will differ from the national budget.{% endif %} Budgets for individual weapons programmes are not shown: the main database of them (SIPRI) does not allow reuse on this site.</p>
 </div>
 {% endif %}
 

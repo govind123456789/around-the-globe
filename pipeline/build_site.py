@@ -243,9 +243,10 @@ class Site:
         self.rankings()
         self.markets_pages()
         self.reports_pages()
-        self.geo = geopolitics.Geo(self.m, self.countries, self.by_id, self.mk.show)
-        self.defence = defence.load({e["entity_id"] for e in self.countries}, lambda n: self.geo.names.get(geopolitics._norm(n)))
+        names = {geopolitics._norm(n): e["entity_id"] for e in self.countries for n in [e["name"], e.get("source_name") or "", *e.get("aliases", [])] if n}
+        self.defence = defence.load({e["entity_id"] for e in self.countries}, names.get)
         print(f"  defence profiles (CIA World Factbook): {len(self.defence)} countries")
+        self.geo = geopolitics.Geo(self.m, self.countries, self.by_id, self.mk.show, milex={i: p["milex"] for i, p in self.defence.items()})
         self.geopolitics_pages()
         self.so = standout.Standout(self.m, self.countries, self.by_id)
         self.standout_pages()
@@ -446,11 +447,18 @@ class Site:
         sanction_rows = sorted(((self.by_id[i], v) for i, v in g.sanctions["by_country"].items() if i in self.by_id), key=lambda x: -x[1]["n"])
         common_extra = dict(crises=crises, power=g.power, power_weights=geopolitics.POWER_WEIGHTS, sanctions=g.sanctions,
                             sanction_rows=sanction_rows, sanctions_map={e["entity_id"]: v["n"] for e, v in sanction_rows}, alerts=g.alerts)
-        dsum = defence.summary(self.defence, self.by_id)
+        def at(i, ind, y):
+            # the indicator's value for year y, or the year before when y is not published yet
+            if ind not in self.m.indicators:
+                return None
+            vals = {yy: v for yy, v, *_ in self.m.series(i, ind)}
+            return vals.get(y) or vals.get(y - 1)
+        dsum = defence.summary(self.defence, self.by_id, gdp=lambda i, y: at(i, "gdp", y), pop=lambda i, y: at(i, "population", y))
         common_extra["dsum"] = dsum
         common_extra["dprofiles"] = sorted((self.by_id[i] for i in self.defence if i in self.by_id), key=lambda e: e["name"])
         common = dict(**common_extra, blocs=g.blocs, as_of=g.blocs_as_of, treaties=g.treaties, nuclear=g.nuclear_rows(), nuclear_src=g.nuclear,
-                      forces=forces, by_id=self.by_id, risers=g.risers, fallers=g.fallers, risk_year=g.risk_year,
+                      forces=forces, by_id=self.by_id,
+                      tests=sorted(((self.by_id[i], t) for i, t in g.nuclear.get("tests", {}).items() if i in self.by_id), key=lambda x: -x[1]["n"]), risers=g.risers, fallers=g.fallers, risk_year=g.risk_year,
                       events=g.events, risk_from=geopolitics.RISK_FROM,
                       ov=ov, al=al, dp=dp, risk=g.risk, risk_map={r["e"]["entity_id"]: round(r["score"], 1) for r in g.risk}, weights=geopolitics.RISK_WEIGHTS, srcs=srcs, types=geopolitics.TYPES,
                       powers=geopolitics.POWER_NAMES, pairs=[(self.by_id[a], self.by_id[b]) for a, b in geopolitics.PAIRS
@@ -508,7 +516,8 @@ class Site:
             share = self.m.latest(iso, "armed-forces-share", min_year=2015) if "armed-forces-share" in self.m.indicators else None
             self.render(f"/geopolitics/defence/{e['slug']}/", "geo_defence_country.html", og_image="/og/geopolitics.png", c=e, d=prof,
                         spend=spend_by.get(iso), n_spend=len(dsum["spend"]), forces=forces, share=share,
-                        nuclear=g.nuclear["states"].get(iso), nuclear_src=g.nuclear, treaties=g.treaty_status(iso),
+                        nuclear=g.nuclear["states"].get(iso), nuclear_src=g.nuclear, tests=g.nuclear.get("tests", {}).get(iso),
+                        usd_rank=next((k for k, r in enumerate(dsum["usd"], 1) if r["e"]["entity_id"] == iso), None), n_usd=len(dsum["usd"]), treaties=g.treaty_status(iso),
                         power=g.power_by.get(iso), n_power=len(g.power), blocs=g.bloc_of.get(iso, []),
                         deaths3=g.deaths(iso, range((g.final_year or 2025) - 2, (g.final_year or 2025) + 1)), fy=g.final_year or 2025,
                         srcs=dsrcs)
