@@ -253,6 +253,8 @@ single:
   - { id: ghg-per-capita,     indicator: ghg-per-capita,     order: desc, name: "Highest greenhouse gas emissions per person", topics: [environment] }
   - { id: homicide-rate,      indicator: homicide-rate,      order: asc,  name: "Lowest homicide rate",          topics: [safety] }
   - { id: road-deaths,        indicator: road-deaths,        order: asc,  name: "Safest roads (fewest road deaths)", topics: [safety] }
+  - { id: military-budgets,   indicator: military-spending-usd, order: desc, name: "Biggest military budgets", topics: [safety], value_label: Spending, columns: [{ id: military-spending, label: "% of GDP" }, { id: armed-forces, label: Armed forces }] }
+  - { id: military-spending,  indicator: military-spending,  order: desc, name: "Military spending as a share of GDP", topics: [safety], value_label: "% of GDP", columns: [{ id: military-spending-usd, label: "US$" }, { id: armed-forces-share, label: "Forces, % of labour" }] }
   - { id: government-effectiveness, indicator: wgi-government-effectiveness, order: desc, name: "Government effectiveness (WGI)", topics: [governance] }
   - { id: rule-of-law,        indicator: wgi-rule-of-law,    order: desc, name: "Rule of law (WGI)",             topics: [governance] }
   - { id: women-secondary-education, indicator: women-secondary-education, order: desc, name: "Women with secondary education", topics: [society, education] }

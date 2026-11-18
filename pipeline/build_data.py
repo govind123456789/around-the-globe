@@ -308,6 +308,19 @@ def load_observations(cat: dict, entities: dict, sources: dict):
                     if row.get(col, "") != "":
                         add(ind, iso3, year, float(row[col]), rid)
 
+    # CIA World Factbook: military spending as a share of GDP, and in US$ using World Bank GDP of the same year
+    from . import defence
+    fb = {i["code"]: i for i in cat["indicators"] if i["source"] == "factbook"}
+    if fb and defence.ZIP.exists():
+        rid = release("factbook", "World Factbook", defence.ZIP)
+        for iso3, prof in defence.load(set(entities)).items():
+            for year, share in prof["milex"]:
+                if "milex" in fb:
+                    add(fb["milex"], iso3, year, share, rid)
+                gdp = obs.get((iso3, "gdp"), {}).get(year)
+                if "milex-usd" in fb and gdp:
+                    add(fb["milex-usd"], iso3, year, round(gdp[0] * share / 100), rid)
+
     # ILOSTAT: one CSV per indicator; keep the all-sexes, all-sectors total and the first source for each year
     for ind in cat["indicators"]:
         if ind["source"] != "ilostat":

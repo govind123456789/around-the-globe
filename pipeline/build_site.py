@@ -322,7 +322,7 @@ class Site:
             ("homicide-rate", "Which country has the higher murder rate?"), ("forest-area", "Which country is more forested?"),
             ("tertiary-enrolment", "Which country sends more young people to university?"), ("surface-area", "Which country is larger by area?"),
             ("solar-capacity", "Which country has more solar power capacity?"), ("market-cap", "Which country has the bigger stock market?"),
-            ("armed-forces", "Which country has more people in its armed forces?"), ("adult-obesity", "Which country has the higher adult obesity rate?")]
+            ("armed-forces", "Which country has more people in its armed forces?"), ("military-spending-usd", "Which country spends more on its military?"), ("adult-obesity", "Which country has the higher adult obesity rate?")]
 
     def india_pages(self) -> None:
         """Indian states from data.gov.in; pages appear only once the build has fetched the tables."""

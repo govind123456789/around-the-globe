@@ -223,6 +223,8 @@ indicators:
 
   # ---------------- Defence (World Bank WDI, from IISS The Military Balance; series licence CC BY 4.0) ----------------
   - { id: "armed-forces", source: "wb-wdi", code: "MS.MIL.TOTL.P1", dimension: "safety", direction: "neutral", unit: "people", decimals: 0, bounds: [0, 1.0e8], name: "Armed forces personnel", definition: "Active-duty military personnel, including paramilitary forces trained and equipped like military units.", transform: log }
+  - { id: "military-spending", source: "factbook", code: "milex", dimension: "safety", direction: "neutral", unit: "% of GDP", decimals: 1, bounds: [0, 50], name: "Military spending (% of GDP)", definition: "Military expenditure as a share of gross domestic product, as estimated by the CIA World Factbook.", status: "estimate" }
+  - { id: "military-spending-usd", source: "factbook", code: "milex-usd", dimension: "safety", direction: "neutral", unit: "current US$", decimals: 0, bounds: [0, 3.0e12], name: "Military spending (US$)", definition: "Estimated military expenditure in current US dollars: the CIA World Factbook's share of GDP multiplied by World Bank GDP in current US$ for the same year.", transform: log, status: "estimate" }
   - { id: "armed-forces-share", source: "wb-wdi", code: "MS.MIL.TOTL.TF.ZS", dimension: "safety", direction: "neutral", unit: "% of labour force", decimals: 1, bounds: [0, 50], name: "Armed forces personnel (% of labour force)", definition: "Active-duty military personnel as a share of the total labour force." }
 
   # ---------------- Labour (ILOSTAT, CC BY 4.0) ----------------
