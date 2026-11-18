@@ -274,6 +274,10 @@
       el._map.setPaintProperty("line", "line-color", cssVar("--surface"));
       return;
     }
+    // a container hidden or collapsed at load time has no size: wait until it has one
+    if (!el.clientWidth || !el.clientHeight) {
+      await new Promise(res => { const ro = new ResizeObserver(() => { if (el.clientWidth && el.clientHeight) { ro.disconnect(); res(); } }); ro.observe(el); });
+    }
     const map = new lib.Map({
       container: el, attributionControl: { compact: true, customAttribution: "Natural Earth" },
       style: { version: 8, sources: { c: { type: "geojson", data: geo } }, layers: [
@@ -287,6 +291,9 @@
     map.touchZoomRotate.disableRotation();
     map.addControl(new lib.NavigationControl({ showCompass: false }), "top-right");
     el._map = map;
+    const slow = setTimeout(() => { if (!map.loaded()) mapNote(el, "The interactive map is taking a while; showing a static map for now."); }, 15000);
+    map.on("load", () => { clearTimeout(slow); $(".map-static", el)?.remove(); mapNote(el, ""); });
+    map.on("error", e => console.error("map", e && e.error));
     map.on("mousemove", "fill", e => {
       const p = e.features[0].properties; const v = el._values[p.iso3];
       tip.style.display = "block";
@@ -297,13 +304,19 @@
     map.on("mouseleave", "fill", () => { tip.style.display = "none"; map.getCanvas().style.cursor = ""; });
     map.on("click", "fill", e => { const u = urls[e.features[0].properties.iso3]; if (u) location.href = u; });
   }
+  function mapNote(el, text) {
+    const n = $(".map-note", el.closest(".map-box"));
+    if (n) { n.textContent = text; n.hidden = !text; }
+  }
+  const mapFailed = (el, err) => {
+    console.error(err);
+    mapNote(el, "The interactive map could not load, so a static version is shown (no zoom or hover).");
+  };
   window.atlasMap = renderMap;
   const io = "IntersectionObserver" in window ? new IntersectionObserver(entries => entries.forEach(en => {
     if (!en.isIntersecting || en.target._loading) return; io.unobserve(en.target); en.target._loading = true;
     const json = $("[data-map-values]", en.target.closest(".map-box"));
-    renderMap(en.target, JSON.parse(json.textContent)).catch(err => {
-      en.target.innerHTML = '<p class="muted" style="padding:16px">The map could not load. Data is in the table.</p>'; console.error(err);
-    });
+    renderMap(en.target, JSON.parse(json.textContent)).catch(err => mapFailed(en.target, err));
   }), { rootMargin: "200px" }) : null;
   $$("[data-map]").forEach(el => { if (el.id !== "explore-map") io?.observe(el); });
   // Fallback for browsers or embedded views where the observer never fires: load a map once it is on screen.
@@ -312,7 +325,7 @@
     const r = el.getBoundingClientRect();
     if (r.top < innerHeight + 200 && r.bottom > -200) {
       el._loading = true; io?.unobserve(el);
-      renderMap(el, JSON.parse($("[data-map-values]", el.closest(".map-box")).textContent)).catch(err => console.error(err));
+      renderMap(el, JSON.parse($("[data-map-values]", el.closest(".map-box")).textContent)).catch(err => mapFailed(el, err));
     }
   });
   addEventListener("scroll", check, { passive: true }); setTimeout(check, 1500);

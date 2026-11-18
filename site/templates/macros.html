@@ -22,9 +22,11 @@
 
 {% macro map(id, values, label, lower_better=False, height=None) -%}
 <div class="map-box">
-  <div class="map" id="{{ id }}" data-map data-label="{{ label }}"{% if lower_better %} data-lower-better{% endif %}{% if height %} style="height:{{ height }}px"{% endif %} role="img" aria-label="World map: {{ label }}"></div>
+  {% set nums = values.values()|select('number')|list %}
+  <div class="map" id="{{ id }}" data-map data-label="{{ label }}"{% if lower_better %} data-lower-better{% endif %}{% if height %} style="height:{{ height }}px"{% endif %} role="img" aria-label="World map: {{ label }}{% if nums %}, {{ nums|length }} countries with data{% endif %}">{{ static_map(values, lower_better, label) }}</div>
   <div class="map-tip" aria-hidden="true"></div>
-  <div class="map-legend"><span data-lo></span><span class="ramp">{% for i in range(7) %}<i style="background:var(--map-{{ i }})"></i>{% endfor %}</span><span data-hi></span><span class="na"></span> No data</div>
+  <p class="map-note small" hidden></p>
+  <div class="map-legend">{% if nums %}<span data-lo>{{ (nums|max if lower_better else nums|min)|compact }}</span><span class="ramp">{% for i in range(7) %}<i style="background:var(--map-{{ i }})"></i>{% endfor %}</span><span data-hi>{{ (nums|min if lower_better else nums|max)|compact }}{% if lower_better %} (better){% endif %}</span><span class="na"></span> No data{% else %}<span>No data for this map yet.</span>{% endif %}</div>
   <script type="application/json" data-map-values>{{ values|tojson_safe }}</script>
 </div>
 {%- endmacro %}

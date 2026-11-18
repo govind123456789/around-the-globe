@@ -185,3 +185,64 @@ def pillar_bars(pillars: list[tuple[str, float]], w: int = 220) -> str:
         rows.append(f'<div class="pbar"><span>{escape(name)}</span><b style="--v:{max(0, min(100, v)):.1f}%"></b>'
                     f'<em>{v:.0f}</em></div>')
     return '<div class="pbars">' + "".join(rows) + "</div>"
+
+
+# --------------------------------------------------------------------------- static world map
+MAP_VIEW = (30, 28, 690, 264)          # equirectangular, 2 units per degree: longitude -165..180, latitude 76..-56
+
+
+def _ring(pts, step=0.6):
+    out, last = [], None
+    for lon, lat in pts:
+        x, y = (lon + 180) * 2, (90 - lat) * 2
+        if last is None or abs(x - last[0]) + abs(y - last[1]) >= step:
+            out.append((x, y))
+            last = (x, y)
+    if len(out) < 3:
+        return ""
+    return "M" + "L".join(f"{x:.1f} {y:.1f}" for x, y in out) + "Z"
+
+
+def world_paths(features: list[dict]) -> dict[str, str]:
+    """{iso3: SVG path data} from GeoJSON country features (lon/lat)."""
+    d: dict[str, str] = {}
+    for f in features:
+        g = f["geometry"]
+        polys = [g["coordinates"]] if g["type"] == "Polygon" else g["coordinates"] if g["type"] == "MultiPolygon" else []
+        path = "".join(_ring(r) for poly in polys for r in poly)
+        iso = f["properties"]["iso3"]
+        if path and iso:
+            d[iso] = d.get(iso, "") + path
+    return d
+
+
+def world_sprite(d: dict[str, str]) -> str:
+    body = "".join(f'<path id="c-{iso}" d="{p}"/>' for iso, p in sorted(d.items()))
+    return f'<svg xmlns="http://www.w3.org/2000/svg"><defs>{body}</defs></svg>'
+
+
+def map_bins(values: dict, lower_better: bool = False) -> dict[str, int]:
+    """Seven quantile bins, the same rule the interactive map uses (app.js colorExpr)."""
+    vals = sorted(v for v in values.values() if v is not None and math.isfinite(v))
+    if not vals:
+        return {}
+    breaks = [vals[int(i / 7 * (len(vals) - 1))] for i in range(1, 7)]
+    out = {}
+    for k, v in values.items():
+        if v is None or not math.isfinite(v):
+            continue
+        b = 0
+        while b < 6 and v > breaks[b]:
+            b += 1
+        out[k] = 6 - b if lower_better else b
+    return out
+
+
+def static_map(values: dict, isos: list[str], lower_better: bool = False, label: str = "", v: str = "") -> str:
+    bins = map_bins(values, lower_better)
+    x, y, w, h = MAP_VIEW
+    href = f"/geo/world.svg?v={v}" if v else "/geo/world.svg"
+    uses = "".join(f'<use href="{href}#c-{i}" class="m{bins[i]}"/>' if i in bins else f'<use href="{href}#c-{i}" class="mna"/>'
+                   for i in isos)
+    return (f'<svg class="map-static" viewBox="{x} {y} {w} {h}" preserveAspectRatio="xMidYMid meet" aria-hidden="true" '
+            f'focusable="false">{uses}</svg>')

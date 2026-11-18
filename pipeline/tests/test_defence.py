@@ -75,3 +75,15 @@ def test_nuclear_tests_are_well_formed():
     assert nuc["tests"]["USA"]["n"] == 1030 and nuc["tests_source"]
     for t in nuc["tests"].values():
         assert t["n"] > 0 and 1945 <= t["first"] <= t["last"] <= 2026
+
+
+def test_static_map_bins_and_svg():
+    from pipeline import svg
+    vals = {"AAA": 1, "BBB": 2, "CCC": 3, "DDD": None}
+    b = svg.map_bins(vals)
+    assert b["AAA"] == 0 and b["CCC"] == 6 and "DDD" not in b
+    assert svg.map_bins(vals, lower_better=True)["AAA"] == 6
+    d = svg.world_paths([{"properties": {"iso3": "AAA"}, "geometry": {"type": "Polygon", "coordinates": [[[0, 0], [10, 0], [10, 10], [0, 0]]]}}])
+    assert d["AAA"].startswith("M") and d["AAA"].endswith("Z")
+    out = svg.static_map(vals, ["AAA", "EEE"])
+    assert 'class="m0"' in out and 'c-EEE" class="mna"' in out

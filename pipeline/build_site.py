@@ -78,6 +78,9 @@ class Site:
                 digest.update(f.read_bytes())
         self.env.globals["asset_v"] = digest.hexdigest()[:10]    # cache-busting for /static assets
         self.env.filters["ename_ind"] = lambda i: model.indicators[i]["name"]
+        self.geo_isos: list[str] = []
+        self.env.globals["static_map"] = lambda values, lower_better=False, label="": Markup(
+            svg.static_map(values, self.geo_isos, lower_better, label, self.env.globals.get("asset_v", "")))
         self.countries = countries
         self.dims = {d["id"]: d for d in model.dimensions}
         self.rk = model.rankings
@@ -293,6 +296,11 @@ class Site:
         out = DIST / "geo" / "countries.json"
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps({"type": "FeatureCollection", "features": feats}, separators=(",", ":")))
+        # A static SVG of the same shapes: drawn in the page before the interactive map loads, and kept
+        # if it fails, so a map is never blank (and crawlers and no-JS readers see one too).
+        d = svg.world_paths(feats)
+        (DIST / "geo" / "world.svg").write_text(svg.world_sprite(d), encoding="utf-8")
+        self.geo_isos = sorted(d)
 
     def featured(self) -> list[dict]:
         cards = []
