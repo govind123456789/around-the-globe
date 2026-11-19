@@ -6,8 +6,10 @@ names:
   BRN: { name: Brunei }
   COD: { name: DR Congo, aliases: [Democratic Republic of the Congo, DRC, Zaire] }
   COG: { name: Republic of the Congo, aliases: [Congo-Brazzaville] }
-  CIV: { name: Côte d'Ivoire, aliases: [Ivory Coast] }
+  CIV: { name: Côte d'Ivoire, aliases: [Ivory Coast, Cote d'Ivoire] }
   CPV: { name: Cabo Verde, aliases: [Cape Verde] }
+  CHI: { name: Channel Islands, aliases: [Jersey, Guernsey] }
+  CUW: { name: Curaçao, aliases: [Curacao] }
   CZE: { name: Czechia, aliases: [Czech Republic] }
   EGY: { name: Egypt }
   FSM: { name: Micronesia }
@@ -27,6 +29,7 @@ names:
   PRK: { name: North Korea, aliases: [DPRK] }
   RUS: { name: Russia }
   SOM: { name: Somalia }
+  STP: { name: São Tomé and Príncipe, aliases: [Sao Tome and Principe] }
   SVK: { name: Slovakia }
   SWZ: { name: Eswatini, aliases: [Swaziland] }
   SXM: { name: Sint Maarten }

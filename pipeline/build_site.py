@@ -55,12 +55,15 @@ class Site:
         self.env.filters["lc"] = lambda n: n if n[:2].isupper() else n[:1].lower() + n[1:]   # keeps GSDP, CO2 etc.
         self.env.filters["tojson_safe"] = lambda o: Markup(json.dumps(o, ensure_ascii=False).replace("<", "\\u003c"))
         self.env.globals.update(year_label=svg.year_label, SOURCE_SHORT=SOURCE_SHORT, site=self.cfg, release=model.release, KIND_LABEL=KIND_LABEL,
-                                EXCLUDED_LABEL=EXCLUDED_LABEL, nav=self.nav())
+                                EXCLUDED_LABEL=EXCLUDED_LABEL, nav=self.nav(), nav2=self.secondary_nav(), nav_foot=self.footer_nav())
         self.pages: list[str] = []
         self.search: list[dict] = []
         countries = model.countries()
         self.by_id = {e["entity_id"]: e for e in model.entities.values()}
         self.env.globals["ename"] = lambda e: self.by_id[e]["name"]
+        # the 217 are World Bank economies: sovereign countries plus territories such as Hong Kong and Puerto Rico
+        self.env.globals["n_places"] = sum(1 for e in model.entities.values() if e["type"] == "country")
+        self.env.globals["places_label"] = "countries and territories"
         flags = {p.stem for p in (SITE / "static" / "flags").glob("*.svg")}
 
         def flag(iso3: str, eager: bool = False) -> Markup:
@@ -146,6 +149,18 @@ class Site:
             verdict = None if avg is None else q["high"] if avg >= 67 else q["low"] if avg < 33 else q["mid"]
             out.append({"q": q, "items": items, "missing": missing, "avg": avg, "verdict": verdict})
         return out
+
+    @staticmethod
+    def secondary_nav() -> list:
+        # shown once, in the utility bar (desktop and mobile); everything in the main menu stays out of it
+        return [("Data & API", "/data/"), ("Methodology", "/methodology/"), ("About", "/about/")]
+
+    @staticmethod
+    def footer_nav() -> list:
+        # the slim footer: reference and policy pages that are not in the header
+        return [("Sources & licences", "/data/sources/"), ("Downloads", "/data/downloads/"), ("Open API", "/data/api/"),
+                ("Editorial policy", "/about/editorial-policy/"), ("Errata", "/about/errata/"),
+                ("Licences & citing", "/about/licences/"), ("Funding", "/about/funding/"), ("Privacy", "/about/privacy/")]
 
     @staticmethod
     def nav():

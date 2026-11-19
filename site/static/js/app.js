@@ -330,7 +330,9 @@
   });
   addEventListener("scroll", check, { passive: true }); setTimeout(check, 1500);
   document.addEventListener("click", e => $$(".nav-more[open]").forEach(d => { if (!d.contains(e.target)) d.open = false; }));
-  document.addEventListener("keydown", e => { if (e.key === "Escape") $$(".nav-more[open]").forEach(d => { d.open = false; }); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") $$(".nav-more[open]").forEach(d => { const inside = d.contains(document.activeElement); d.open = false; if (inside) d.querySelector("summary")?.focus(); }); });
+  // one menu open at a time
+  $$(".nav-more").forEach(d => d.addEventListener("toggle", () => { if (d.open) $$(".nav-more[open]").forEach(o => { if (o !== d) o.open = false; }); }));
   document.addEventListener("themechange", () => $$("[data-map]").forEach(el => { if (el._map) renderMap(el, el._values, { lowerBetter: el._lowerBetter, label: el._label }); }));
 
   function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }

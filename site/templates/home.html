@@ -6,9 +6,9 @@
   <canvas class="globe" data-globe data-lon="78" aria-hidden="true"></canvas>
   <div class="wrap">
   <div class="hero-copy">
-  <span class="eyebrow">Open data · {{ n_countries }} countries · 2,000 years of history</span>
+  <span class="eyebrow">Open data · {{ n_countries }} {{ places_label }} · <a href="/explore/timeline/">history since 200 BCE</a></span>
   <h1>{{ site.tagline|replace('. ', '.<br>')|safe }}</h1>
-  <p class="lede">Free, open rankings and comparisons of {{ n_countries }} countries. Every number shows its source, its year and how it was calculated, and every dataset can be downloaded and reused under {{ site.data_licence }}.</p>
+  <p class="lede">Free, open rankings and comparisons of {{ n_countries }} {{ places_label }}. Every number shows its source, its year and how it was calculated, and every dataset can be downloaded and reused under {{ site.data_licence }}.</p>
   <div class="search">
     <svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
     <input type="search" data-search placeholder="Search a country, indicator or ranking… try “india vs china”" aria-label="Search" autocomplete="off">
@@ -16,7 +16,7 @@
   </div>
   <p class="try">Try: <a href="/rankings/human-development-index/">Human Development Index</a><a href="/compare/china-vs-india/">China vs India</a><a href="/data/indicators/life-expectancy/">Life expectancy</a><a href="/index-builder/">Build your own index</a></p>
   <div class="facts">
-    <div><b>{{ n_countries }}</b>countries</div>
+    <div><b>{{ n_countries }}</b>countries &amp; territories</div>
     <div><b>{{ n_indicators }}</b>indicators</div>
     <div><b>{{ n_rankings }}</b>rankings</div>
     <div><b>{{ hdi_check.exact_to_3dp }}/{{ hdi_check.compared }}</b>HDI values verified</div>
