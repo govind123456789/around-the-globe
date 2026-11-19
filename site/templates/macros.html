@@ -66,3 +66,7 @@
   </div>
 </details>
 {%- endmacro %}
+
+{% macro trust_badge(t) -%}
+<span class="trust t-{{ t.level }}" title="Trust: {{ t.label }}. {{ t.reasons|join('. ') }}."><span aria-hidden="true">{{ t.icon }}</span> {{ t.label }}<span class="sr-only"> trust: {{ t.reasons|join('; ') }}</span></span>
+{%- endmacro %}

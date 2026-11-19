@@ -165,17 +165,31 @@
   $$("[data-filters]").forEach(bar => {
     const table = document.getElementById(bar.dataset.filters);
     const text = $("[data-f-text]", bar), region = $("[data-f-region]", bar), income = $("[data-f-income]", bar),
-      ranked = $("[data-f-ranked]", bar), count = $("[data-f-count]", bar);
+      ranked = $("[data-f-ranked]", bar), count = $("[data-f-count]", bar), trustOnly = $("[data-f-trust]", bar);
+    const CAP = 50;
+    let all = false, more = null;
     const apply = () => {
-      const q = (text.value || "").toLowerCase(); let n = 0;
+      const q = (text.value || "").toLowerCase(); let n = 0, total = 0;
+      const capped = !all && !q && !region.value && !income.value && !trustOnly?.checked;
       for (const r of table.tBodies[0].rows) {
         const show = (!q || r.dataset.name.includes(q)) && (!region.value || r.dataset.region === region.value)
-          && (!income.value || r.dataset.income === income.value) && (!ranked.checked || !("unranked" in r.dataset));
-        r.hidden = !show; if (show) n++;
+          && (!income.value || r.dataset.income === income.value) && (!ranked.checked || !("unranked" in r.dataset))
+          && (!trustOnly?.checked || r.dataset.trust === "high");
+        if (show) total++;
+        r.hidden = !show || (capped && n >= CAP); if (!r.hidden) n++;
       }
       count.textContent = `${n} shown`;
+      if (capped && total > CAP) {
+        if (!more) {
+          more = document.createElement("button");
+          more.type = "button"; more.className = "btn ghost sm show-all";
+          more.addEventListener("click", () => { all = true; apply(); table.tBodies[0].rows[CAP]?.querySelector("a")?.focus(); });
+          table.closest(".table-wrap").after(more);
+        }
+        more.textContent = `Show all ${total} countries`; more.hidden = false;
+      } else if (more) more.hidden = true;
     };
-    [text, region, income, ranked].forEach(el => el.addEventListener("input", apply));
+    [text, region, income, ranked, trustOnly].forEach(el => el?.addEventListener("input", apply));
     apply();
   });
 
@@ -264,8 +278,8 @@
     const lowerBetter = opts.lowerBetter ?? ("lowerBetter" in el.dataset);
     const label = opts.label || el.dataset.label || "";
     el._values = values; el._lowerBetter = lowerBetter; el._label = label; el._unit = opts.unit || "";
-    const [lib, geo, idx] = await Promise.all([loadLib(), loadGeo(), loadIndex()]);
-    const urls = {}; idx.forEach(i => { if (i.a) urls[i.a] = i.u; });
+    const [lib, geo] = await Promise.all([loadLib(), loadGeo()]);
+    const go = async iso => { const idx = await loadIndex(); const hit = idx.find(i => i.a === iso); if (hit) location.href = hit.u; };
     const { expr, lo, hi } = colorExpr(values, lowerBetter);
     const [loEl, hiEl] = [$("[data-lo]", box), $("[data-hi]", box)];
     if (loEl) loEl.textContent = lo === null ? "" : (lowerBetter ? fmtNum(hi) : fmtNum(lo));
@@ -301,10 +315,10 @@
       tip.style.display = "block";
       tip.style.left = Math.min(e.point.x + 14, el.clientWidth - 180) + "px"; tip.style.top = (e.point.y + 14) + "px";
       tip.innerHTML = `<b>${esc(p.name)}</b><br>${v === undefined || v === null ? '<span class="muted">No data</span>' : esc(el._label) + ": " + fmtNum(v)}`;
-      map.getCanvas().style.cursor = urls[p.iso3] ? "pointer" : "";
+      map.getCanvas().style.cursor = p.known ? "pointer" : "";
     });
     map.on("mouseleave", "fill", () => { tip.style.display = "none"; map.getCanvas().style.cursor = ""; });
-    map.on("click", "fill", e => { const u = urls[e.features[0].properties.iso3]; if (u) location.href = u; });
+    map.on("click", "fill", e => { const p = e.features[0].properties; if (p.known) go(p.iso3); });
   }
   function mapNote(el, text) {
     const n = $(".map-note", el.closest(".map-box"));
@@ -315,6 +329,15 @@
     mapNote(el, "The interactive map could not load, so a static version is shown (no zoom or hover).");
   };
   window.atlasMap = renderMap;
+  const lite = !matchMedia("(pointer: fine)").matches || innerWidth < 768 || (navigator.connection && navigator.connection.saveData);
+  if (lite) $$("[data-map]").forEach(el => {
+    if (el.id === "explore-map") return;
+    el._loading = true;                                   // skip automatic loading
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "btn sm map-go"; b.textContent = "Explore the interactive map";
+    b.addEventListener("click", () => { b.remove(); renderMap(el, JSON.parse($("[data-map-values]", el.closest(".map-box")).textContent)).catch(err => mapFailed(el, err)); });
+    el.closest(".map-box").appendChild(b);
+  });
   const io = "IntersectionObserver" in window ? new IntersectionObserver(entries => entries.forEach(en => {
     if (!en.isIntersecting || en.target._loading) return; io.unobserve(en.target); en.target._loading = true;
     const json = $("[data-map-values]", en.target.closest(".map-box"));

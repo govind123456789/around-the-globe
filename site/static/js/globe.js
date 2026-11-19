@@ -5,7 +5,9 @@
   const canvas = document.querySelector("[data-globe]");
   if (!canvas || !canvas.getContext) return;
   const ctx = canvas.getContext("2d");
-  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // rotation only where it is cheap: a fine pointer, a wide screen, no data saver, no reduced motion
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches || !matchMedia("(pointer: fine) and (min-width: 900px)").matches
+    || (navigator.connection && navigator.connection.saveData);
   const RAD = Math.PI / 180;
   const TILT = +(canvas.dataset.tilt || 18) * RAD;
   let lon = +(canvas.dataset.lon || 78);
@@ -90,9 +92,11 @@
     ctx.stroke();
   }
 
-  let cost = 0, frames = 0, stopped = false;
+  let cost = 0, frames = 0, stopped = false, began = 0;
   function loop(t) {
     if (stopped) return;
+    if (!began) began = t;
+    if (t - began > 45000) { stopped = true; return; }                // a short turn, then stay still
     requestAnimationFrame(loop);
     if (!visible || document.hidden || t - last < 100) return;     // 10 redraws a second is smooth at this speed
     lon += Math.min(t - last, 200) * 0.0012;                       // about 1 degree a second
@@ -101,24 +105,19 @@
     draw();
     cost += performance.now() - start;
     if (++frames === 12) {                                         // too slow on this device: stay still
-      if (cost / frames > 30) stopped = true;
+      if (cost / frames > 12) stopped = true;
       cost = 0; frames = 0;
     }
   }
 
-  fetch("/geo/countries.json").then(r => r.json()).then(geo => {
+  // start after the page has loaded and gone idle, from the small pre-thinned globe file
+  const start = () => fetch("/geo/globe.json").then(r => r.json()).then(geo => {
     rings = [];
-    for (const f of geo.features) {
-      const polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
-      for (const poly of polys) {
-        const src = poly[0];                                       // outer ring only
-        let x0 = 180, x1 = -180, y0 = 90, y1 = -90;
-        for (const pt of src) { x0 = Math.min(x0, pt[0]); x1 = Math.max(x1, pt[0]); y0 = Math.min(y0, pt[1]); y1 = Math.max(y1, pt[1]); }
-        if (f.properties.iso3 !== highlight && (x1 - x0) * (y1 - y0) < 0.6) continue;   // too small to see at this size
-        const step = src.length > 120 ? 4 : src.length > 40 ? 3 : src.length > 12 ? 2 : 1, flat = [];
-        for (let i = 0; i < src.length; i += step) flat.push(src[i][0], src[i][1]);
-        rings.push({ iso: f.properties.iso3, ring: flat });
-      }
+    for (const [iso, ring] of geo) {
+      let x0 = 180, x1 = -180, y0 = 90, y1 = -90;
+      for (let i = 0; i < ring.length; i += 2) { x0 = Math.min(x0, ring[i]); x1 = Math.max(x1, ring[i]); y0 = Math.min(y0, ring[i + 1]); y1 = Math.max(y1, ring[i + 1]); }
+      if (iso !== highlight && (x1 - x0) * (y1 - y0) < 0.6) continue;   // too small to see at this size
+      rings.push({ iso, ring });
     }
     resize();
     canvas.classList.add("ready");
@@ -129,4 +128,6 @@
       requestAnimationFrame(loop);
     }
   }).catch(() => { canvas.remove(); });
+  const idle = () => ("requestIdleCallback" in window ? requestIdleCallback(start, { timeout: 3000 }) : setTimeout(start, 600));
+  if (document.readyState === "complete") idle(); else addEventListener("load", idle, { once: true });
 })();

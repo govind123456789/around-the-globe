@@ -49,6 +49,19 @@ jobs:
           python -m pipeline.fetch
           rm -rf raw/wb.prev
 
+      # Rank changes are explained against the previous data release, downloaded from GitHub Releases.
+      - name: Fetch the previous data release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          rm -rf raw/prev_release
+          TODAY=$(date -u +%F)
+          TAG=$(gh release list --limit 20 --json tagName -q '.[].tagName' | grep '^data-' | sed 's/^data-//' | awk -v t="$TODAY" '$0 < t' | sort | tail -1)
+          if [ -n "$TAG" ]; then
+            mkdir -p /tmp/prev raw/prev_release
+            gh release download "data-$TAG" -p "api-json-$TAG.zip" -D /tmp/prev && unzip -q -o /tmp/prev/api-json-$TAG.zip -d raw/prev_release || echo "previous release not available"
+          fi
+
       - name: Build release (strict licence gate)
         run: RELEASE_DATE=$(date -u +%F) python -m pipeline.build --skip-fetch --strict
 

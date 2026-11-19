@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}How trust levels work{% endblock %}
+{% block description %}How every value on {{ site.name }} gets a High, Medium or Low trust level: data age against the source's usual lag, the kind of source, and estimate or projection flags.{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/methodology/">Methodology</a></p>
+<div class="page-head">
+  <h1>How trust levels work</h1>
+  <p class="lede">Every value on this site carries a trust level: High, Medium or Low. It is not a judgement of the publisher. It says how far you can lean on that one number today: how old it is, what kind of source made it, and whether the source calls it an estimate. This page is generated from the same settings file the code uses (<code>data/trust.yaml</code>).</p>
+</div>
+<div class="prose">
+<h2>Points</h2>
+<p>A value starts at zero points and gains points for each concern below. Then:</p>
+<ul>
+  <li><b>{{ trust_cfg.levels.high.icon }} {{ trust_cfg.levels.high.label }}</b>: {{ trust_cfg.levels.high.max_points }} points.</li>
+  <li><b>{{ trust_cfg.levels.medium.icon }} {{ trust_cfg.levels.medium.label }}</b>: {{ trust_cfg.levels.high.max_points + 1 }} to {{ trust_cfg.levels.medium.max_points }} points.</li>
+  <li><b>{{ trust_cfg.levels.low.icon }} {{ trust_cfg.levels.low.label }}</b>: {{ trust_cfg.levels.medium.max_points + 1 }} points or more, or a value far older than its source usually is (below).</li>
+</ul>
+
+<h2>Age</h2>
+<p>Each source publishes with a usual delay (its lag): most international series describe the year before last. A value counts from the release year ({{ release[:4] }}):</p>
+<ul>
+  <li>Up to {{ trust_cfg.freshness.aging_after }} year{{ 's' if trust_cfg.freshness.aging_after != 1 }} beyond the source’s lag: no points.</li>
+  <li>More than {{ trust_cfg.freshness.aging_after }} beyond the lag: 1 point.</li>
+  <li>More than {{ trust_cfg.freshness.old_after }} years beyond the lag: Low, whatever the other points.</li>
+</ul>
+
+<h2>Kind of source</h2>
+<table>
+  <thead><tr><th>Kind</th><th class="num">Points</th></tr></thead>
+  <tbody>{% for k, t in trust_cfg.source_types.items() %}<tr><td>{{ t.label }}</td><td class="num">{{ t.points }}</td></tr>{% endfor %}</tbody>
+</table>
+
+<h2>Estimates and projections</h2>
+<p>When the source flags a value: estimate {{ trust_cfg.status.estimate }} point, projection of a future year {{ trust_cfg.status.forecast }} points.</p>
+
+<h2>Sources</h2>
+<table>
+  <thead><tr><th>Source</th><th>Kind</th><th class="num">Usual lag (years)</th></tr></thead>
+  <tbody>{% for sid, s in trust_cfg.sources.items() %}<tr><td>{{ sources[sid].publisher if sid in sources else ('This site' if sid == 'site' else sid) }}</td><td>{{ trust_cfg.source_types[s.type].label }}</td><td class="num">{{ s.lag }}</td></tr>{% endfor %}</tbody>
+</table>
+
+<h2>Coverage</h2>
+<p>Rankings and comparisons also show coverage: how many countries (or index components) have data from the last {{ trust_cfg.coverage_recent_years }} years.</p>
+</div>
+{% endblock %}

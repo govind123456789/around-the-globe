@@ -4,11 +4,24 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "around-the-globe",
   "compatibility_date": "2026-10-01",
+  // A small Worker in front of the open API only (/v1/*, /api/*): optional keys, tiers and rate limits.
+  // Every other path is served straight from the static assets. See worker/index.js.
+  "main": "worker/index.js",
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/v1/*", "/api/*"],
     "not_found_handling": "404-page",   // serves dist/404.html
     "html_handling": "auto-trailing-slash"
-  }
+  },
+  // Rate limits per minute: anonymous by IP, keyed by key, and API-key sign-ups by IP.
+  "ratelimits": [
+    { "name": "RATE_ANON", "namespace_id": "4101", "simple": { "limit": 60, "period": 60 } },
+    { "name": "RATE_KEYED", "namespace_id": "4102", "simple": { "limit": 600, "period": 60 } },
+    { "name": "RATE_SIGNUP", "namespace_id": "4103", "simple": { "limit": 3, "period": 60 } }
+  ],
+  // API keys switch on when this D1 database exists (see worker/schema.sql for the two commands):
+  // "d1_databases": [{ "binding": "DB", "database_name": "around-the-globe-api", "database_id": "<id>" }],
   // When the domain is ready, add it in the Cloudflare dashboard (Workers → around-the-globe →
   // Domains & Routes) or here:
   // "routes": [{ "pattern": "zmetaboard.com", "custom_domain": true }]

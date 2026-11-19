@@ -117,6 +117,29 @@ def score(norm: dict[str, dict[str, float]], indicators: list[IndicatorSpec],
     return assign_ranks(results)
 
 
+def contributions(norm: dict[str, dict[str, float]], indicators: list[IndicatorSpec], pillars: list[PillarSpec],
+                  entity: str) -> dict[str, tuple[float, float]]:
+    """Each indicator's share of an entity's arithmetic score: {indicator: (effective weight, normalised value)}.
+
+    The effective weight is the pillar's share of the weight present times the indicator's share within its
+    pillar, both renormalised over the data the entity has, exactly as in score(). So
+    100 * sum(w * v) reproduces the score.
+    """
+    pw = {p.id: p.weight for p in pillars}
+    by_pillar: dict[str, list[IndicatorSpec]] = {}
+    for ind in indicators:
+        by_pillar.setdefault(ind.pillar, []).append(ind)
+    present = {p: [i for i in inds if entity in norm.get(i.id, {})] for p, inds in by_pillar.items()}
+    present = {p: inds for p, inds in present.items() if inds}
+    pw_total = sum(pw[p] for p in present)
+    out = {}
+    for p, inds in present.items():
+        iw_total = sum(i.weight for i in inds)
+        for i in inds:
+            out[i.id] = (pw[p] / pw_total * i.weight / iw_total, norm[i.id][entity])
+    return out
+
+
 def assign_ranks(results: list[Result], descending: bool = True) -> list[Result]:
     """Competition ranking (1, 2, 2, 4). Ties are scores equal at 6 decimal places."""
     ranked = [r for r in results if r.score is not None]

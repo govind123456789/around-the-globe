@@ -215,6 +215,12 @@
     {% if x.row.rank %}
       {{ x.bars|safe }}
       <p class="small muted" style="margin:10px 0 0">Score {{ '%.1f'|format(x.row.score) }} · rank {{ x.row.rank }} of {{ x.r.ranked_count }} (range {{ x.row.rank_low }}–{{ x.row.rank_high }}) · coverage {{ (x.row.coverage * 100)|round|int }}%</p>
+      {% if x.why %}<div class="why-card">
+        <h4>Why #{{ x.row.rank }}</h4>
+        <p class="small">{{ x.why }}</p>
+        {{ x.dbars|safe }}
+        <p class="small muted">Points each component adds to the score compared with the median ranked country, at this index’s weights.</p>
+      </div>{% endif %}
     {% else %}
       <p class="small muted">Not ranked: {{ EXCLUDED_LABEL.get(x.row.excluded_reason, x.row.excluded_reason) }}{% if x.row.coverage %} (data for {{ (x.row.coverage * 100)|round|int }}% of the weight){% endif %}.</p>
     {% endif %}
@@ -222,6 +228,19 @@
   {% endfor %}
 </div>
 <p class="small muted" style="margin-top:6px">Pillar scores are 0–100 relative to other ranked countries. These are original indices, not official statistics.</p>
+{% endif %}
+
+{% if rank_moves %}
+<div class="section-head"><h2>Rank changes since the {{ prev_release }} release</h2><a href="/methodology/trust/">How we explain them →</a></div>
+<div class="table-wrap"><table class="moves">
+  <thead><tr><th>Ranking</th><th class="num">Now</th><th>Change and cause</th><th>Rank by release</th></tr></thead>
+  <tbody>{% for r, ch, h in rank_moves|sort(attribute='1.delta', reverse=True) %}<tr>
+    <td><a href="/rankings/{{ r.ranking_id }}/">{{ r.name }}</a></td>
+    <td class="num">{{ ch.to }} <span class="muted small">of {{ r.ranked_count }}</span></td>
+    <td><span class="mv {{ 'up' if ch.delta > 0 else 'down' }}">{{ ch.text }}</span></td>
+    <td class="small muted">{% for rel, rk in h %}{{ rel }}: {{ rk }}{% if not loop.last %} → {% endif %}{% endfor %}</td>
+  </tr>{% endfor %}</tbody>
+</table></div>
 {% endif %}
 
 {% if charts %}
@@ -246,6 +265,7 @@
         {% if it.pct is not none %}<span title="Share of countries with data that {{ c.name }} {{ 'does better than' if it.ind.direction != 'neutral' else 'is higher than' }}">{{ 'Better' if it.ind.direction != 'neutral' else 'Higher' }} than {{ it.pct }}%</span>{% endif %}
       </div>
       {% if it.very_old %}<span class="old-badge">data from {{ it.year }}</span>{% elif it.stale %}<span class="small stale">Latest data is from {{ it.year }}</span>{% endif %}
+      {{ m.trust_badge(trust_of(it.ind.source, it.year, it.status)) }}
     </div>
     {% endfor %}
   </div>

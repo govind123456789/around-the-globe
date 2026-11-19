@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Open data API{% endblock %}
-{% block description %}A free, open JSON API for every indicator, ranking and country on {{ site.name }}, under {{ site.data_licence }}. No key needed.{% endblock %}
+{% block description %}A free, open JSON API for every indicator, ranking and country on {{ site.name }}, under {{ site.data_licence }}. No key needed; a free key raises the rate limit.{% endblock %}
 {% block main %}
 <p class="crumbs"><a href="/data/">Data</a></p>
 <div class="page-head">
   <h1>Open data API</h1>
-  <p class="lede">The API is a set of static JSON files at stable URLs: the same files this website reads. There is no key and no rate limit, and cross-origin requests are allowed.</p>
+  <p class="lede">The API is a set of static JSON files at stable URLs: the same files this website reads. You do not need a key: anonymous access is open to everyone, with a fair-use limit. A free key raises the limit. Cross-origin requests are allowed.</p>
 </div>
 <div class="prose">
 <p>Use <code>/v1/latest/…</code> for the newest release, or <code>/v1/releases/{date}/…</code> for a fixed, unchanging release. <a href="/v1/releases.json">releases.json</a> lists all releases.</p>
@@ -24,6 +24,37 @@
     <tr><td><code><a href="/data/downloads/">/v1/latest/bulk/{table}.{csv.gz|parquet}</a></code></td><td>Bulk tables (CSV is gzip-compressed)</td></tr>
   </tbody>
 </table>
+<h2 id="tiers">Access and limits</h2>
+<table>
+  <thead><tr><th>Tier</th><th class="num">Requests a minute</th><th>How</th></tr></thead>
+  <tbody>
+    <tr><td>Anonymous</td><td class="num">60 per IP address</td><td>Nothing to do: call any <code>/v1/</code> URL.</td></tr>
+    <tr><td>Free key</td><td class="num">600 per key</td><td>Get a key below and send it as the <code>x-api-key</code> header (or <code>?key=</code>). Attribution is required, as for all the data ({{ site.data_licence }}).</td></tr>
+    <tr><td>Commercial</td><td class="num">By arrangement</td><td>Not offered yet. <a href="mailto:{{ site.contact_email }}">Write to us</a> if you need more.</td></tr>
+  </tbody>
+</table>
+<p class="small muted">Every response carries <code>x-api-tier</code> and <code>x-ratelimit-limit</code> headers. Over the limit you get HTTP 429 with <code>retry-after: 60</code>. We count requests per key or per IP address per day, to set fair limits; we do not log which files you fetch.</p>
+<h3>Get a free key</h3>
+<form class="key-form" data-key-form>
+  <label class="field">Email<input type="email" name="email" required autocomplete="email" placeholder="you@example.org"></label>
+  <button class="btn sm" type="submit">Get a key</button>
+</form>
+<p class="small" data-key-out aria-live="polite"></p>
+<p class="small muted">We store your email, a one-way hash of your key (never the key itself) and daily request counts. The key is shown once. See <a href="/about/privacy/">Privacy</a>.</p>
+<script>
+document.querySelector("[data-key-form]")?.addEventListener("submit", async e => {
+  e.preventDefault();
+  const out = document.querySelector("[data-key-out]"), f = e.target;
+  out.textContent = "Requesting a key…";
+  try {
+    const r = await fetch("/api/keys", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: f.email.value }) });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.key) { out.innerHTML = ""; const c = document.createElement("code"); c.textContent = d.key; out.append("Your key (copy it now, it is shown once): ", c); }
+    else out.textContent = d.error || "Keys are not available yet. Anonymous access works without one.";
+  } catch (err) { out.textContent = "Keys are not available yet. Anonymous access works without one."; }
+});
+</script>
+
 <h2>Example</h2>
 <pre><code>const r = await fetch("{{ site.base_url }}/v1/latest/entities/country/IND.json");
 const india = await r.json();

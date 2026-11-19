@@ -41,6 +41,7 @@
 
 <h2>All indicators</h2>
 {% set n_old = rows|sum(attribute='items', start=[])|selectattr('all_old')|list|length %}
+<p class="small"><label><input type="checkbox" data-trust-only> Only rows where every value is high-trust</label> · <a href="/methodology/trust/">How trust levels work</a></p>
 {% if n_old %}<p class="small muted old-toggle-row">{{ n_old }} indicator{{ 's' if n_old != 1 }} where every value is from before {{ old_before }} {{ 'are' if n_old != 1 else 'is' }} hidden. <button type="button" class="linklike" data-old-toggle aria-controls="pair-table" aria-expanded="false">Show older data</button></p>{% endif %}
 <div class="table-wrap hide-old">
 <table id="pair-table">
@@ -49,9 +50,10 @@
   <tbody>
     <tr><th colspan="4" style="position:static">{{ d.dim.name }}</th></tr>
     {% for it in d['items'] %}
-    <tr{% if it.all_old %} class="old-row"{% endif %}>
+    {% set lv = [] %}{% for v in it.vals if v %}{% set _ = lv.append(trust_of(it.ind.source, v[0], v[2] if v|length > 2 else 'measured').level) %}{% endfor %}
+    <tr{% if it.all_old %} class="old-row"{% endif %} data-trust="{{ 'high' if lv and lv|reject('equalto', 'high')|list|length == 0 else 'mixed' }}">
       <td><a href="/data/indicators/{{ it.ind.id }}/">{{ it.ind.name }}</a> <span class="muted small">{{ it.ind.unit|unit_short }}</span>{% if it.years_differ %} <span class="small stale" title="The two values are from different years">⚠ years differ</span>{% endif %}</td>
-      {% for v in it.vals %}<td class="num{% if it.old[loop.index0] %} old-val{% endif %}">{% if v %}{{ v[1]|fmt(it.ind.decimals, it.ind.unit) }} {% if it.old[loop.index0] %}<span class="old-badge" title="Older than {{ site.stale_after_years or 10 }} years">data from {{ v[0] }}</span>{% else %}<span class="muted small">{{ v[0] }}</span>{% endif %}{% else %}<span class="muted">—</span>{% endif %}</td>{% endfor %}
+      {% for v in it.vals %}<td class="num{% if it.old[loop.index0] %} old-val{% endif %}">{% if v %}{{ v[1]|fmt(it.ind.decimals, it.ind.unit) }} {% if it.old[loop.index0] %}<span class="old-badge" title="Older than {{ site.stale_after_years or 10 }} years">data from {{ v[0] }}</span>{% else %}<span class="muted small">{{ v[0] }}</span>{% endif %} {{ m.trust_badge(trust_of(it.ind.source, v[0], v[2] if v|length > 2 else 'measured')) }}{% else %}<span class="muted">—</span>{% endif %}</td>{% endfor %}
       <td>{{ m.chip(it.chip) }}</td>
     </tr>
     {% endfor %}
@@ -62,6 +64,7 @@
 {% if related %}<div class="section-head"><h2>Related comparisons</h2><a href="/compare/popular/">All popular comparisons →</a></div>
 <div class="peers">{% for q in related %}<a href="{{ q.url }}">{{ q.a.name }} vs {{ q.b.name }}</a>{% endfor %}</div>{% endif %}
 <script>
+document.querySelector("[data-trust-only]")?.addEventListener("change", e => document.getElementById("pair-table").classList.toggle("trust-only", e.target.checked));
 document.querySelectorAll("[data-old-toggle]").forEach(b => b.addEventListener("click", () => {
   const w = document.getElementById(b.getAttribute("aria-controls")).closest(".table-wrap");
   const show = w.classList.toggle("hide-old") === false;

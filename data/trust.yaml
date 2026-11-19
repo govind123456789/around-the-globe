@@ -1,0 +1,48 @@
+# Trust levels for every displayed value (pipeline/trust.py). /methodology/trust/ is generated from this file,
+# so the page and the code always agree.
+#
+# A value gets penalty points; the total sets its level:
+#   0 points -> High, 1-2 -> Medium, 3 or more -> Low.
+# And a value far older than its source usually publishes (the "old" rule below) is Low whatever its points.
+
+levels:
+  high: { max_points: 0, label: High, icon: "●●●" }
+  medium: { max_points: 2, label: Medium, icon: "●●○" }
+  low: { label: Low, icon: "●○○" }
+
+freshness:
+  # years between the data year and the release year, beyond the source's usual publication lag
+  default_lag: 2          # most international series describe the year before last
+  aging_after: 1          # more than lag + 1 years old: 1 point
+  old_after: 5            # more than lag + 5 years old: Low, whatever the other points
+
+# What kind of number each source publishes, and its usual lag in years.
+source_types:
+  official: { points: 0, label: "Official statistics compiled by an international agency" }
+  agency_estimate: { points: 1, label: "International agency estimate or model" }
+  expert_survey: { points: 1, label: "Expert assessment or survey-based index" }
+  own_calculation: { points: 1, label: "Calculated on this site from other sources" }
+  media_monitoring: { points: 2, label: "Derived from media monitoring" }
+
+sources:
+  wb-wdi: { type: official, lag: 2 }
+  wb-wgi: { type: expert_survey, lag: 2 }
+  undp-hdr: { type: agency_estimate, lag: 3 }
+  un-wpp: { type: agency_estimate, lag: 1 }
+  ilostat: { type: agency_estimate, lag: 2 }
+  faostat: { type: agency_estimate, lag: 3 }
+  ember: { type: official, lag: 1 }
+  oecd: { type: official, lag: 2 }
+  v-dem: { type: expert_survey, lag: 2 }
+  ti-cpi: { type: expert_survey, lag: 1 }
+  gdelt: { type: media_monitoring, lag: 0 }
+  factbook: { type: agency_estimate, lag: 2 }
+  site: { type: own_calculation, lag: 2 }
+
+status:
+  measured: 0
+  estimate: 1             # the source flags the value as an estimate
+  forecast: 2             # a projection of a future year
+
+# Rankings and comparisons: the share of values (or index components) with data this recent counts as covered.
+coverage_recent_years: 5

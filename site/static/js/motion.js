@@ -7,7 +7,8 @@
   root.classList.add("anim");
 
   const SEL = [
-    "main .section-head", "main .card", "main .table-wrap", "main .map-box", "main .pos", "main .stat",
+    // tables and maps are not faded in: they are often the largest content and must be readable at once
+    "main .section-head", "main .card", "main .pos", "main .stat",
     "main .mk-bars", "main .mk-list", "main .rp-finding", "main .rp-section", "main .prose > h2", "main .chart-card"
   ].join(",");
   const NUM = /([+\-−]?\d[\d,]*\.?\d*)/;
@@ -40,7 +41,7 @@
 
   // ---- draw line charts and sparklines
   function draw(el) {
-    el.querySelectorAll("svg.chart polyline.line, svg.spark polyline, svg.chart path.line").forEach(p => {
+    el.querySelectorAll("svg.chart polyline.line, svg.chart path.line").forEach(p => {   // full charts only: drawing every sparkline at once is costly
       if (p._drawn) return;
       p._drawn = true;
       let len = 0;
@@ -58,7 +59,7 @@
     el._shown = true;
     el.classList.add("in");
     setTimeout(() => el.style.setProperty("--d", "0ms"), 1600);
-    el.querySelectorAll(".stat .v, .mk-big, .rk, .rp-big, .facts b, .num-up").forEach(countUp);
+    el.querySelectorAll(".stat .v, .mk-big, .rp-big, .facts b, .num-up").forEach(countUp);   // not every rank in long lists
     if (el.matches(".stat .v, .mk-big, .num-up")) countUp(el);
     draw(el);
   }

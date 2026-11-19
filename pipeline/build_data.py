@@ -503,6 +503,19 @@ def build_composite(model: Model, comp: dict) -> dict:
                      "excluded_reason": "ineligible_population", "pillar_scores": {}, "rank_low": None,
                      "rank_high": None, "movement": None, "indicator_values": {}})
     ranked = [r for r in rows if r["rank"]]
+    # Why this rank: each indicator's points in the score, and its points against the median country
+    # (the same weight applied to the median normalised value). contrib sums to the score.
+    if agg == "arithmetic" and ranked:
+        ids = [r["entity_id"] for r in ranked]
+        med = {}
+        for s in specs:
+            vs = sorted(norm[s.id][e] for e in ids if e in norm[s.id])
+            if vs:
+                med[s.id] = vs[len(vs) // 2] if len(vs) % 2 else (vs[len(vs) // 2 - 1] + vs[len(vs) // 2]) / 2
+        for r in ranked:
+            parts = engine.contributions(norm, specs, pillars, r["entity_id"])
+            r["contrib"] = {k: round(100 * w * v, 3) for k, (w, v) in parts.items()}
+            r["drivers"] = {k: round(100 * w * (v - med[k]), 3) for k, (w, v) in parts.items() if k in med}
     top10 = [r["entity_id"] for r in ranked[:10]]
     stable = sum(1 for r in ranked[:10] if r["rank_high"] and r["rank_high"] <= 10)
     return {

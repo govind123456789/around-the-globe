@@ -1,0 +1,4 @@
+# Method changes to rankings, hand-edited. Every rank change after a release that has an entry here for its
+# ranking is explained as a method change (pipeline/changes.py), ahead of data revisions and new data.
+#   - { date: 2026-12-01, ranking: capability-index, note: "R&D spending weight raised from 30% to 40%" }
+changes: []

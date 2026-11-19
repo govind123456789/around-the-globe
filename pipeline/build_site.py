@@ -11,7 +11,7 @@ import markdown
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
 
-from . import beyond, defence, geopolitics, summaries, history, india, lab, live, markets, og, reports, standout, stories, svg
+from . import beyond, changes, defence, explain, geopolitics, summaries, trust, history, india, lab, live, markets, og, reports, standout, stories, svg
 from .build_data import Model
 from .config import CONTENT, DIST, RAW, SITE, load_yaml, site_config
 
@@ -24,6 +24,19 @@ EXCLUDED_LABEL = {
 SOURCE_SHORT = {"un-wpp": "UN WPP", "wb-wgi": "World Bank WGI", "wb-wdi": "World Bank", "undp-hdr": "UNDP HDR", "ti-cpi": "Transparency Intl",
                 "oecd": "OECD", "gdelt": "GDELT", "ember": "Ember"}
 NE_FIX = {"KOS": "XKX", "SDS": "SSD", "PSX": "PSE", "SAH": "ESH", "JEY": "CHI", "GGY": "CHI"}  # WB reports the Channel Islands as one
+
+
+CSS_BUNDLE = ("fonts.css", "app.css", "atlas.css", "luxe.css")      # order matters: later files override
+
+
+def minify_css(css: str) -> str:
+    """Comments and whitespace out; safe for this site's hand-written CSS (no comment markers in strings)."""
+    import re
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+    css = re.sub(r"\s+", " ", css)
+    css = re.sub(r"\s*([{};,>])\s*", r"\1", css)
+    css = re.sub(r";}", "}", css)
+    return css.strip()
 
 
 def fmt(v, decimals: int = 2, unit: str = "") -> str:
@@ -75,6 +88,10 @@ class Site:
         # values from before this year count as very old (site.yaml: stale_after_years)
         self.old_before = int(model.release[:4]) - int(self.cfg.get("stale_after_years", 10))
         self.env.globals["old_before"] = self.old_before
+        # trust level of any value: trust_of(source, year, status) -> {level, label, icon, reasons}; data/trust.yaml
+        _ry = int(model.release[:4])
+        self.env.globals["trust_of"] = lambda src, year, status="measured": trust.level(src, year, _ry, status)
+        self.env.globals["trust_cfg"] = trust.cfg()
         flags = {p.stem for p in (SITE / "static" / "flags").glob("*.svg")}
 
         def flag(iso3: str, eager: bool = False) -> Markup:
@@ -101,6 +118,7 @@ class Site:
         self.countries = countries
         self.dims = {d["id"]: d for d in model.dimensions}
         self.rk = model.rankings
+        self.moves, self.rank_hist, self.prev_release = self.load_moves(model)
 
     # -- helpers ------------------------------------------------------------
     def live_context(self) -> dict | None:
@@ -249,6 +267,8 @@ class Site:
             if (DIST / name).exists():
                 shutil.rmtree(DIST / name)
         shutil.copytree(SITE / "static", DIST / "static")
+        css = "\n".join((SITE / "static" / "css" / n).read_text(encoding="utf-8") for n in CSS_BUNDLE)
+        (DIST / "static" / "css" / "site.css").write_text(minify_css(css), encoding="utf-8")
         self.geo()
         og.card(DIST / "og" / "default.png", self.cfg["name"], "Open data on 217 countries", self.cfg["tagline"],
                 ["Every number shows its source, year and method."])
@@ -327,6 +347,16 @@ class Site:
         out.write_text(json.dumps({"type": "FeatureCollection", "features": feats}, separators=(",", ":")))
         # A static SVG of the same shapes: drawn in the page before the interactive map loads, and kept
         # if it fails, so a map is never blank (and crawlers and no-JS readers see one too).
+        globe = []
+        for f in feats:
+            g = f["geometry"]
+            polys = [g["coordinates"]] if g["type"] == "Polygon" else g["coordinates"]
+            for poly in polys:
+                src = poly[0]                     # outer ring only; tiny shapes are skipped in the browser
+                step = 4 if len(src) > 120 else 3 if len(src) > 40 else 2 if len(src) > 12 else 1
+                flat = [round(c, 1) for p in src[::step] for c in p]
+                globe.append([f["properties"]["iso3"], flat])
+        (DIST / "geo" / "globe.json").write_text(json.dumps(globe, separators=(",", ":")), encoding="utf-8")
         d = svg.world_paths(feats)
         (DIST / "geo" / "world.svg").write_text(svg.world_sprite(d), encoding="utf-8")
         self.geo_isos = sorted(d)
@@ -687,12 +717,77 @@ class Site:
             else:
                 chip = None
             self.ranking_extras(r, rows)
+            why = self.why_data(r)
             self.render(f"/rankings/{r['ranking_id']}/", "ranking.html", og_image=f"/og/rankings/{r['ranking_id']}.png", r=r, rows=rows, pillars=pillars,
                         ind=ind_meta, chip=chip, regions=regions, incomes=incomes,
                         map_values=self.map_values(r), hdi_check=self.m.hdi_check,
-                        indicators=self.m.indicators)
+                        indicators=self.m.indicators, why=why, moves=self.moves.get(r["ranking_id"], {}), prev_release=self.prev_release)
             self.search.append({"t": r["name"], "u": f"/rankings/{r['ranking_id']}/", "k": "Ranking",
                                 "s": KIND_LABEL[r["kind"]]})
+
+    def load_moves(self, model) -> tuple[dict, dict, str | None]:
+        """Why it moved: rank changes since the previous release, each with its cause, and rank history
+        across releases. Also written to the API as rank_changes.json and rank_history.json."""
+        rels = DIST / "v1" / "releases"
+        prev = changes.previous_release(rels, model.release, RAW / "prev_release")
+        if not prev:
+            return {}, {}, None
+        cur = lambda ind, e: {y: v for y, v, _ in model.series(e, ind)}
+        moves = changes.rank_changes(model.rankings, prev, cur, model.indicators,
+                                     load_yaml("method_changes.yaml").get("changes") or [])
+        hist_file = prev.path / "rank_history.json"
+        if hist_file.exists():
+            hist = json.loads(hist_file.read_text(encoding="utf-8"))
+        else:                                   # rebuild from the releases on disk, oldest first
+            hist = {}
+            for d in sorted(p for p in rels.iterdir() if p.is_dir() and p.name < model.release) if rels.exists() else []:
+                old = changes.Release(d)
+                snap = {rid: r for rid in model.rankings if (r := old.ranking(rid))}
+                hist = changes.append_history(hist, d.name, snap)
+        hist = changes.append_history(hist, model.release, model.rankings)
+        for out in (rels / model.release, DIST / "v1" / "latest"):
+            if out.exists():
+                (out / "rank_history.json").write_text(json.dumps(hist, separators=(",", ":")), encoding="utf-8")
+                (out / "rank_changes.json").write_text(json.dumps({"release": model.release, "previous": prev.date,
+                                                                  "changes": moves}, separators=(",", ":"), default=str), encoding="utf-8")
+        n = sum(len(v) for v in moves.values())
+        print(f"  rank changes since {prev.date}: {n} across {len(moves)} rankings")
+        return moves, hist, prev.date
+
+    def why_data(self, r: dict) -> dict:
+        """Per-country explanations for a ranking page, read by why.js when a row's "Why" is opened."""
+        out = {}
+        if r["kind"] == "original_composite":
+            for row in r["results"]:
+                if row.get("rank") and row.get("drivers"):
+                    out[row["entity_id"]] = {"s": explain.why_sentence(row, r["ranked_count"], self.m.indicators),
+                                             "d": [[d["name"], round(d["points"], 1)] for d in explain.drivers(row, self.m.indicators, 10)]}
+            self._add_moves(r, out)
+            return out
+        if r["kind"] != "single_indicator" or r.get("indicator") not in self.m.indicators:
+            return out
+        ind = self.m.indicators[r["indicator"]]
+        ref = r["definition"].get("reference_year") or int(self.m.release[:4])
+        ids = [row["entity_id"] for row in r["results"]]
+        hist = explain.rank_history({e: [(y, v) for y, v, _ in self.m.series(e, ind["id"])] for e in ids},
+                                    r.get("order", "desc"), list(range(ref - 10, ref + 1)))
+        near = explain.neighbours(r["results"])
+        for row in r["results"]:
+            e = row["entity_id"]
+            if not row.get("rank"):
+                continue
+            nb = near.get(e, {})
+            side = lambda x: [self.by_id[x[0]]["name"], summaries.say(x[1], ind, fmt)] if x else None
+            out[e] = {"v": summaries.say(row["score"], ind, fmt), "y": row.get("year"),
+                      "above": side(nb.get("above")), "below": side(nb.get("below")), "h": hist.get(e, [])[-10:]}
+        self._add_moves(r, out)
+        return out
+
+    def _add_moves(self, r: dict, out: dict) -> None:
+        for e, ch in self.moves.get(r["ranking_id"], {}).items():
+            if e in out:
+                out[e]["m"] = f"Since the {ch['prev_release']} release: {ch['text']}"
+
 
     def ranking_extras(self, r: dict, rows: list[dict]) -> None:
         """Share card and embeddable top-10 chart for one ranking."""
@@ -763,7 +858,9 @@ class Site:
                 row = next(x for x in comp["results"] if x["entity_id"] == eid)
                 names = {p["id"]: p["name"] for p in comp["definition"]["pillars"]}
                 bars = svg.pillar_bars([(names[k], v) for k, v in row["pillar_scores"].items()]) if row["rank"] else ""
-                composites.append({"r": comp, "row": row, "bars": bars})
+                composites.append({"r": comp, "row": row, "bars": bars,
+                                   "why": explain.why_sentence(row, comp["ranked_count"], self.m.indicators),
+                                   "dbars": explain.bars_html(explain.drivers(row, self.m.indicators, 8))})
             hdi_ser = [(y, v) for y, v, _ in self.m.series(eid, "hdi")]
             gdp_ser = [(y, v) for y, v, _ in self.m.series(eid, "gdp-per-capita-ppp")]
             charts = []
@@ -789,7 +886,9 @@ class Site:
             og.card(DIST / "og" / "countries" / f"{c['slug']}.png", self.cfg["name"], c["region"], c["name"], lines)
             self.render(f"/countries/{c['slug']}/", "country.html", og_image=f"/og/countries/{c['slug']}.png", c=c, key=key, dims=self.country_dims(c),
                         positions=self.positions(eid), peers=peers, mk=self.mk.country_shares(eid), geo=self.geo.country(eid), dfc=self.defence.get(eid),
-                        summary=summaries.country(c, self.rk, self.m.indicators, fmt), so_twins=self.so.twins.get(eid),
+                        summary=summaries.country(c, self.rk, self.m.indicators, fmt),
+                        rank_moves=[(self.rk[rid], ch[eid], self.rank_hist.get(rid, {}).get(eid, [])) for rid, ch in self.moves.items() if eid in ch],
+                        prev_release=self.prev_release, so_twins=self.so.twins.get(eid),
                         so_targets=self.so.targets.get(eid, []), so_cov=self.so.coverage.get(eid),
                         geo_powers=geopolitics.POWER_NAMES, region=self.by_id[c["region_id"]],
                         income=self.by_id.get(c["income_id"]) if c["income_id"] else None,
@@ -1045,6 +1144,7 @@ class Site:
         rel = DIST / "v1" / "releases" / self.m.release
         files = [{"name": p.name, "bytes": p.stat().st_size} for p in sorted((rel / "bulk").iterdir())]
         self.render("/data/downloads/", "downloads.html", files=files)
+        self.render("/methodology/trust/", "trust_method.html", sources=self.m.sources)
         self.render("/data/api/", "api.html", sample_country=self.countries[0] if self.countries else None)
 
     def methodology(self) -> None:

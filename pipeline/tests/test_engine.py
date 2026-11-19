@@ -90,3 +90,22 @@ def test_hdi_matches_undp_published_values():
 def test_hdi_goalposts():
     assert engine.hdi(85, 18, 15, 75000) == pytest.approx(1.0)
     assert math.isclose(engine.hdi(20, 0, 0, 100), 0.0, abs_tol=1e-12)
+
+
+def test_contributions_reproduce_the_score():
+    """Why this rank: the indicators' points add back up to each entity's score, with missing data."""
+    import random
+    from pipeline import engine
+    rnd = random.Random(7)
+    specs = [engine.IndicatorSpec("a", 0.6, pillar="p1"), engine.IndicatorSpec("b", 0.4, pillar="p1"),
+             engine.IndicatorSpec("c", 1.0, pillar="p2"), engine.IndicatorSpec("d", 0.5, pillar="p3"),
+             engine.IndicatorSpec("e", 0.5, pillar="p3")]
+    pillars = [engine.PillarSpec("p1", 0.5), engine.PillarSpec("p2", 0.3), engine.PillarSpec("p3", 0.2)]
+    ents = [f"E{i}" for i in range(40)]
+    norm = {s.id: {e: rnd.random() for e in ents if rnd.random() > 0.15} for s in specs}
+    for r in engine.score(norm, specs, pillars, ents, min_coverage=0.5):
+        if r.score is None:
+            continue
+        parts = engine.contributions(norm, specs, pillars, r.entity_id)
+        assert abs(100 * sum(w * v for w, v in parts.values()) - r.score) < 1e-6
+        assert abs(sum(w for w, _ in parts.values()) - 1) < 1e-9

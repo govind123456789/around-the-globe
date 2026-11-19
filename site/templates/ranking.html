@@ -15,6 +15,9 @@
   <h1 style="margin-top:10px">{{ r.name }}</h1>
   <p class="lede">{{ r.summary }}</p>
   <p class="small muted">{{ r.ranked_count }} countries ranked · {{ r.excluded_count }} not ranked · release {{ release }} · licence {{ r.output_licence }}</p>
+  {% set yrs = rows|selectattr('rank')|map(attribute='year')|list %}{% set since = release[:4]|int - trust_cfg.coverage_recent_years %}
+  {% if not composite and yrs|select|list %}<p class="small coverage-line"><b>Coverage:</b> {{ yrs|select('ge', since)|list|length }} of {{ yrs|length }} ranked countries have data from {{ since }} or later · <a href="/methodology/trust/">trust levels</a>{% if prev_release and moves %} · ▲▼ show moves since the {{ prev_release }} release{% endif %}</p>
+  {% elif composite %}<p class="small coverage-line"><b>Coverage:</b> {{ rows|selectattr('rank')|selectattr('coverage', 'ge', 1)|list|length }} of {{ r.ranked_count }} ranked countries have data for every component{% if prev_release and moves %} · ▲▼ show moves since the {{ prev_release }} release{% endif %}</p>{% endif %}
   <div class="btns">
     <a class="btn ghost sm" href="/methodology/{{ r.ranking_id }}/">Methodology</a>
     <a class="btn ghost sm" href="/v1/latest/rankings/{{ r.ranking_id }}/{{ r.version }}.json">JSON</a>
@@ -36,7 +39,7 @@
   <div class="split" style="margin-bottom:8px">
     {{ m.map("rank-map", map_values, r.name, lower_better=(r.order == 'asc'), height=320) }}
     <div class="card">
-      {% if not composite %}<h3>How it’s calculated</h3>{% endif %}
+      {% if not composite %}<h2 class="card-h">How it’s calculated</h2>{% endif %}
       {% if composite %}
         {{ m.method(r, indicators, open=True) }}
       {% elif official and not is_hdi %}
@@ -56,6 +59,7 @@
   <label class="field">Region<select data-f-region><option value="">All regions</option>{% for x in regions %}<option>{{ x }}</option>{% endfor %}</select></label>
   <label class="field">Income<select data-f-income><option value="">All income groups</option>{% for x in incomes %}<option>{{ x }}</option>{% endfor %}</select></label>
   <label class="field" style="flex-direction:row;align-items:center;gap:6px;padding-bottom:6px"><input type="checkbox" data-f-ranked checked> Ranked only</label>
+  <label class="field" style="flex-direction:row;align-items:center;gap:6px;padding-bottom:6px"><input type="checkbox" data-f-trust> Only high-trust values</label>
   <span class="muted small" data-f-count style="padding-bottom:8px"></span>
 </div>
 
@@ -77,17 +81,18 @@
       </tr></thead>
       <tbody>
       {% for row in rows %}
-        <tr data-region="{{ row.region }}" data-income="{{ row.income }}" data-name="{{ row.name|lower }}"{% if not row.rank %} class="excluded" data-unranked hidden{% endif %}>
-          <td class="num rank" data-v="{{ row.rank or 9999 }}">{{ m.rank_label(row) }}</td>
+        {% set tr = trust_of(ind.source, row.year, ind.status or 'measured') if (ind and row.year) else none %}
+        <tr data-region="{{ row.region }}" data-income="{{ row.income }}" data-name="{{ row.name|lower }}" data-trust="{{ tr.level if tr else ('high' if composite and row.coverage == 1 else 'medium') }}"{% if not row.rank %} class="excluded" data-unranked hidden{% endif %}>
+          <td class="num rank" data-v="{{ row.rank or 9999 }}">{{ m.rank_label(row) }}{% set mv = moves.get(row.iso3) %}{% if mv %} <span class="mv {{ 'up' if mv.delta > 0 else 'down' }}" title="Since the {{ mv.prev_release }} release: {{ mv.text }}">{{ '▲' if mv.delta > 0 else '▼' }}{{ mv.delta|abs }}<span class="sr-only">. Since the {{ mv.prev_release }} release: {{ mv.text }}</span></span>{% endif %}</td>
           {% if is_hdi %}<td class="num" data-v="{{ row.movement if row.movement is not none else -999 }}">{{ m.movement(row.movement) }}</td>{% endif %}
-          <td class="country-cell">{{ flag(row.iso3) }}<a href="/countries/{{ row.slug }}/">{{ row.name }}</a>{% if not row.rank %} <span class="muted small">· {{ EXCLUDED_LABEL.get(row.excluded_reason, row.excluded_reason) }}</span>{% endif %}</td>
+          <td class="country-cell">{{ flag(row.iso3) }}<a href="/countries/{{ row.slug }}/">{{ row.name }}</a>{% if row.rank and row.iso3 in why %} <button type="button" class="why-btn" data-why="{{ row.iso3 }}" aria-expanded="false" aria-controls="why-{{ row.iso3 }}">Why #{{ row.rank }}</button>{% endif %}{% if not row.rank %} <span class="muted small">· {{ EXCLUDED_LABEL.get(row.excluded_reason, row.excluded_reason) }}</span>{% endif %}</td>
           <td class="num" data-v="{{ row.score if row.score is not none else '' }}"><b>{{ m.score(r, row.score) }}</b></td>
           {% if composite %}
             <td>{% if row.rank_low %}{% set n = r.ranked_count %}<span class="range" aria-hidden="true"><b style="left:{{ (row.rank_low - 1) / n * 100 }}%;width:{{ [((row.rank_high - row.rank_low) / n * 100), 1.5]|max }}%"></b><i style="left:calc({{ (row.rank - 1) / n * 100 }}% - 1px)"></i></span><span class="small muted">{{ row.rank_low }}–{{ row.rank_high }}</span>{% endif %}</td>
             {% for p in pillars %}<td class="num" data-v="{{ row.pillar_scores.get(p.id, '') }}">{% if row.pillar_scores.get(p.id) is not none %}{{ '%.0f'|format(row.pillar_scores[p.id]) }}{% else %}<span class="muted">—</span>{% endif %}</td>{% endfor %}
             <td class="num" data-v="{{ row.coverage }}"><span class="cov" aria-hidden="true"><b style="width:{{ row.coverage * 100 }}%"></b></span>{{ (row.coverage * 100)|round|int }}%</td>
           {% elif not official %}
-            <td class="num" data-v="{{ row.year or '' }}">{% if row.year %}<span{% if row.year < 2019 %} class="stale" title="Older data"{% endif %}>{{ row.year }}</span>{% endif %}</td>
+            <td class="num" data-v="{{ row.year or '' }}">{% if row.year %}<span{% if row.year < 2019 %} class="stale" title="Older data"{% endif %}>{{ row.year }}</span>{% if tr %} {{ m.trust_badge(tr) }}{% endif %}{% endif %}</td>
             {% for cell in row.cells %}<td class="num" data-v="{{ cell.v if cell.v is not none else '' }}"{% if cell.year %} title="Data year {{ cell.year }}"{% endif %}>{% if cell.v is none %}<span class="muted">—</span>{% else %}<span{% if cell.stale %} class="stale"{% endif %}>{{ cell.text }}</span>{% endif %}</td>{% endfor %}
           {% endif %}
         </tr>
@@ -95,4 +100,6 @@
       </tbody>
     </table>
   </div>
+{% if why %}<script type="application/json" id="why-data" data-kind="{{ r.kind }}" data-unit="{{ r.value_label or '' }}">{{ why|tojson_safe }}</script>{% endif %}
 {% endblock %}
+{% block scripts %}{% if why %}<script src="/static/js/why.js?v={{ asset_v }}" defer></script>{% endif %}{% endblock %}
