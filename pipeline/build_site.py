@@ -11,7 +11,7 @@ import markdown
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
 
-from . import beyond, defence, geopolitics, history, india, lab, live, markets, og, reports, standout, stories, svg
+from . import beyond, defence, geopolitics, summaries, history, india, lab, live, markets, og, reports, standout, stories, svg
 from .build_data import Model
 from .config import CONTENT, DIST, RAW, SITE, load_yaml, site_config
 
@@ -64,6 +64,17 @@ class Site:
         # the 217 are World Bank economies: sovereign countries plus territories such as Hong Kong and Puerto Rico
         self.env.globals["n_places"] = sum(1 for e in model.entities.values() if e["type"] == "country")
         self.env.globals["places_label"] = "countries and territories"
+        self.env.globals["CRUMB_NAMES"] = {"/countries/": "Countries", "/rankings/": "Rankings", "/compare/": "Compare",
+                                           "/data/": "Data", "/data/indicators/": "Indicators", "/geopolitics/": "Geopolitics",
+                                           "/markets/": "Markets", "/reports/": "Reports", "/explore/": "Explore", "/lab/": "Lab",
+                                           "/methodology/": "Methodology", "/about/": "About", "/regions/": "Regions",
+                                           "/topics/": "Topics", "/insights/": "Insights", "/cities/": "Cities",
+                                           "/universities/": "Universities", "/india/": "Indian states",
+                                           "/geopolitics/defence/": "Defence", "/geopolitics/crises/": "Crisis tracker",
+                                           "/geopolitics/blocs/": "Blocs", "/geopolitics/relations/": "Relations"}
+        # values from before this year count as very old (site.yaml: stale_after_years)
+        self.old_before = int(model.release[:4]) - int(self.cfg.get("stale_after_years", 10))
+        self.env.globals["old_before"] = self.old_before
         flags = {p.stem for p in (SITE / "static" / "flags").glob("*.svg")}
 
         def flag(iso3: str, eager: bool = False) -> Markup:
@@ -81,6 +92,9 @@ class Site:
                 digest.update(f.read_bytes())
         self.env.globals["asset_v"] = digest.hexdigest()[:10]    # cache-busting for /static assets
         self.env.filters["ename_ind"] = lambda i: model.indicators[i]["name"]
+        self.env.filters["dl_entry"] = lambda name, base, rel: {
+            "@type": "DataDownload", "contentUrl": f"{base}/v1/releases/{rel}/bulk/{name}",
+            "encodingFormat": "text/csv" if name.endswith((".csv", ".csv.gz")) else "application/octet-stream"}
         self.geo_isos: list[str] = []
         self.env.globals["static_map"] = lambda values, lower_better=False, label="": Markup(
             svg.static_map(values, self.geo_isos, lower_better, label, self.env.globals.get("asset_v", "")))
@@ -709,7 +723,7 @@ class Site:
                 pts = [(yy, vv) for yy, vv, _ in ser if yy >= 2000]
                 items.append({"ind": ind, "value": v, "year": y, "status": s,
                               "spark": svg.sparkline(pts, label=ind["name"]),
-                              "chip": self.chip(ind["id"], y, s), "stale": y < 2019,
+                              "chip": self.chip(ind["id"], y, s), "stale": y < 2019, "very_old": y < self.old_before,
                               "pct": self.pct.get((e["entity_id"], ind["id"]))})
             if items:
                 out.append({"dim": d, "items": items})
@@ -764,7 +778,7 @@ class Site:
             proj = self.projection_chart(eid, c["name"])
             if proj:
                 charts.append(("Population to 2100 (UN)", proj, self.chip("median-age", 2100, "forecast")))
-            pair_links = [(self.by_id[a], self.by_id[b]) for a, b in self.cfg["curated_pairs"] if eid in (a, b)]
+            pair_links = [(p["a"], p["b"]) for p in self.top_pairs(eid)]
             lines = []
             if key.get("population"):
                 lines.append(f"Population {fmt(key['population'][1], 0)} ({key['population'][0]})")
@@ -774,7 +788,8 @@ class Site:
                 lines.append(f"Human Development Index {key['hdi'][1]:.3f}")
             og.card(DIST / "og" / "countries" / f"{c['slug']}.png", self.cfg["name"], c["region"], c["name"], lines)
             self.render(f"/countries/{c['slug']}/", "country.html", og_image=f"/og/countries/{c['slug']}.png", c=c, key=key, dims=self.country_dims(c),
-                        positions=self.positions(eid), peers=peers, mk=self.mk.country_shares(eid), geo=self.geo.country(eid), dfc=self.defence.get(eid), so_twins=self.so.twins.get(eid),
+                        positions=self.positions(eid), peers=peers, mk=self.mk.country_shares(eid), geo=self.geo.country(eid), dfc=self.defence.get(eid),
+                        summary=summaries.country(c, self.rk, self.m.indicators, fmt), so_twins=self.so.twins.get(eid),
                         so_targets=self.so.targets.get(eid, []), so_cov=self.so.coverage.get(eid),
                         geo_powers=geopolitics.POWER_NAMES, region=self.by_id[c["region_id"]],
                         income=self.by_id.get(c["income_id"]) if c["income_id"] else None,
@@ -889,16 +904,72 @@ class Site:
                 if not any(vals):
                     continue
                 years = {v[0] for v in vals if v}
-                items.append({"ind": ind, "vals": vals, "years_differ": len(years) > 1,
+                old = [bool(v) and v[0] < self.old_before for v in vals]
+                items.append({"ind": ind, "vals": vals, "years_differ": len(years) > 1, "old": old,
+                              "all_old": all(o for v, o in zip(vals, old) if v),
                               "chip": self.chip(ind["id"], None)})
             if items:
                 out.append({"dim": d, "items": items})
         return out
 
+    def compare_pairs(self) -> list[dict]:
+        """Comparison pages to build, most important first: curated, rivals, India vs each G20 member,
+        G20 pairs, then neighbours (both over a million people). Pairs are canonical: slugs in alphabetical order."""
+        if getattr(self, "_pairs", None) is not None:
+            return self._pairs
+        import csv as _csv
+        pop = {e["entity_id"]: (self.m.latest(e["entity_id"], "population") or (0, 0))[1] for e in self.countries}
+        out, seen = [], set()
+
+        def add(a, b, why):
+            if a not in self.by_id or b not in self.by_id or a == b or a not in pop or b not in pop:
+                return
+            ea, eb = sorted((self.by_id[a], self.by_id[b]), key=lambda e: e["slug"])
+            key = (ea["entity_id"], eb["entity_id"])
+            if key in seen:
+                next(p for p in out if p["key"] == key)["why"].add(why)
+                return
+            seen.add(key)
+            out.append({"key": key, "a": ea, "b": eb, "why": {why}, "url": f"/compare/{ea['slug']}-vs-{eb['slug']}/"})
+        for a, b in self.cfg["curated_pairs"]:
+            add(a, b, "Popular")
+        for a, b in geopolitics.PAIRS:
+            add(a, b, "Rivals and partners")
+        g20 = next((b["members"] for b in load_yaml("blocs.yaml")["blocs"] if b["id"] == "g20"), [])
+        for m in g20:
+            add("IND", m, "India and the G20")
+        for i, a in enumerate(g20):
+            for b in g20[i + 1:]:
+                add(a, b, "G20")
+        path = RAW / "wikidata" / "facts" / "neighbours.csv"
+        if path.exists():
+            with open(path, encoding="utf-8", newline="") as f:
+                for row in _csv.DictReader(f):
+                    a, b = row["iso3"], row["extra"]
+                    if pop.get(a, 0) >= 1e6 and pop.get(b, 0) >= 1e6:
+                        add(a, b, "Neighbours")
+        self._pairs = out
+        return out
+
+    def top_pairs(self, eid: str, n: int = 5) -> list[dict]:
+        """A country's most relevant comparisons: rivals first, then neighbours, then the rest."""
+        order = {"Popular": 0, "Rivals and partners": 1, "Neighbours": 2, "India and the G20": 3, "G20": 4}
+        mine = [p for p in self.compare_pairs() if eid in p["key"]]
+        mine.sort(key=lambda p: min(order[w] for w in p["why"]))
+        return mine[:n]
+
     def compare(self) -> None:
         self.render("/compare/", "compare.html", countries=self.countries)
-        for a, b in self.cfg["curated_pairs"]:
-            ea, eb = sorted((self.by_id[a], self.by_id[b]), key=lambda e: e["slug"])
+        pairs = self.compare_pairs()
+        groups = {}
+        for p in pairs:
+            for w in p["why"]:
+                groups.setdefault(w, []).append(p)
+        self.render("/compare/popular/", "compare_popular.html", groups=groups, n=len(pairs),
+                    order=["Popular", "Rivals and partners", "India and the G20", "G20", "Neighbours"])
+        self.search.append({"t": "Popular comparisons", "u": "/compare/popular/", "k": "Compare", "s": f"{len(pairs)} country pairs"})
+        for p in pairs:
+            ea, eb = p["a"], p["b"]
             ids = [ea["entity_id"], eb["entity_id"]]
             charts = []
             for ind_id in ("gdp-per-capita-ppp", "hdi", "life-expectancy", "internet-users"):
@@ -908,7 +979,9 @@ class Site:
                                decimals=self.ind(ind_id)["decimals"], title=self.ind(ind_id)["name"])))
             pos = [{p["r"]["ranking_id"]: p for p in self.positions(e)} for e in ids]
             self.render(f"/compare/{ea['slug']}-vs-{eb['slug']}/", "compare_pair.html", ents=[ea, eb],
-                        rows=self.compare_rows(ids), charts=charts, pos=pos, rankings=self.rk)
+                        rows=self.compare_rows(ids), charts=charts, pos=pos, rankings=self.rk, indicators=self.m.indicators,
+                        summary=summaries.pair(ea, eb, self.rk, self.m.indicators, fmt),
+                        related=[q for q in self.top_pairs(ea["entity_id"], 4) + self.top_pairs(eb["entity_id"], 4) if q["key"] != p["key"]][:6])
             self.search.append({"t": f"{ea['name']} vs {eb['name']}", "u": f"/compare/{ea['slug']}-vs-{eb['slug']}/",
                                 "k": "Compare", "s": "Side-by-side"})
 
@@ -955,7 +1028,9 @@ class Site:
                     cov[y] = cov.get(y, 0) + 1
             latest_year = max(cov) if cov else None
             recent = sum(1 for x in latest if x["year"] >= 2019)
+            wl = self.m.latest("WLD", ind["id"])
             self.render(f"/data/indicators/{ind['id']}/", "indicator.html", ind=ind, src=self.src(ind["id"]),
+                        summary=summaries.indicator(ind, latest, fmt, world=(wl[0], wl[1]) if wl else None),
                         latest=latest, chart=chart, cov=sorted(cov.items()), latest_year=latest_year,
                         n_countries=len(countries), recent=recent, used_in=used_in.get(ind["id"], []),
                         dim=self.dims[ind["dimension"]],
@@ -1143,16 +1218,29 @@ class Site:
 
     def write_sitemap(self) -> None:
         base = self.cfg["base_url"].rstrip("/")
-        urls = "".join(f"<url><loc>{base}{u}</loc></url>" for u in sorted(set(self.pages)))
-        (DIST / "sitemap.xml").write_text(
-            f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>',
-            encoding="utf-8")
+        lastmod = self.m.release
+        pages = sorted(set(self.pages))
+        ns = 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
+
+        def urlset(chunk):
+            body = "".join(f"<url><loc>{base}{u}</loc><lastmod>{lastmod}</lastmod></url>" for u in chunk)
+            return f'<?xml version="1.0" encoding="UTF-8"?><urlset {ns}>{body}</urlset>'
+        limit = 50000                                       # the sitemap protocol's per-file maximum
+        if len(pages) <= limit:
+            (DIST / "sitemap.xml").write_text(urlset(pages), encoding="utf-8")
+        else:
+            parts = [pages[i:i + limit] for i in range(0, len(pages), limit)]
+            for k, chunk in enumerate(parts, 1):
+                (DIST / f"sitemap-{k}.xml").write_text(urlset(chunk), encoding="utf-8")
+            idx = "".join(f"<sitemap><loc>{base}/sitemap-{k}.xml</loc><lastmod>{lastmod}</lastmod></sitemap>" for k in range(1, len(parts) + 1))
+            (DIST / "sitemap.xml").write_text(f'<?xml version="1.0" encoding="UTF-8"?><sitemapindex {ns}>{idx}</sitemapindex>', encoding="utf-8")
         (DIST / "robots.txt").write_text(f"User-agent: *\nAllow: /\nDisallow: /index-builder/\n\nSitemap: {base}/sitemap.xml\n")
         repo = self.cfg.get("repo_url", "").rstrip("/")
         if repo.startswith("https://github.com/"):
             # Releases are archived on GitHub by the deploy workflow; send release links there so they never break.
             dl = f"{repo}/releases/download/data-:date"
-            (DIST / "_redirects").write_text(f"/v1/releases/:date/bulk/:file {dl}/:file 302\n"
+            rev = "".join(f"/compare/{p['b']['slug']}-vs-{p['a']['slug']}/ {p['url']} 301\n" for p in self.compare_pairs())
+            (DIST / "_redirects").write_text(rev + f"/v1/releases/:date/bulk/:file {dl}/:file 302\n"
                                              f"/v1/releases/:date/:file {dl}/:file 302\n")
         (DIST / "_headers").write_text(
             "/v1/releases/*\n  Access-Control-Allow-Origin: *\n  Cache-Control: public, max-age=31536000, immutable\n"

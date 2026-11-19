@@ -8,6 +8,7 @@
 <div class="page-head">
   <h1>{{ a.name }} vs {{ b.name }}</h1>
   <p class="lede">Side by side on every indicator, using each country’s latest available value. Where the data years differ, that is flagged.</p>
+  {% if summary %}<p class="auto-summary">{{ summary|join(' ') }}</p>{% endif %}
   <div class="btns"><a class="btn sm" href="/compare/#c={{ a.entity_id }},{{ b.entity_id }}">Add more countries</a><button class="btn ghost sm" data-csv="pair-table" data-csv-name="{{ a.slug }}-vs-{{ b.slug }}.csv">Download CSV</button><button class="btn ghost sm" data-share>Copy link</button></div>
 </div>
 
@@ -24,22 +25,33 @@
 </table>
 </div>
 
+<details class="method">
+  <summary>How this comparison is calculated</summary>
+  <div class="method-body">
+    <p class="small">Each row shows each country’s latest published value and its year; values are not adjusted or estimated here. Rows marked “years differ” compare different years. Values from before {{ old_before }} are greyed out, and rows where every value is that old are hidden until you choose to show them. Ranks come from the rankings above, each over the countries it covers.</p>
+    <p class="small"><a href="/methodology/">Methodology →</a></p>
+  </div>
+</details>
+{% for rid, r in rankings.items() if r.kind == 'original_composite' %}{{ m.method(r, indicators, title='How the ' ~ r.name ~ ' is calculated') }}{% endfor %}
+
 <h2>Trends</h2>
 <div class="grid g2">
   {% for ind, chart in charts %}<div class="card"><h3><a href="/data/indicators/{{ ind.id }}/">{{ ind.name }}</a> <span class="muted small">{{ ind.unit }}</span></h3>{{ chart|safe }}</div>{% endfor %}
 </div>
 
 <h2>All indicators</h2>
-<div class="table-wrap">
+{% set n_old = rows|sum(attribute='items', start=[])|selectattr('all_old')|list|length %}
+{% if n_old %}<p class="small muted old-toggle-row">{{ n_old }} indicator{{ 's' if n_old != 1 }} where every value is from before {{ old_before }} {{ 'are' if n_old != 1 else 'is' }} hidden. <button type="button" class="linklike" data-old-toggle aria-controls="pair-table" aria-expanded="false">Show older data</button></p>{% endif %}
+<div class="table-wrap hide-old">
 <table id="pair-table">
   <thead><tr><th>Indicator</th><th class="num">{{ flag(a.entity_id) }}{{ a.name }}</th><th class="num">{{ flag(b.entity_id) }}{{ b.name }}</th><th>Source</th></tr></thead>
   {% for d in rows %}
   <tbody>
     <tr><th colspan="4" style="position:static">{{ d.dim.name }}</th></tr>
     {% for it in d['items'] %}
-    <tr>
+    <tr{% if it.all_old %} class="old-row"{% endif %}>
       <td><a href="/data/indicators/{{ it.ind.id }}/">{{ it.ind.name }}</a> <span class="muted small">{{ it.ind.unit|unit_short }}</span>{% if it.years_differ %} <span class="small stale" title="The two values are from different years">⚠ years differ</span>{% endif %}</td>
-      {% for v in it.vals %}<td class="num">{% if v %}{{ v[1]|fmt(it.ind.decimals, it.ind.unit) }} <span class="muted small">{{ v[0] }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>{% endfor %}
+      {% for v in it.vals %}<td class="num{% if it.old[loop.index0] %} old-val{% endif %}">{% if v %}{{ v[1]|fmt(it.ind.decimals, it.ind.unit) }} {% if it.old[loop.index0] %}<span class="old-badge" title="Older than {{ site.stale_after_years or 10 }} years">data from {{ v[0] }}</span>{% else %}<span class="muted small">{{ v[0] }}</span>{% endif %}{% else %}<span class="muted">—</span>{% endif %}</td>{% endfor %}
       <td>{{ m.chip(it.chip) }}</td>
     </tr>
     {% endfor %}
@@ -47,4 +59,13 @@
   {% endfor %}
 </table>
 </div>
+{% if related %}<div class="section-head"><h2>Related comparisons</h2><a href="/compare/popular/">All popular comparisons →</a></div>
+<div class="peers">{% for q in related %}<a href="{{ q.url }}">{{ q.a.name }} vs {{ q.b.name }}</a>{% endfor %}</div>{% endif %}
+<script>
+document.querySelectorAll("[data-old-toggle]").forEach(b => b.addEventListener("click", () => {
+  const w = document.getElementById(b.getAttribute("aria-controls")).closest(".table-wrap");
+  const show = w.classList.toggle("hide-old") === false;
+  b.setAttribute("aria-expanded", show); b.textContent = show ? "Hide older data" : "Show older data";
+}));
+</script>
 {% endblock %}

@@ -47,3 +47,22 @@
 </section>
 {% endif %}
 {%- endmacro %}
+
+{% macro method(r, indicators, open=False, title='How this is calculated') -%}
+{% set d = r.definition %}
+<details class="method"{% if open %} open{% endif %}>
+  <summary>{{ title }}</summary>
+  <div class="method-body">
+    <p class="small"><b>{{ r.name }}</b> is an original index, not an official statistic. Each indicator is rescaled {{ 'from 0 to 1 between the lowest and highest eligible country (min–max)' if d.normalisation == 'min_max' else 'by ' ~ d.normalisation }}{% set logs = d.pillars|map(attribute='indicators')|sum(start=[])|map(attribute='id')|select('in', indicators)|list %}{% set logged = [] %}{% for i in logs if indicators[i].transform == 'log' %}{% set _ = logged.append(indicators[i].name) %}{% endfor %}{% if logged %}, after taking logs of {{ logged|join(', ') }}{% endif %}. Lower-is-better indicators are flipped so higher always means better. Indicators are averaged with the weights below into pillars, and the pillars into a score from 0 to 100.</p>
+    <table class="method-table">
+      <thead><tr><th>Pillar and indicator</th><th class="num">Weight</th></tr></thead>
+      {% for p in d.pillars %}<tbody>
+        <tr class="method-pillar"><th scope="row">{{ p.name }}</th><td class="num">{{ (p.weight * 100)|round|int }}% of score</td></tr>
+        {% for i in p.indicators %}<tr><td><a href="/data/indicators/{{ i.id }}/">{{ indicators[i.id].name if i.id in indicators else i.id }}</a>{% if i.id in indicators and indicators[i.id].direction == 'lower_better' %} <span class="muted small">lower is better</span>{% endif %}</td><td class="num">{{ (i.weight * 100)|round|int }}% of pillar</td></tr>{% endfor %}
+      </tbody>{% endfor %}
+    </table>
+    <p class="small muted">Data years: each country’s latest value from {{ d.reference_year - d.max_data_age }} to {{ d.reference_year }}. A country is ranked only with data for at least {{ (d.min_coverage * 100)|int }}% of the weight{% if d.eligibility and d.eligibility.min_population %} and a population of at least {{ '{:,}'.format(d.eligibility.min_population) }}{% endif %}; missing values are never treated as zero.{% if d.mc %} Rank ranges come from {{ '{:,}'.format(d.mc.runs) }} runs with every weight changed at random by up to ±{{ (d.mc.spread * 100)|int }}%.{% endif %}</p>
+    <p class="small"><a href="/methodology/{{ r.ranking_id }}/">Full methodology for {{ r.name }} →</a> · <a href="/methodology/">How every ranking is made →</a></p>
+  </div>
+</details>
+{%- endmacro %}

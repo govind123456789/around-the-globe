@@ -26,6 +26,12 @@
 <link rel="alternate" type="application/rss+xml" title="{{ site.name }}: global trend reports" href="/feeds/reports.xml">
 <script>try{var t=localStorage.getItem("theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 {% block head %}{% endblock %}
+{% set segs = url.strip('/').split('/') if url.strip('/') and url.endswith('/') else [] %}
+{% if segs %}{% set crumbs = [{"@type": "ListItem", "position": 1, "name": "Home", "item": site.base_url ~ "/"}] %}
+{% for s in segs %}{% set path = '/' ~ segs[:loop.index]|join('/') ~ '/' %}{% set _ = crumbs.append({"@type": "ListItem", "position": loop.index + 1, "name": (self.title()|striptags|trim if loop.last else CRUMB_NAMES.get(path, s|replace('-', ' ')|capitalize)), "item": site.base_url ~ path}) %}{% endfor %}
+<script type="application/ld+json">{{ {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": crumbs}|tojson }}</script>{% endif %}
+{% if url == '/' %}<script type="application/ld+json">{{ {"@context": "https://schema.org", "@type": "WebSite", "name": site.name, "url": site.base_url ~ "/", "potentialAction": {"@type": "SearchAction", "target": {"@type": "EntryPoint", "urlTemplate": site.base_url ~ "/?q={search_term_string}"}, "query-input": "required name=search_term_string"}}|tojson }}</script>{% endif %}
+{% block jsonld %}{% endblock %}
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>

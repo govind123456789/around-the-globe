@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Popular country comparisons{% endblock %}
+{% block description %}{{ n }} side-by-side country comparisons: rivals, neighbours, G20 members and India against every G20 country, each on every indicator with sources and data years.{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/compare/">Compare</a></p>
+<div class="page-head">
+  <h1>Popular comparisons</h1>
+  <p class="lede">{{ n }} country pairs, each compared on every indicator and ranking, with the source and year of every value. Or <a href="/compare/">pick any countries</a>.</p>
+</div>
+{% for g in order if g in groups %}
+<div class="section-head"><h2>{{ g }}</h2><span class="small muted">{{ groups[g]|length }} pairs</span></div>
+<div class="peers">{% for p in groups[g]|sort(attribute='a.name') %}<a href="{{ p.url }}">{{ p.a.name }} vs {{ p.b.name }}</a>{% endfor %}</div>
+{% endfor %}
+{% endblock %}

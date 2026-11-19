@@ -23,6 +23,7 @@
 </section>
 {% endblock %}
 {% block main %}
+{% if summary %}<p class="auto-summary">{{ summary|join(' ') }}</p>{% endif %}
 <div class="stats overlap">
   {% set labels = {'population': 'Population', 'gdp': 'GDP (current US$)', 'gdp-per-capita-ppp': 'GDP per capita, PPP', 'hdi': 'Human Development Index', 'life-expectancy': 'Life expectancy'} %}
   {% for k, v in key.items() if v %}
@@ -236,7 +237,7 @@
   <h2>{{ d.dim.name }}</h2>
   <div class="ind-grid">
     {% for it in d['items'] %}
-    <div class="ind">
+    <div class="ind{% if it.very_old %} old-val{% endif %}">
       <a class="name" href="/data/indicators/{{ it.ind.id }}/">{{ it.ind.name }}</a>
       <div class="val">{{ it.value|fmt(it.ind.decimals, it.ind.unit) }}<small>{{ it.ind.unit|unit_short }}</small></div>
       {{ it.spark|safe }}
@@ -244,7 +245,7 @@
         {{ m.chip(it.chip) }}
         {% if it.pct is not none %}<span title="Share of countries with data that {{ c.name }} {{ 'does better than' if it.ind.direction != 'neutral' else 'is higher than' }}">{{ 'Better' if it.ind.direction != 'neutral' else 'Higher' }} than {{ it.pct }}%</span>{% endif %}
       </div>
-      {% if it.stale %}<span class="small stale">Latest data is from {{ it.year }}</span>{% endif %}
+      {% if it.very_old %}<span class="old-badge">data from {{ it.year }}</span>{% elif it.stale %}<span class="small stale">Latest data is from {{ it.year }}</span>{% endif %}
     </div>
     {% endfor %}
   </div>

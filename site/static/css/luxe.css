@@ -585,3 +585,27 @@ footer.site { padding-top: 40px; }
   .utility .u-links a { white-space: nowrap; margin-left: 12px; font-size: .68rem; letter-spacing: .03em; }
   .utility .u-links a:first-child { margin-left: 0; }
 }
+
+/* very old values (site.yaml stale_after_years): greyed, with a "data from YYYY" badge */
+.old-val { opacity: .62; }
+.old-val:hover, .old-val:focus-within { opacity: 1; }
+.old-badge { display: inline-block; font-size: .7rem; font-weight: 600; padding: 1px 7px; border-radius: 999px; white-space: nowrap;
+  background: color-mix(in srgb, var(--muted) 16%, transparent); color: var(--text-2); }
+.hide-old .old-row { display: none; }
+
+/* generated method blocks */
+.method { margin: 14px 0; border: 1px solid var(--border); border-radius: var(--card-radius, 12px); background: var(--surface); }
+.method > summary { cursor: pointer; padding: 12px 16px; font-weight: 600; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+.method > summary::-webkit-details-marker { display: none; }
+.method > summary::after { content: ""; width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); transition: transform .2s; }
+.method[open] > summary::after { transform: rotate(-135deg); }
+.method-body { padding: 0 16px 14px; }
+.method-table { width: 100%; font-size: .88rem; margin: 6px 0 10px; }
+.method-table td, .method-table th { padding: 6px 8px; }
+.method-pillar th, .method-pillar td { font-weight: 600; color: var(--text); text-transform: none; letter-spacing: 0; font-size: .9rem; }
+.card .method { border: 0; margin: 0; background: transparent; }
+.card .method > summary { padding: 0 0 8px; font-family: var(--serif); font-size: 1.12rem; }
+.card .method-body { padding: 0; }
+/* generated factual summaries */
+.auto-summary { max-width: 72ch; margin: 14px 0 6px; font-size: 1.02rem; line-height: 1.65; color: var(--text); }
+main > .wrap > .auto-summary:first-child { margin-top: 26px; }

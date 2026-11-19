@@ -1,5 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Downloads{% endblock %}
+{% block description %}Download the full {{ site.name }} data release {{ release }} as bulk tables, with source and licence on every row.{% endblock %}
+{% block jsonld %}<script type="application/ld+json">{{ {"@context": "https://schema.org", "@type": "Dataset",
+  "name": site.name ~ " data release " ~ release, "description": "Every indicator for every country and territory in this release, as bulk tables with the source, licence, source URL and retrieval date on every row.",
+  "url": site.base_url ~ url, "isAccessibleForFree": true, "license": "https://creativecommons.org/licenses/by/4.0/",
+  "publisher": {"@type": "Organization", "name": site.name, "url": site.base_url ~ "/"}, "version": release,
+  "distribution": files|map(attribute='name')|map('dl_entry', site.base_url, release)|list}|tojson }}</script>{% endblock %}
 {% block main %}
 <p class="crumbs"><a href="/data/">Data</a></p>
 <div class="page-head">

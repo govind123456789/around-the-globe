@@ -3,7 +3,7 @@
 {% set composite = r.kind == 'original_composite' %}
 {% set official = r.kind == 'official_reproduction' %}
 {% set is_hdi = r.ranking_id == 'human-development-index' %}
-{% block title %}{{ r.name }}{% endblock %}
+{% block title %}{{ r.name }}: country ranking{% endblock %}
 {% block description %}{{ r.name }}: {{ r.ranked_count }} countries ranked. {{ r.summary[:150] }}{% endblock %}
 {% block head %}
 <script type="application/ld+json">{{ {"@context":"https://schema.org","@type":"ItemList","name":r.name,"numberOfItems":r.ranked_count,"itemListElement":[]}|tojson_safe }}</script>
@@ -36,14 +36,9 @@
   <div class="split" style="margin-bottom:8px">
     {{ m.map("rank-map", map_values, r.name, lower_better=(r.order == 'asc'), height=320) }}
     <div class="card">
-      <h3>How it’s calculated</h3>
+      {% if not composite %}<h3>How it’s calculated</h3>{% endif %}
       {% if composite %}
-        <p class="small">Each indicator is rescaled 0–1 across eligible countries (min–max; log first for {{ pillars|map(attribute='indicators')|sum(start=[])|selectattr('transform', 'equalto', 'log')|map(attribute='id')|map('ename_ind')|join(', ') }}). Lower-is-better indicators are flipped. Indicators are averaged into pillars, and pillars into a 0–100 score:</p>
-        {% for p in pillars %}
-          <p class="small" style="margin:8px 0 2px"><b>{{ p.name }}</b> · {{ (p.weight * 100)|round|int }}%</p>
-          <ul class="small" style="margin:0 0 6px;padding-left:18px">{% for i in p.indicators %}<li><a href="/data/indicators/{{ i.id }}/">{{ indicators[i.id].name }}</a> · {{ (i.weight * 100)|round|int }}%{% if i.direction == 'lower_better' %} <span class="muted">(lower is better)</span>{% endif %}</li>{% endfor %}</ul>
-        {% endfor %}
-        <p class="small muted">A country is ranked only if it has data for at least {{ (r.definition.min_coverage * 100)|int }}% of the weight, from {{ r.definition.reference_year - r.definition.max_data_age }}–{{ r.definition.reference_year }}. Missing values are never treated as zero.</p>
+        {{ m.method(r, indicators, open=True) }}
       {% elif official and not is_hdi %}
         <p class="small">{{ ind.definition }}</p>
         <p class="small muted">Shown exactly as {{ r.official_owner }} publishes it for {{ r.definition.year }}. See {{ r.official_owner }}’s technical notes for the formula.</p>

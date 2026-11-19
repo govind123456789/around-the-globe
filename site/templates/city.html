@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ c.name }}: population, growth and density{% endblock %}
+{% block title %}{{ c.name }}{% if country %}, {{ country.name }}{% endif %}: population, growth and density{% endblock %}
 {% block description %}{{ c.name }}{% if country %}, {{ country.name }}{% endif %}: {{ c.people|fmt(0) }} people in its urban centre in 2025, the world's #{{ c.rank }} largest; growth since 1975 and the 2030 projection (GHSL).{% endblock %}
 {% block main %}
 <p class="crumbs"><a href="/cities/">Cities</a>{% if country %} › <a href="/countries/{{ country.slug }}/">{{ country.name }}</a>{% endif %}</p>

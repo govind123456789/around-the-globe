@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Indicators{% endblock %}
+{% block description %}Every indicator on {{ site.name }}, by topic, with its source, licence, unit and country coverage.{% endblock %}
 {% block main %}
 <p class="crumbs"><a href="/data/">Data</a></p>
 <div class="page-head"><h1>Indicators</h1><p class="lede">{{ inds|length }} indicators from {{ inds|map(attribute='source')|unique|list|length }} open sources.</p>

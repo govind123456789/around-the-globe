@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% import "macros.html" as m %}
 {% block title %}{{ g.name }}{% endblock %}
+{% block description %}{{ g.name }}: rankings and data for its countries and territories, with the source and year of every figure.{% endblock %}
 {% block main %}
 <p class="crumbs"><a href="/countries/">Countries</a> › {{ 'Region' if g.group_kind == 'region' else 'Income group' }}</p>
 <div class="page-head">

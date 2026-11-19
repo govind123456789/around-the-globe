@@ -34,4 +34,7 @@ curated_pairs:
   - [IND, NPL]
   - [SAU, ARE]
 
+# Values older than this many years (before the release year) are greyed out with a "data from YYYY"
+# badge, and comparison rows where every value is that old are hidden behind a "show older data" toggle.
+stale_after_years: 10
 featured_rankings: [human-development-index, capability-index, gdp-per-capita-ppp, life-expectancy]

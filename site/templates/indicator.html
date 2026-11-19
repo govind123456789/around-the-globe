@@ -1,16 +1,21 @@
 {% extends "base.html" %}
 {% import "macros.html" as m %}
-{% block title %}{{ ind.name }}{% endblock %}
+{% block title %}{{ ind.name }}: data by country, sources and trends{% endblock %}
 {% block description %}{{ ind.name }} for {{ latest|length }} countries: map, rankings, time series and download. {{ ind.definition }}{% endblock %}
-{% block head %}
-<script type="application/ld+json">{{ {"@context":"https://schema.org","@type":"Dataset","name":ind.name,"description":ind.definition,"license":"https://creativecommons.org/licenses/by/4.0/","creator":{"@type":"Organization","name":src.publisher},"isBasedOn":src.url,"temporalCoverage":(cov[0][0]|string) ~ "/" ~ (cov[-1][0]|string) if cov else "","distribution":[{"@type":"DataDownload","encodingFormat":"application/json","contentUrl":site.base_url ~ "/v1/latest/indicators/" ~ ind.id ~ ".json"}]}|tojson_safe }}</script>
-{% endblock %}
+{% block jsonld %}{% set yrs = cov|map(attribute=0)|list %}<script type="application/ld+json">{{ {"@context": "https://schema.org", "@type": "Dataset",
+  "name": ind.name ~ " by country", "description": ind.definition ~ " Latest values for " ~ (latest|length) ~ " countries and territories, with the source and year of every value.",
+  "url": site.base_url ~ url, "isAccessibleForFree": true, "license": src.licence_url or src.url,
+  "creator": {"@type": "Organization", "name": src.publisher, "url": src.url},
+  "publisher": {"@type": "Organization", "name": site.name, "url": site.base_url ~ "/"},
+  "temporalCoverage": (yrs|min|string ~ "/" ~ yrs|max|string) if yrs else none, "spatialCoverage": "World", "variableMeasured": ind.name ~ " (" ~ ind.unit ~ ")",
+  "distribution": [{"@type": "DataDownload", "encodingFormat": "application/json", "contentUrl": site.base_url ~ "/v1/latest/indicators/" ~ ind.id ~ ".json"}]}|tojson }}</script>{% endblock %}
 {% block main %}
 <p class="crumbs"><a href="/data/indicators/">Indicators</a> › <a href="/topics/{{ dim.id }}/">{{ dim.name }}</a></p>
 <div class="page-head">
   <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="badge">{{ {'higher_better': 'Higher is better', 'lower_better': 'Lower is better', 'neutral': 'Neutral'}[ind.direction] }}</span>{% if ind.status == 'estimate' %}<span class="badge">Modelled estimate</span>{% endif %}</div>
   <h1 style="margin-top:10px">{{ ind.name }}</h1>
   <p class="lede">{{ ind.definition }}</p>
+  {% if summary %}<p class="auto-summary">{{ summary|join(' ') }}</p>{% endif %}
   <p class="small muted">Unit: {{ ind.unit }} · Source: <a href="{{ src.url }}">{{ src.publisher }}</a> (<span class="mono">{{ ind.code }}</span>) · Licence {{ src.licence }} · {{ latest|length }} of {{ n_countries }} countries have data; {{ recent }} have data from 2019 or later.</p>
   <div class="btns">
     <a class="btn ghost sm" href="/v1/latest/indicators/{{ ind.id }}.json">JSON (all years)</a>

@@ -2,6 +2,7 @@
 {% import "macros.html" as m %}
 {% set composite = r.kind == 'original_composite' %}
 {% block title %}{{ r.name }} — methodology{% endblock %}
+{% block description %}How the {{ r.name }} is calculated: indicators, weights, normalisation, data years and eligibility rules.{% endblock %}
 {% block main %}
 <p class="crumbs"><a href="/methodology/">Methodology</a></p>
 <div class="page-head">

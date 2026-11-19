@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% import "macros.html" as m %}
 {% block title %}{{ d.name }}{% endblock %}
+{% block description %}{{ d.name }}: every indicator and ranking on this topic for {{ n_places }} countries and territories, with sources and data years.{% endblock %}
 {% block main %}
 <p class="crumbs"><a href="/topics/">Topics</a></p>
 <div class="page-head"><h1>{{ d.name }}</h1><p class="lede">{{ d.blurb }}</p></div>

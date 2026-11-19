@@ -126,6 +126,8 @@
   const dlg = $("#search-dialog");
   const openSearch = () => { dlg.showModal(); $("input", dlg).focus(); };
   $("#search-open")?.addEventListener("click", openSearch);
+  { const q = new URLSearchParams(location.search).get("q");
+    if (q && dlg) { openSearch(); const i = $("input", dlg); i.value = q; i.dispatchEvent(new Event("input", { bubbles: true })); } }
   document.addEventListener("keydown", e => {
     if (e.key === "/" && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { e.preventDefault(); openSearch(); }
   });
