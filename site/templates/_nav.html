@@ -1,0 +1,16 @@
+<nav class="nav" id="nav" aria-label="Main">
+  <ul class="nav-list">
+  {% for mm in menus %}
+    {% set here = mm.base and url.startswith(mm.base) %}
+    <li class="nav-item{% if mm.explore %} nav-explore{% endif %}{% if here %} current{% endif %}">
+      <button type="button" class="nav-btn" aria-expanded="false" aria-controls="dd-{{ mm.id }}">{{ mm.label }}</button>
+      <div class="dd" id="dd-{{ mm.id }}" hidden>
+        <div class="dd-cols">
+        {% for heading, items in mm.groups if items %}<div class="dd-col"><p class="dd-h">{{ heading }}</p>{% for l, h, d in items %}<a href="{{ h }}"{% if url == h %} aria-current="page"{% endif %}>{{ l }}{% if d %}<small>{{ d }}</small>{% endif %}</a>{% endfor %}</div>{% endfor %}
+        </div>
+        {% if mm.all %}<a class="dd-all" href="{{ mm.all[1] }}">{{ mm.all[0] }}</a>{% endif %}
+      </div>
+    </li>
+  {% endfor %}
+  </ul>
+</nav>

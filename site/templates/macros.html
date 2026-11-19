@@ -74,3 +74,7 @@
 {% macro sb(ind, year, status='measured', differ=False) -%}
 {% if year %}{% set k = pv(ind.id, year, status) %}<button class="sb {{ pv_level(k)[0] }}{% if differ %} yd{% endif %}" data-p="{{ k }}">{{ SRC_CODE.get(ind.source, ind.source) }} · {{ year }}</button>{% endif %}
 {%- endmacro %}
+
+{% macro live_line(l) -%}
+{% if l %}<p class="hero-live"><span class="dot" aria-hidden="true"></span>World population now <b data-live="population">{{ '{:,.0f}'.format(l.at.population) }}</b> <span class="muted">· an estimate, <a href="/methodology/live-estimates/">how it is made</a></span><script type="application/json" id="live-data">{{ l.base|tojson_safe }}</script></p>{% endif %}
+{%- endmacro %}

@@ -8,15 +8,19 @@
   <canvas class="globe" data-globe data-lon="{{ c.lon if c.lon is not none else 0 }}" data-tilt="{{ [[c.lat if c.lat is not none else 15, 50]|min, -30]|max }}" data-highlight="{{ c.entity_id }}" aria-hidden="true"></canvas>
   <div class="wrap">
   <p class="crumbs"><a href="/countries/">Countries</a> › <a href="/regions/{{ region.slug }}/">{{ c.region }}</a></p>
-<div class="page-head" style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:end">
+<div class="page-head country-head">
   <div>
     <h1>{{ flag(c.entity_id, eager=True) }}{{ c.name }}</h1>
-    <p class="lede" style="margin:0">{{ c.region }}{% if income %} · <a href="/regions/{{ income.slug }}/">{{ c.income }}</a>{% endif %}{% if c.capital %} · Capital: {{ c.capital }}{% endif %} · <span class="mono">{{ c.entity_id }}</span></p>
+    <p class="lede country-meta">{{ c.region }}{% if income %} · <a href="/regions/{{ income.slug }}/">{{ c.income }}</a>{% endif %}{% if c.capital %} · Capital {{ c.capital }}{% endif %}{% if head.pop %} · Population {{ head.pop[1]|short }} ({{ head.pop[0] }}){% endif %}</p>
   </div>
   <div class="btns">
-    <a class="btn sm" href="/compare/#c={{ c.entity_id }}">Compare with…</a>
+    <button type="button" class="btn sm" data-watch="{{ c.entity_id }}">☆ Watch</button>
+    <form class="compare-with" data-compare-with data-a="{{ c.entity_id }}" data-a-slug="{{ c.slug }}">
+      <label class="sr-only" for="cw-{{ c.entity_id }}">Compare {{ c.name }} with</label>
+      <select id="cw-{{ c.entity_id }}" name="b"><option value="">Compare with…</option>{% for x in countries if x.entity_id != c.entity_id %}<option value="{{ x.slug }}">{{ x.name }}</option>{% endfor %}</select>
+      <button class="btn ghost sm" type="submit">Go</button>
+    </form>
     <a class="btn ghost sm" href="/v1/latest/entities/country/{{ c.entity_id }}.json">JSON</a>
-    <button class="btn ghost sm" data-share>Copy link</button>
   </div>
 </div>
   </div>
@@ -24,15 +28,39 @@
 {% endblock %}
 {% block main %}
 {% if summary %}<p class="auto-summary">{{ summary|join(' ') }}</p>{% endif %}
-<div class="stats overlap">
-  {% set labels = {'population': 'Population', 'gdp': 'GDP (current US$)', 'gdp-per-capita-ppp': 'GDP per capita, PPP', 'hdi': 'Human Development Index', 'life-expectancy': 'Life expectancy'} %}
-  {% for k, v in key.items() if v %}
+<div class="stats overlap head-stats">
+  {% for st in head.stats %}
   <div class="card stat">
-    <span class="l">{{ labels[k] }}</span>
-    <span class="v">{% if k == 'gdp' %}{{ v[1]|fmt(0, 'current US$') }}{% elif k == 'hdi' %}{{ '%.3f'|format(v[1]) }}{% elif k == 'life-expectancy' %}{{ '%.1f'|format(v[1]) }} yrs{% else %}{{ v[1]|fmt(0) }}{% endif %}</span>
-    {{ m.chip(chips[k]) }}
+    <span class="l">{{ st.label }}</span>
+    {% if st.value is none %}<span class="v muted">—</span><span class="small muted">no data</span>
+    {% else %}
+    <span class="v">{% if st.index %}{{ '%.1f'|format(st.value) }}{% elif st.ind.id == 'hdi' %}{{ '%.3f'|format(st.value) }}{% elif st.ind.id == 'life-expectancy' %}{{ '%.1f'|format(st.value) }} yrs{% else %}{{ st['value']|short(st['ind']['unit']) }}{% endif %}</span>
+    <span class="small muted">{% if st.rank %}#{{ st.rank[0] }} of {{ st.rank[1] }}{% else %}not ranked{% endif %}{% if st.index %} · original index{% endif %}</span>
+    {% if st.spark %}<span class="head-spark">{{ st.spark|safe }}</span>{% endif %}
+    {% if st.ind %}{{ m.sb(st.ind, st.year, st.status or 'measured') }}{% endif %}
+    {% endif %}
   </div>
   {% endfor %}
+</div>
+
+{% if head.strip %}
+<section class="rank-strip" aria-labelledby="rs-h">
+  <div class="section-head"><h2 id="rs-h">Where {{ c.name }} stands in every ranking</h2><a href="#rankings-list">As a list →</a></div>
+  <p class="small muted">Each dot is one ranking: left is first place, right is last. Hover or focus a dot for the rank; select it to open the ranking.</p>
+  {% for theme, dots in head.strip %}
+  <div class="rs-row"><span class="rs-theme">{{ theme }}</span>
+    <div class="rs-track">{% for d in dots %}<a class="rs-dot" href="/rankings/{{ d.rid }}/" style="left:{{ '%.1f'|format(d.pos * 100) }}%" aria-label="{{ d.name }}: {{ d.rank }} of {{ d.of }}{% if d.val %}, {{ d.val }}{% endif %}" data-tip="{{ d.name }} · {{ d.rank }} of {{ d.of }}{% if d.val %} · {{ d.val }}{% endif %}"></a>{% endfor %}</div>
+  </div>
+  {% endfor %}
+  <div class="rs-scale small muted" aria-hidden="true"><span>1st</span><span>last</span></div>
+</section>
+{% endif %}
+
+<div class="grid g2 head-links">
+  {% if head.peers %}<div class="card"><h3>Peers</h3><p class="small muted">Same region and income group, closest GDP per person.</p>
+    <div class="peers">{% for pr in head.peers %}<a href="{{ pr.url }}">{{ flag(pr.e.entity_id) }}{{ c.name }} vs {{ pr.e.name }}</a>{% endfor %}</div></div>{% endif %}
+  {% if head.popular %}<div class="card"><h3>Popular comparisons</h3>
+    <div class="peers">{% for pp in head.popular %}<a href="{{ pp.url }}">{{ pp.a.name }} vs {{ pp.b.name }}</a>{% endfor %}</div></div>{% endif %}
 </div>
 
 <div class="section-head"><h2>At a glance</h2><span class="muted small">Basic facts about {{ c.name }}</span></div>
@@ -83,7 +111,7 @@
 </section>
 {% endfor %}
 
-<div class="section-head"><h2>Where {{ c.name }} ranks</h2><a href="/rankings/">All rankings →</a></div>
+<div class="section-head" id="rankings-list"><h2>Where {{ c.name }} ranks</h2><a href="/rankings/">All rankings →</a></div>
 <div class="pos-grid">
   {% for p in positions[:10] %}
   <a class="pos" href="/rankings/{{ p.r.ranking_id }}/">
@@ -281,4 +309,4 @@
 </div>
 <p class="small muted" style="margin-top:24px">Spotted a problem with a value? <a href="mailto:{{ site.contact_email }}?subject=Data%20issue%3A%20{{ c.name|urlencode }}">Report a data issue</a>. Corrections are logged on the <a href="/about/errata/">errata page</a>.</p>
 {% endblock %}
-{% block scripts %}<script src="/static/js/globe.js?v={{ asset_v }}" defer></script><script src="/static/js/geo-news.js?v={{ asset_v }}" defer></script><script src="/static/js/watch.js?v={{ asset_v }}" defer></script>{% endblock %}
+{% block scripts %}<script src="/static/js/country.js?v={{ asset_v }}" defer></script><script src="/static/js/globe.js?v={{ asset_v }}" defer></script><script src="/static/js/geo-news.js?v={{ asset_v }}" defer></script><script src="/static/js/watch.js?v={{ asset_v }}" defer></script>{% endblock %}

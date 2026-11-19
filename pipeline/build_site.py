@@ -11,7 +11,7 @@ import markdown
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
 
-from . import beyond, changes, defence, explain, geopolitics, summaries, trust, history, india, lab, live, markets, og, reports, standout, stories, svg
+from . import beyond, changes, numfmt, defence, explain, geopolitics, summaries, trust, history, india, lab, live, markets, og, reports, standout, stories, svg
 from .build_data import Model
 from .config import CONTENT, DIST, RAW, SITE, load_yaml, site_config
 
@@ -44,15 +44,8 @@ def minify_css(css: str) -> str:
 
 
 def fmt(v, decimals: int = 2, unit: str = "") -> str:
-    if v is None:
-        return "—"
-    if abs(v) >= 1e6:
-        s = svg.compact(v, 2 if abs(v) < 1e10 else 1)
-    else:
-        s = f"{v:,.{decimals}f}"
-    if unit.startswith("current US$") and not unit.endswith("person"):
-        s = "$" + s
-    return s
+    """Kept as the name the templates use; the rules live in numfmt."""
+    return numfmt.value(v, decimals, unit)
 
 
 def unit_short(unit: str) -> str:
@@ -68,7 +61,8 @@ class Site:
                                trim_blocks=True, lstrip_blocks=True)
         self.env.filters["fmt"] = fmt
         self.env.filters["unit_short"] = unit_short
-        self.env.filters["compact"] = svg.compact
+        self.env.filters["compact"] = numfmt.scale
+        self.env.filters["short"] = lambda v, unit="", d=None: numfmt.compact(v if isinstance(v, (int, float)) else None, unit if isinstance(unit, str) else "", d)
         self.env.filters["lc"] = lambda n: n if n[:2].isupper() else n[:1].lower() + n[1:]   # keeps GSDP, CO2 etc.
         self.env.filters["tojson_safe"] = lambda o: Markup(json.dumps(o, ensure_ascii=False).replace("<", "\\u003c"))
         self.env.globals.update(year_label=svg.year_label, SOURCE_SHORT=SOURCE_SHORT, site=self.cfg, release=model.release, KIND_LABEL=KIND_LABEL,
@@ -229,10 +223,59 @@ class Site:
 
     @staticmethod
     def footer_nav() -> list:
-        # the slim footer: reference and policy pages that are not in the header
-        return [("Sources & licences", "/data/sources/"), ("Downloads", "/data/downloads/"), ("Open API", "/data/api/"),
-                ("Editorial policy", "/about/editorial-policy/"), ("Errata", "/about/errata/"),
-                ("Licences & citing", "/about/licences/"), ("Funding", "/about/funding/"), ("Privacy", "/about/privacy/")]
+        # the slim footer: about and policy pages only (everything else is in the menus)
+        return [("About", "/about/"), ("Methodology", "/methodology/"), ("Editorial policy", "/about/editorial-policy/"),
+                ("Errata", "/about/errata/"), ("Licences", "/about/licences/"), ("Funding", "/about/funding/"),
+                ("Privacy", "/about/privacy/")]
+
+    def menus(self) -> list[dict]:
+        """The site navigation, in one place: five top-level menus and Explore. Each menu is a list of
+        groups [(heading, [(label, url, description)])] plus an "all" link."""
+        comps = [(r["name"], f"/rankings/{rid}/", "Original index, weights published") for rid, r in self.rk.items()
+                 if r["kind"] == "original_composite"]
+        official = [(r["name"], f"/rankings/{rid}/", f"Official · {r.get('official_owner') or 'UNDP'}") for rid, r in self.rk.items()
+                    if r["kind"] == "official_reproduction"][:3]
+        popular = [(label, url, "") for label, url in self.env.globals["mega"]["popular"]][:8]
+        return [
+            {"id": "countries", "base": "/countries/", "label": "Countries", "groups": [("Countries", [
+                ("All countries and territories", "/countries/", "217, by region"),
+                ("The world at a glance", "/world/", "Global totals and trends"),
+                ("Regions and income groups", "/regions/", "World Bank groupings"),
+                ("Indian states", "/india/", "36 states and union territories")])], "all": ("All countries →", "/countries/")},
+            {"id": "rankings", "base": "/rankings/", "label": "Rankings", "groups": [("Our indices", comps), ("Official indices", official),
+                                                               ("Popular rankings", popular),
+                                                               ("By topic", [("Rankings and indicators by theme", "/topics/", "")])],
+             "all": ("All rankings →", "/rankings/")},
+            {"id": "compare", "base": "/compare/", "label": "Compare", "groups": [("Compare", [
+                ("Pick countries", "/compare/", "Two to five countries side by side"),
+                ("Popular comparisons", "/compare/popular/", "Rivals, neighbours, G20"),
+                ("China vs India", "/compare/china-vs-india/", ""), ("China vs United States", "/compare/china-vs-united-states/", ""),
+                ("India vs Pakistan", "/compare/india-vs-pakistan/", "")])], "all": ("Popular comparisons →", "/compare/popular/")},
+            {"id": "geopolitics", "base": "/geopolitics/", "label": "Geopolitics", "groups": [("Geopolitics", [
+                ("Crisis tracker", "/geopolitics/crises/", "Wars and emergencies"),
+                ("Risk index", "/geopolitics/risk/", "Transparent country risk score"),
+                ("Blocs", "/geopolitics/blocs/", "NATO, EU, BRICS, SCO, G20"),
+                ("Sanctions", "/geopolitics/sanctions/", "US sanctions by country"),
+                ("Weekly briefing", "/geopolitics/briefing/", "What changed this week")]),
+                ("More", [("Live news", "/geopolitics/news/", ""), ("Defence", "/geopolitics/defence/", ""),
+                          ("Power index", "/geopolitics/power/", ""), ("UN alignment", "/geopolitics/un-votes/", "")])],
+             "all": ("Geopolitics overview →", "/geopolitics/")},
+            {"id": "data", "base": "/data/", "label": "Data & API", "groups": [("Data", [
+                ("Indicators", "/data/indicators/", f"{len(self.m.indicators)} series"),
+                ("Sources & licences", "/data/sources/", "Every source and its terms"),
+                ("Downloads", "/data/downloads/", "Bulk CSV and Parquet"),
+                ("Open API", "/data/api/", "JSON, CC BY 4.0"),
+                ("Methodology", "/methodology/", "How every number is made"),
+                ("Trust levels", "/methodology/trust/", "How old and how solid each value is")])], "all": ("Data overview →", "/data/")},
+            {"id": "explore", "label": "Explore", "explore": True, "groups": [("Tools", [
+                ("Markets", "/markets/", "Industries and market sizes"), ("Lab", "/lab/", "Correlations and findings"),
+                ("Index Builder", "/index-builder/", "Your own weights"), ("Timeline map", "/explore/timeline/", "Since 1990"),
+                ("Map explorer", "/explore/", "Any indicator on the map"), ("Daily quiz", "/quiz/", "Which country has more?"),
+                ("Where would I fit?", "/lab/fit/", "Countries that match you")]),
+                ("Places and stories", [("Cities", "/cities/", "524 cities"), ("Universities", "/universities/", "2,000 most cited"),
+                                        ("Reports", "/reports/", "Global trend reports"), ("Insights", "/insights/", "Stories and releases")])],
+             "all": None},
+        ]
 
     @staticmethod
     def nav():
@@ -332,6 +375,7 @@ class Site:
                      ("Data & API", "/data/", "Bulk downloads, CSV and JSON")],
             "hubs": self.mk.hubs,
             "popular": [(label, f"/rankings/{rid}/") for rid, label in popular if rid in self.rk]}
+        self.env.globals["menus"] = self.menus()
         self.explore()
         self.rankings()
         self.markets_pages()
@@ -413,12 +457,16 @@ class Site:
     def home(self) -> None:
         cap = self.rk["capability-index"]
         pairs = [(self.by_id[a], self.by_id[b]) for a, b in self.cfg["curated_pairs"][:6]]
-        self.render("/", "home.html", featured=self.featured(), map_values=self.map_values(cap),
+        hero_maps = [{"id": rid, "label": self.rk[rid]["name"], "values": self.map_values(self.rk[rid]),
+                      "lower": self.rk[rid].get("order") == "asc"}
+                     for rid in ("capability-index", "gdp-per-capita-ppp", "life-expectancy", "human-development-index", "internet-users")
+                     if rid in self.rk]
+        self.render("/", "home.html", featured=self.featured(), map_values=self.map_values(cap), hero_maps=hero_maps,
                     map_label=cap["name"], pairs=pairs, countries=self.countries,
                     n_countries=len(self.countries), n_indicators=len(self.m.indicators),
                     n_rankings=len(self.rk), hdi_check=self.m.hdi_check,
                     markets=[h for h in self.mk.hubs if h["id"] != "economy"][:6], n_markets=len(self.mk.hubs),
-                    week=self.this_week())
+                    week=self.this_week(), n_compare=len(self.compare_pairs()))
 
     QUIZ = [("life-expectancy", "Which country has the higher life expectancy?"), ("gdp-per-capita-ppp", "Which country is richer per person (GDP per capita, PPP)?"),
             ("population", "Which country has more people?"), ("internet-users", "Which country has a larger share of its people online?"),
@@ -798,6 +846,61 @@ class Site:
         print(f"  rank changes since {prev.date}: {n} across {len(moves)} rankings")
         return moves, hist, prev.date
 
+    HEAD_STATS = (("gdp", "gdp", "GDP"), ("gdp-per-capita-ppp", "gdp-per-capita-ppp", "GDP per person, PPP"),
+                  ("population", "population", "Population"), ("life-expectancy", "life-expectancy", "Life expectancy"),
+                  ("hdi", "human-development-index", "Human Development Index"), (None, "capability-index", "Capability Index"))
+
+    def country_header(self, eid: str) -> dict:
+        """Everything the top of a country page shows, computed from the data; empty parts are left out."""
+        stats = []
+        for ind_id, rid, label in self.HEAD_STATS:
+            r = self.rk.get(rid)
+            row = next((x for x in r["results"] if x["entity_id"] == eid), None) if r else None
+            if ind_id:
+                lt = self.m.latest(eid, ind_id)
+                if not lt:
+                    stats.append({"label": label, "value": None})
+                    continue
+                ind = self.m.indicators[ind_id]
+                ser = [(y, v) for y, v, _ in self.m.series(eid, ind_id) if y > lt[0] - 10]
+                stats.append({"label": label, "value": lt[1], "year": lt[0], "status": lt[2], "ind": ind,
+                              "rank": (row["rank"], r["ranked_count"]) if row and row.get("rank") else None,
+                              "spark": svg.sparkline(ser, w=96, h=24, label=f"{label}, last 10 years") if len(ser) > 2 else ""})
+            elif r:
+                stats.append({"label": label, "value": row["score"] if row else None, "index": True,
+                              "rank": (row["rank"], r["ranked_count"]) if row and row.get("rank") else None, "spark": ""})
+        # rank strip: one dot per ranking on a 1..N scale, grouped by theme
+        dims = {d["id"]: d["name"] for d in self.m.dimensions}
+        groups: dict[str, list] = {}
+        for rid, r in self.rk.items():
+            row = next((x for x in r["results"] if x["entity_id"] == eid), None)
+            if not row or not row.get("rank") or r["ranked_count"] < 2:
+                continue
+            theme = next((dims.get(t, t.capitalize()) for t in r.get("topics", [])), "Other")
+            unit = r.get("unit") or ""
+            val = (f"{row['score']:.1f}" if r["kind"] == "original_composite" else fmt(row["score"], r.get("decimals", 1), unit)) if row.get("score") is not None else ""
+            groups.setdefault(theme, []).append({"rid": rid, "name": r["name"], "rank": row["rank"], "of": r["ranked_count"],
+                                                 "pos": (row["rank"] - 1) / (r["ranked_count"] - 1), "val": val})
+        strip = sorted(groups.items(), key=lambda g: -len(g[1]))
+        # peers: same region and income group, closest GDP per person (log distance); fall back to the region
+        e = self.by_id[eid]
+        mine = self.m.latest(eid, "gdp-per-capita-ppp")
+        cand = [x for x in self.countries if x["entity_id"] != eid and x["region_id"] == e["region_id"] and x.get("income_id") == e.get("income_id")]
+        if len(cand) < 5:
+            cand = [x for x in self.countries if x["entity_id"] != eid and x["region_id"] == e["region_id"]]
+        import math as _m
+        def dist(x):
+            lt = self.m.latest(x["entity_id"], "gdp-per-capita-ppp")
+            return abs(_m.log(lt[1]) - _m.log(mine[1])) if (lt and mine and lt[1] > 0 and mine[1] > 0) else 99
+        pages = {p["key"]: p["url"] for p in self.compare_pairs()}
+        peers = []
+        for x in sorted(cand, key=dist)[:5]:
+            a, b = sorted((e, x), key=lambda y: y["slug"])
+            url = pages.get((a["entity_id"], b["entity_id"])) or f"/compare/#c={eid},{x['entity_id']}"
+            peers.append({"e": x, "url": url})
+        return {"stats": stats, "strip": strip, "peers": peers, "popular": self.top_pairs(eid, 5),
+                "pop": self.m.latest(eid, "population")}
+
     def world_rank(self, ind_id: str, eid: str):
         """(rank, of) of a country's latest value among all countries with data; lower first if lower is better."""
         if not hasattr(self, "_wr"):
@@ -941,6 +1044,7 @@ class Site:
                 lines.append(f"Human Development Index {key['hdi'][1]:.3f}")
             og.card(DIST / "og" / "countries" / f"{c['slug']}.png", self.cfg["name"], c["region"], c["name"], lines)
             self.render(f"/countries/{c['slug']}/", "country.html", og_image=f"/og/countries/{c['slug']}.png", c=c, key=key, dims=self.country_dims(c),
+                        head=self.country_header(eid), countries=self.countries,
                         positions=self.positions(eid), peers=peers, mk=self.mk.country_shares(eid), geo=self.geo.country(eid), dfc=self.defence.get(eid),
                         summary=summaries.country(c, self.rk, self.m.indicators, fmt),
                         rank_moves=[(self.rk[rid], ch[eid], self.rank_hist.get(rid, {}).get(eid, [])) for rid, ch in self.moves.items() if eid in ch],
@@ -1036,6 +1140,8 @@ class Site:
             self.render("/methodology/live-estimates/", "live_method.html", b=self.env.globals["live"]["base"])
 
     def regions(self) -> None:
+        groups = sorted((self.by_id[g] | {"n": len(mem)} for g, mem in self.m.groups.items()), key=lambda g: (g["group_kind"], g["name"]))
+        self.render("/regions/", "regions_index.html", groups=groups)
         for gid, members in self.m.groups.items():
             g = self.by_id[gid]
             rows = []

@@ -48,15 +48,7 @@ if (typeof document !== "undefined") (() => {
   const cache = {};
   const loadInd = id => (cache[id] = cache[id] || fetch(`/v1/latest/indicators/${id}.json`).then(r => r.json()));
 
-  function compact(v, dec = 1) {
-    const a = Math.abs(v);
-    if (a >= 1e12) return (v / 1e12).toFixed(1) + " tn";
-    if (a >= 1e9) return (v / 1e9).toFixed(1) + " bn";
-    if (a >= 1e6) return (v / 1e6).toFixed(1) + " m";
-    if (a >= 1e4) return Math.round(v / 1e3).toLocaleString("en") + "k";
-    if (a >= 100) return Math.round(v).toLocaleString("en");
-    return v.toLocaleString("en", { maximumFractionDigits: dec, minimumFractionDigits: 0 });
-  }
+  function compact(v, dec = 1) { return NF.label(v, dec); }
   function niceTicks(lo, hi, n = 5) {
     if (hi === lo) hi = lo + 1;
     const raw = (hi - lo) / n, mag = 10 ** Math.floor(Math.log10(raw));
@@ -192,7 +184,7 @@ if (typeof document !== "undefined") (() => {
       svg += `<text class="tick axis-label" x="${ml}" y="${mt - 4}">${esc(iy.name)}${st.ly ? " (log scale)" : ""}</text></svg>`;
       box.innerHTML = svg;
 
-      const f2 = v => v === null ? "—" : (v < 0 ? "−" : "") + Math.abs(v).toFixed(2);
+      const f2 = v => v === null ? "—" : (v < 0 ? "−" : "") + NF.value(Math.abs(v), 2);
       const yearsTxt = st.yr === "latest" ? `each country’s latest value from ${M.reference_year - M.max_data_age} to ${M.reference_year}` : `values for ${st.yr}`;
       stats.innerHTML = `
         <div><b>${pts.length}</b><span>countries</span></div>
@@ -284,7 +276,7 @@ if (typeof document !== "undefined") (() => {
     cv.addEventListener("pointermove", e => {
       const ij = at(e); if (!ij) { tip.hidden = true; return; }
       const [i, j] = ij, v = C.rho[i][j];
-      tip.innerHTML = `<b>${esc(C.names[i])}</b> × <b>${esc(C.names[j])}</b><br>${v === null ? "Too few countries with both" : "ρ = " + (v < 0 ? "−" : "") + Math.abs(v).toFixed(2)} <span class="muted">· ${C.n[i][j]} countries</span>`;
+      tip.innerHTML = `<b>${esc(C.names[i])}</b> × <b>${esc(C.names[j])}</b><br>${v === null ? "Too few countries with both" : "ρ = " + (v < 0 ? "−" : "") + NF.value(Math.abs(v), 2)} <span class="muted">· ${C.n[i][j]} countries</span>`;
       const r = cv.parentElement.getBoundingClientRect();
       tip.style.left = Math.min(e.clientX - r.left + 14, r.width - 260) + "px"; tip.style.top = (e.clientY - r.top + 14) + "px"; tip.hidden = false;
     });
@@ -298,7 +290,7 @@ if (typeof document !== "undefined") (() => {
       $("corr-list").innerHTML = rows.map(r => `<li>
           <a href="${link(sel.value, r.id)}" title="${esc(C.names[r.j])}">${esc(C.names[r.j])}</a>
           <span class="corr-bar" aria-hidden="true"><i class="${r.v < 0 ? "c-neg" : "c-pos"}" style="width:${Math.abs(r.v) * 50}%"></i></span>
-          <b>${(r.v < 0 ? "−" : "") + Math.abs(r.v).toFixed(2)}</b><small class="muted">${C.n[i][r.j]}</small></li>`).join("");
+          <b>${(r.v < 0 ? "−" : "") + NF.value(Math.abs(r.v), 2)}</b><small class="muted">${C.n[i][r.j]}</small></li>`).join("");
       history.replaceState(null, "", "#" + sel.value);
     }
     if (location.hash.length > 1 && C.ids.includes(location.hash.slice(1))) sel.value = location.hash.slice(1);

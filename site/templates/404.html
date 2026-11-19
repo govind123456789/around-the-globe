@@ -12,5 +12,16 @@
     <div class="search-results" role="listbox"></div>
   </div>
   <p style="margin-top:16px"><a href="/">← Home</a></p>
+  <script>
+  (() => {
+    const m = /^\/compare\/([a-z0-9-]+)-vs-([a-z0-9-]+)\/?$/.exec(location.pathname);
+    if (!m) return;
+    fetch("/search-index.json").then(r => r.json()).then(items => {
+      const iso = s => (items.find(i => i.k === "Country" && i.u === `/countries/${s}/`) || {}).a;
+      const a = iso(m[1]), b = iso(m[2]);
+      if (a && b) location.replace(`/compare/#c=${a},${b}`);
+    }).catch(() => {});
+  })();
+  </script>
 </div>
 {% endblock %}

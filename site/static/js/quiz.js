@@ -10,7 +10,7 @@
   const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
   const fmt = (v, d, u) => {
     const a = Math.abs(v);
-    let s = a >= 1e12 ? (v / 1e12).toFixed(1) + " tn" : a >= 1e9 ? (v / 1e9).toFixed(1) + " bn" : a >= 1e6 ? (v / 1e6).toFixed(1) + " m" : v.toLocaleString("en-US", { maximumFractionDigits: d });
+    let s = a >= 1e6 ? NF.scale(v, 1) : NF.label(v, d);
     if (u.startsWith("current US$") || u.includes("international $")) s = "$" + s;
     return u.startsWith("%") ? s + "%" : s + (u && !u.startsWith("current") && !u.includes("$") ? " " + u : "");
   };

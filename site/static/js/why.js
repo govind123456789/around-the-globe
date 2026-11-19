@@ -11,7 +11,7 @@
     if (composite) {
       const peak = Math.max(...w.d.map(d => Math.abs(d[1])), 1);
       return `<p class="small">${esc(w.s)}</p><ol class="drivers">${w.d.map(([n, p]) =>
-        `<li class="${p >= 0 ? "up" : "down"}"><span class="nm">${esc(n)}</span><span class="dbar" aria-hidden="true"><i style="width:${(50 * Math.abs(p) / peak).toFixed(1)}%"></i></span><span class="pts">${p >= 0 ? "+" : ""}${p.toFixed(1)}</span></li>`).join("")}</ol>
+        `<li class="${p >= 0 ? "up" : "down"}"><span class="nm">${esc(n)}</span><span class="dbar" aria-hidden="true"><i style="width:${(50 * Math.abs(p) / peak).toFixed(1)}%"></i></span><span class="pts">${NF.signed(p, 1)}</span></li>`).join("")}</ol>
         <p class="small muted">Points against the median ranked country, at this index's weights.</p>`;
     }
     const near = [w.above && `${esc(w.above[1])} behind ${esc(w.above[0])} (one place up)`, w.below && `${esc(w.below[1])} ahead of ${esc(w.below[0])} (one place down)`].filter(Boolean).join("; ");

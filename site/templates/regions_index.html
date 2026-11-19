@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Regions and income groups{% endblock %}
+{% block description %}World Bank regions and income groups, each with its countries and territories, key figures and rankings.{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/countries/">Countries</a></p>
+<div class="page-head"><h1>Regions and income groups</h1><p class="lede">The World Bank groups its {{ n_places }} economies by region and by income.</p></div>
+{% for kind, label in [("region", "Regions"), ("income", "Income groups")] %}
+<div class="section-head"><h2>{{ label }}</h2></div>
+<div class="peers">{% for g in groups if g.group_kind == kind %}<a href="/regions/{{ g.slug }}/">{{ g.name }} <span class="muted small">({{ g.n }})</span></a>{% endfor %}</div>
+{% endfor %}
+{% endblock %}

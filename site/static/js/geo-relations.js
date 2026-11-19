@@ -4,7 +4,7 @@
   const form = document.getElementById("rel-form"), out = document.getElementById("rel-out");
   if (!form) return;
   const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const num = v => Math.round(v).toLocaleString("en-US");
+  const num = v => NF.int(v);
 
   function chart(pts) {
     if (!pts || pts.length < 2) return `<p class="small muted">Not enough shared votes.</p>`;

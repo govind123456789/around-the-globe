@@ -8,7 +8,7 @@
   const tip = el.parentElement.querySelector(".map-tip");
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const fmt = v => Math.abs(v) >= 1e4 ? Math.round(v).toLocaleString("en") : (+v.toFixed(Math.abs(v) < 10 ? 2 : 1)).toString();
+  const fmt = v => Math.abs(v) >= 1e4 ? NF.int(v) : NF.label(v, Math.abs(v) < 10 ? 2 : 1);
   const lib = () => window.maplibregl ? Promise.resolve(window.maplibregl) : new Promise((res, rej) => {
     const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "/static/vendor/maplibre-gl.css"; document.head.appendChild(l);
     const s = document.createElement("script"); s.src = "/static/vendor/maplibre-gl.js"; s.onload = () => res(window.maplibregl); s.onerror = rej; document.head.appendChild(s);

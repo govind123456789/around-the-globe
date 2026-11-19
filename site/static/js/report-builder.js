@@ -7,11 +7,7 @@
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   let meta = null;
 
-  function compact(v, d) {
-    const a = Math.abs(v);
-    for (const [div, suf] of [[1e12, " tn"], [1e9, " bn"], [1e6, " m"]]) if (a >= div) return (v / div).toFixed(a < 1e10 ? 2 : 1) + suf;
-    return v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
-  }
+  function compact(v, d) { return NF.value(v, d); }
   function fmt(v, m) {
     if (v == null) return "—";
     let s = compact(v, m.d);
@@ -24,7 +20,7 @@
     if (v0 == null) return null;
     if (relative(m)) return v0 > 0 ? { t: `${v1 >= v0 ? "+" : ""}${Math.round(100 * (v1 - v0) / v0)}%`, x: (v1 - v0) / v0 } : null;
     const d = v1 - v0;
-    return { t: `${d >= 0 ? "+" : ""}${d.toFixed(m.d)}${m.u.startsWith("%") ? " pts" : ""}`, x: d };
+    return { t: `${NF.signed(d, m.d)}${m.u.startsWith("%") ? " pts" : ""}`, x: d };
   }
   function spark(pts) {
     if (!pts || pts.length < 2) return "";
@@ -44,7 +40,7 @@
     const o = vs && vs.ind[id];
     const ch = change(v0, v, m), w = m.w;
     let cmp = "";
-    if (m.add && w && w[0] === y && w[1] > 0) cmp = `${(100 * v / w[1]) < 0.1 ? "<0.1" : (100 * v / w[1]).toFixed(1)}% of world`;
+    if (m.add && w && w[0] === y && w[1] > 0) cmp = `${(100 * v / w[1]) < 0.1 ? "<0.1" : NF.value(100 * v / w[1], 1)}% of world`;
     else if (!m.add && w) cmp = `World ${fmt(w[1], m)}`;
     const reg = (!m.add && rv != null && d.region) ? `${esc(d.region)} ${fmt(rv, m)}` : "";
     const p = pos(r), tone = m.dir === "neutral" || p == null ? "" : p <= .25 ? " good" : p >= .75 ? " weak" : "";

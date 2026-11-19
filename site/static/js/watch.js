@@ -42,9 +42,9 @@
       const h = d.risk_hist || [], ch = h.length > 5 ? (h[h.length - 1][1] - h[h.length - 6][1]) : null;
       return `<div class="card wl-card">
         <div class="wl-top"><h3><a href="/countries/${d.slug}/">${esc(d.name)}</a></h3><button type="button" class="linklike" data-rm="${d.id}">Remove</button></div>
-        ${d.risk != null ? `<div class="wl-risk"><span class="rp-big" style="font-size:2rem">${Math.round(d.risk)}</span><span class="small muted">risk index · ${esc(d.risk_band)}${d.risk_rank ? ` · #${d.risk_rank[0]} of ${d.risk_rank[1]}` : ""}${ch != null ? ` · ${ch >= 0 ? "+" : ""}${ch.toFixed(0)} in 5 years` : ""}</span>${spark(h)}</div>` : ""}
+        ${d.risk != null ? `<div class="wl-risk"><span class="rp-big" style="font-size:2rem">${Math.round(d.risk)}</span><span class="small muted">risk index · ${esc(d.risk_band)}${d.risk_rank ? ` · #${d.risk_rank[0]} of ${d.risk_rank[1]}` : ""}${ch != null ? ` · ${NF.signed(ch, 0)} in 5 years` : ""}</span>${spark(h)}</div>` : ""}
         <ol class="mk-list">
-          ${d.cand ? `<li><span>Conflict deaths in ${d.cand[0]} so far</span><span class="mono">${d.cand[1].toLocaleString("en")}</span></li>` : ""}
+          ${d.cand ? `<li><span>Conflict deaths in ${d.cand[0]} so far</span><span class="mono">${NF.int(d.cand[1])}</span></li>` : ""}
           ${us ? `<li><span>UN votes with the US (${us[0]})</span><span class="mono">${Math.round(100 * us[1])}%</span></li>` : ""}
           ${cn ? `<li><span>with China</span><span class="mono">${Math.round(100 * cn[1])}%</span></li>` : ""}
           ${ru ? `<li><span>with Russia</span><span class="mono">${Math.round(100 * ru[1])}%</span></li>` : ""}

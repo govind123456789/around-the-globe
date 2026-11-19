@@ -19,10 +19,27 @@
   });
 
   // ---------- mobile menu ----------
-  const menuBtn = $("#menu-btn");
-  menuBtn?.addEventListener("click", () => {
-    const open = $("#nav").classList.toggle("open");
-    menuBtn.setAttribute("aria-expanded", open);
+  const menuBtn = $("#menu-btn"), nav = $("#nav");
+  const setDrawer = open => {
+    nav.classList.toggle("open", open); document.documentElement.classList.toggle("drawer-open", open);
+    menuBtn.setAttribute("aria-expanded", open); menuBtn.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+    menuBtn.textContent = open ? "✕" : "☰";
+    if (open) $(".nav-btn", nav)?.focus();
+  };
+  menuBtn?.addEventListener("click", () => setDrawer(!nav.classList.contains("open")));
+  // menus: disclosure buttons (no hover-only opening); one open at a time
+  const closeMenu = (btn, focus) => { btn.setAttribute("aria-expanded", "false"); document.getElementById(btn.getAttribute("aria-controls")).hidden = true; if (focus) btn.focus(); };
+  $$(".nav-btn").forEach(btn => btn.addEventListener("click", () => {
+    const open = btn.getAttribute("aria-expanded") === "true";
+    $$(".nav-btn[aria-expanded='true']").forEach(o => { if (o !== btn) closeMenu(o); });
+    if (open) closeMenu(btn); else { btn.setAttribute("aria-expanded", "true"); document.getElementById(btn.getAttribute("aria-controls")).hidden = false; }
+  }));
+  document.addEventListener("click", e => { if (!e.target.closest(".nav-item")) $$(".nav-btn[aria-expanded='true']").forEach(b => closeMenu(b)); });
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Escape") return;
+    const openBtn = $(".nav-btn[aria-expanded='true']");
+    if (openBtn) { closeMenu(openBtn, true); return; }
+    if (nav?.classList.contains("open")) { setDrawer(false); menuBtn.focus(); }
   });
 
   window.atlasFlag = iso2 => iso2 ? `<img class="flag" src="/static/flags/${esc(iso2.toLowerCase())}.svg" width="20" height="15" alt="" loading="lazy" onerror="this.remove()">` : "";
@@ -95,22 +112,42 @@
   function search(items, raw) {
     const q = norm(raw.trim());
     if (!q) return [];
-    const vs = q.split(/\s+(?:vs\.?|versus|v)\s+|\s*,\s*/).filter(Boolean);
     const out = [];
+    // "india vs" (or "india vs ch"): that country's comparison pages first
+    const half = /^(.+?)\s+(?:vs\.?|versus|v)(?:\s+(.*))?$/.exec(q);
+    if (half && !half[2]?.includes(",")) {
+      const c = bestCountry(items, half[1]);
+      const rest = half[2] ? norm(half[2]) : "";
+      if (c) {
+        const pairs = items.filter(it => it.k === "Compare" && norm(it.t).includes(norm(c.t))
+          && (!rest || norm(it.t).replace(norm(c.t), "").includes(rest)));
+        if (pairs.length) return pairs.slice(0, 10);
+      }
+    }
+    const vs = q.split(/\s+(?:vs\.?|versus|v)\s+|\s*,\s*/).filter(Boolean);
     if (vs.length >= 2) {
       const cs = vs.map(v => bestCountry(items, v)).filter(Boolean);
-      if (cs.length >= 2) out.push({ t: cs.map(c => c.t).join(" vs "), u: "/compare/#c=" + cs.map(c => c.a).join(","), k: "Compare" });
+      if (cs.length >= 2) {
+        const page = cs.length === 2 && items.find(it => it.k === "Compare" && norm(it.t).includes(norm(cs[0].t)) && norm(it.t).includes(norm(cs[1].t)));
+        out.push(page || { t: cs.map(c => c.t).join(" vs "), u: "/compare/#c=" + cs.map(c => c.a).join(","), k: "Compare" });
+      }
     }
     return out.concat(items.map(it => [score(it, q), it]).filter(x => x[0] > 0)
       .sort((a, b) => b[0] - a[0] || a[1].t.length - b[1].t.length).slice(0, 12).map(x => x[1]));
   }
   function wire(input) {
     const box = input.parentElement.querySelector(".search-results");
+    const bid = box.id || (box.id = "sr-" + Math.random().toString(36).slice(2, 8));
+    input.setAttribute("role", "combobox"); input.setAttribute("aria-autocomplete", "list");
+    input.setAttribute("aria-controls", bid); input.setAttribute("aria-expanded", "false");
     let sel = -1, hits = [];
     const draw = () => {
-      box.innerHTML = hits.map((h, i) => `<a href="${h.u}" role="option"${i === sel ? ' class="sel" aria-selected="true"' : ""}><span>${h.f ? window.atlasFlag(h.f) : ""}${esc(h.t)}</span><span class="k">${esc(h.k)}${h.s ? " · " + esc(h.s) : ""}</span></a>`).join("")
+      box.innerHTML = hits.map((h, i) => `<a href="${h.u}" role="option" id="${bid}-${i}"${i === sel ? ' class="sel" aria-selected="true"' : ' aria-selected="false"'}><span>${h.f ? window.atlasFlag(h.f) : ""}${esc(h.t)}</span><span class="k">${esc(h.k)}${h.s ? " · " + esc(h.s) : ""}</span></a>`).join("")
         || (input.value.trim() ? '<a aria-disabled="true"><span class="muted">No matches</span></a>' : "");
-      box.classList.toggle("open", !!input.value.trim());
+      const open = !!input.value.trim();
+      box.classList.toggle("open", open);
+      input.setAttribute("aria-expanded", open);
+      if (sel >= 0) input.setAttribute("aria-activedescendant", `${bid}-${sel}`); else input.removeAttribute("aria-activedescendant");
     };
     input.addEventListener("focus", loadIndex, { once: true });
     input.addEventListener("input", async () => { hits = search(await loadIndex(), input.value); sel = -1; draw(); });
@@ -118,7 +155,7 @@
       if (e.key === "ArrowDown") { sel = Math.min(sel + 1, hits.length - 1); draw(); e.preventDefault(); }
       else if (e.key === "ArrowUp") { sel = Math.max(sel - 1, 0); draw(); e.preventDefault(); }
       else if (e.key === "Enter") { const h = hits[sel] || hits[0]; if (h) location.href = h.u; }
-      else if (e.key === "Escape") { box.classList.remove("open"); }
+      else if (e.key === "Escape") { if (box.classList.contains("open")) { box.classList.remove("open"); input.setAttribute("aria-expanded", "false"); } else { input.value = ""; } }
     });
     document.addEventListener("click", e => { if (!input.parentElement.contains(e.target)) box.classList.remove("open"); });
   }
@@ -251,12 +288,7 @@
   }
   const loadGeo = () => geoPromise || (geoPromise = fetch("/geo/countries.json").then(r => r.json()));
   const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  const fmtNum = v => {
-    const a = Math.abs(v);
-    if (a >= 1e12) return (v / 1e12).toFixed(1) + " tn"; if (a >= 1e9) return (v / 1e9).toFixed(1) + " bn";
-    if (a >= 1e6) return (v / 1e6).toFixed(1) + " m"; if (a >= 1e4) return Math.round(v / 1e3) + "k";
-    if (a >= 100) return Math.round(v).toLocaleString("en"); return (+v.toFixed(2)).toString();
-  };
+  const fmtNum = v => NF.label(v);
   window.atlasFmt = fmtNum;
 
   function colorExpr(values, lowerBetter) {
@@ -354,10 +386,7 @@
     }
   });
   addEventListener("scroll", check, { passive: true }); setTimeout(check, 1500);
-  document.addEventListener("click", e => $$(".nav-more[open]").forEach(d => { if (!d.contains(e.target)) d.open = false; }));
-  document.addEventListener("keydown", e => { if (e.key === "Escape") $$(".nav-more[open]").forEach(d => { const inside = d.contains(document.activeElement); d.open = false; if (inside) d.querySelector("summary")?.focus(); }); });
-  // one menu open at a time
-  $$(".nav-more").forEach(d => d.addEventListener("toggle", () => { if (d.open) $$(".nav-more[open]").forEach(o => { if (o !== d) o.open = false; }); }));
+
   document.addEventListener("themechange", () => $$("[data-map]").forEach(el => { if (el._map) renderMap(el, el._values, { lowerBetter: el._lowerBetter, label: el._label }); }));
 
   function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }

@@ -48,7 +48,7 @@
       if (!tip) return;
       tip.style.display = "block";
       tip.style.left = Math.min(e.point.x + 14, el.clientWidth - 220) + "px"; tip.style.top = (e.point.y + 14) + "px";
-      tip.innerHTML = `<b>${esc(p.c)}</b><br>${(+p.d).toLocaleString("en")} deaths in ${p.n} event${p.n == 1 ? "" : "s"}<br><span class="muted">${TYPES[p.t] ? TYPES[p.t][0] : ""}</span>`;
+      tip.innerHTML = `<b>${esc(p.c)}</b><br>${NF.int(+p.d)} deaths in ${p.n} event${p.n == 1 ? "" : "s"}<br><span class="muted">${TYPES[p.t] ? TYPES[p.t][0] : ""}</span>`;
       map.getCanvas().style.cursor = "pointer";
     });
     map.on("mouseleave", "ev", () => { if (tip) tip.style.display = "none"; map.getCanvas().style.cursor = ""; });

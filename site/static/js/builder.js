@@ -107,7 +107,7 @@
       const d = r.rank && capRank[r.entity_id] ? capRank[r.entity_id] - r.rank : null;
       return `<tr${r.rank ? "" : ' class="excluded"'}><td class="num rank" data-v="${r.rank || 9999}">${r.rank ? (r.is_tied ? "=" : "") + r.rank : "—"}</td>
         <td>${window.atlasFlag(iso2[r.entity_id])}<a href="/countries/${slug[r.entity_id]}/">${esc(name[r.entity_id])}</a>${r.rank ? "" : ' <span class="muted small">· insufficient data</span>'}</td>
-        <td class="num" data-v="${r.score ?? ""}"><b>${r.score === null ? "—" : r.score.toFixed(1)}</b></td>
+        <td class="num" data-v="${r.score ?? ""}"><b>${r.score === null ? "—" : NF.value(r.score, 1)}</b></td>
         <td class="num" data-v="${r.coverage}">${Math.round(r.coverage * 100)}%</td>
         <td class="num small" data-band="${r.entity_id}"></td>
         <td class="small">${d === null ? '<span class="muted">·</span>' : d > 0 ? `<span class="mv up">▲${d}</span>` : d < 0 ? `<span class="mv down">▼${-d}</span>` : '<span class="muted">=</span>'}</td></tr>`;

@@ -35,8 +35,8 @@
   function fmtVal(v, ind) {
     if (v === undefined) return '<span class="muted">—</span>';
     const d = ind.decimals ?? 2;
-    const num = Math.abs(v.value) >= 1e6 ? f(v.value) : v.value.toLocaleString("en", { maximumFractionDigits: d, minimumFractionDigits: d });
-    return `${ind.unit.startsWith("current US$") && !ind.unit.endsWith("person") ? "$" : ""}${num} <span class="muted small">${v.year}</span>${v.status === "estimate" ? ' <span class="chip"><span class="st">EST</span></span>' : ""}`;
+    const num = NF.value(v.value, d, ind.unit);
+    return `${num} <span class="muted small">${v.year}</span>${v.status === "estimate" ? ' <span class="chip"><span class="st">EST</span></span>' : ""}`;
   }
 
   async function render() {

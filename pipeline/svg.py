@@ -26,17 +26,9 @@ def _nice_ticks(lo: float, hi: float, n: int = 4) -> list[float]:
 
 
 def compact(v: float, decimals: int = 1) -> str:
-    a = abs(v)
-    if a == 0:
-        return "0"
-    for div, suf in ((1e12, " tn"), (1e9, " bn"), (1e6, " m"), (1e4, "k")):
-        if a >= div:
-            if suf == "k":
-                return f"{v/1e3:,.0f}k"
-            return f"{v/div:,.{decimals}f}{suf}"
-    if a >= 100:
-        return f"{v:,.0f}"
-    return f"{v:,.{decimals}f}"
+    """Chart labels: the shared numfmt.scale rules."""
+    from .numfmt import scale
+    return scale(v, decimals)
 
 
 def sparkline(points: list[tuple[int, float]], w: int = 120, h: int = 32, label: str = "") -> str:

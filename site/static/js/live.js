@@ -26,7 +26,7 @@
     const v = estimate(base, Date.now());
     for (const f of fields) {
       const x = v[f.dataset.live];
-      if (x !== null && x !== undefined) f.textContent = Math.round(x).toLocaleString("en");
+      if (x !== null && x !== undefined) f.textContent = window.NF ? NF.int(x) : Math.round(x).toLocaleString("en");
     }
   };
   tick();
