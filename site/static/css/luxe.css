@@ -651,3 +651,5 @@ table thead th, .table-wrap thead th, table th[scope=row] { color: var(--text-2)
 .t-low { color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
 .trust-only tr[data-trust="mixed"] { display: none; }
 .coverage-line { margin: 2px 0 0; color: var(--text-2); }
+/* small labels stay at least 12px (legible font sizes) */
+.trust, .old-badge, .mv, .pill, .why-btn { font-size: .75rem; }
