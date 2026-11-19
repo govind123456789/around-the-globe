@@ -2,7 +2,10 @@
 (() => {
   const data = document.getElementById("why-data");
   if (!data) return;
-  const why = JSON.parse(data.textContent), composite = data.dataset.kind === "original_composite";
+  const composite = data.dataset.kind === "original_composite";
+  let why = null;
+  const load = () => why ? Promise.resolve(why) : fetch(data.dataset.src).then(r => r.json()).then(d => (why = d));
+  document.querySelectorAll(".why-btn").forEach(b => { b.type = "button"; b.setAttribute("aria-expanded", "false"); b.setAttribute("aria-controls", "why-" + b.dataset.why); });
   const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   function body(w) {
     if (composite) {
@@ -22,9 +25,10 @@
     return `<p class="small">Value ${esc(w.v)}${w.y ? " (" + w.y + ")" : ""}.${near ? " " + near + "." : ""}</p>
       ${h.length ? `<p class="small muted">Rank among the countries with data for each year: ${h.map(x => `${x[0]}: ${x[1]} of ${x[2]}`).join(" · ")}</p>${spark}` : ""}`;
   }
-  document.addEventListener("click", e => {
+  document.addEventListener("click", async e => {
     const b = e.target.closest(".why-btn");
     if (!b) return;
+    try { await load(); } catch (err) { return; }
     const open = b.getAttribute("aria-expanded") === "true", cell = b.closest("td");
     document.querySelectorAll('.why-btn[aria-expanded="true"]').forEach(x => { if (x !== b) { x.setAttribute("aria-expanded", "false"); x.closest("td").querySelector(".why-box")?.remove(); } });
     if (open) { b.setAttribute("aria-expanded", "false"); cell.querySelector(".why-box")?.remove(); return; }

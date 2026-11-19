@@ -39,10 +39,10 @@
 <h2>Latest value by country</h2>
 <div class="table-wrap">
   <table id="ind-table" data-sortable>
-    <thead><tr><th class="num sortable" data-type="num">#</th><th class="sortable" data-type="text">Country</th><th class="num sortable" data-type="num">{{ ind.name }}</th><th class="num sortable" data-type="num">Year</th></tr></thead>
+    <thead><tr><th class="num sortable" data-type="num">#</th><th class="sortable" data-type="text">Country</th><th class="num sortable" data-type="num">{{ ind.name }}</th></tr></thead>
     <tbody>
     {% for x in latest %}
-      <tr><td class="num muted" data-v="{{ loop.index }}">{{ loop.index }}</td><td>{{ flag(x.e.entity_id) }}<a href="/countries/{{ x.e.slug }}/">{{ x.e.name }}</a></td><td class="num" data-v="{{ x.value }}">{{ x.value|fmt(ind.decimals, ind.unit) }}{% if x.status == 'estimate' %} <span class="chip"><span class="st">EST</span></span>{% endif %}</td><td class="num" data-v="{{ x.year }}"><span{% if x.year < 2019 %} class="stale"{% endif %}>{{ x.year }}</span></td></tr>
+      <tr><td class="num muted" data-v="{{ loop.index }}">{{ loop.index }}</td><td>{{ flag(x.e.entity_id) }}<a href="/countries/{{ x.e.slug }}/">{{ x.e.name }}</a></td><td class="num" data-v="{{ x.value }}">{{ x.value|fmt(ind.decimals, ind.unit) }}{{ m.sb(ind, x.year, x.status or 'measured') }}</td></tr>
     {% endfor %}
     </tbody>
   </table>

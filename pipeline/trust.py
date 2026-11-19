@@ -26,9 +26,10 @@ def level(source: str, year: int | None, release_year: int, status: str | None =
     lag = src.get("lag", c["freshness"]["default_lag"])
     reasons, points, forced_low = [], 0, False
     if year is None:
-        return {"level": "low", **_lv(c, "low"), "points": None, "reasons": ["No data year"]}
+        return {"level": "low", **_lv(c, "low"), "points": None, "age": "none", "reasons": ["No data year"]}
     age = release_year - year
     over = age - lag
+    age_band = "old" if over > c["freshness"]["old_after"] else "aging" if over > c["freshness"]["aging_after"] else "recent"
     if over > c["freshness"]["old_after"]:
         forced_low = True
         reasons.append(f"Data from {year}: {age} years old, well past this source's usual {lag}-year lag")
@@ -50,7 +51,7 @@ def level(source: str, year: int | None, release_year: int, status: str | None =
         key = "medium"
     else:
         key = "high"
-    return {"level": key, **_lv(c, key), "points": points, "reasons": reasons}
+    return {"level": key, **_lv(c, key), "points": points, "age": age_band, "lag": lag, "type": src["type"], "reasons": reasons}
 
 
 def _lv(c: dict, key: str) -> dict:

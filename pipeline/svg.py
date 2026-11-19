@@ -246,3 +246,40 @@ def static_map(values: dict, isos: list[str], lower_better: bool = False, label:
                    for i in isos)
     return (f'<svg class="map-static" viewBox="{x} {y} {w} {h}" preserveAspectRatio="xMidYMid meet" aria-hidden="true" '
             f'focusable="false">{uses}</svg>')
+
+
+def pair_spark(series: list[list[tuple[int, float]]], years: int = 20, w: int = 72, h: int = 18) -> str:
+    """Two tiny overlaid lines (the last `years` years with data) on a shared scale, for a comparison row."""
+    pts = [[(y, v) for y, v in s if v is not None] for s in series]
+    ends = [s[-1][0] for s in pts if s]
+    if not ends or sum(1 for s in pts if len(s) > 1) == 0:
+        return ""
+    last = max(ends)
+    first = last - years + 1
+    pts = [[(y, v) for y, v in s if y >= first] for s in pts]
+    vals = [v for s in pts for _, v in s]
+    lo, hi = min(vals), max(vals)
+    span = (hi - lo) or 1
+    out = []
+    for i, s in enumerate(pts):
+        if len(s) < 2:
+            continue
+        p = " ".join(f"{round((y - first) * (w - 2) / max(1, years - 1)) + 1},{round(h - 2 - (v - lo) * (h - 4) / span) + 1}" for y, v in s)
+        out.append(f'<polyline class="s{i + 1}" points="{p}"/>')
+    return f'<svg class="pspark" viewBox="0 0 {w} {h}" width="{w}" height="{h}" aria-hidden="true">{"".join(out)}</svg>'
+
+
+def pair_spark_data(series: list[list[tuple[int, float]]], years: int = 20) -> str:
+    """Compact form of pair_spark for the browser to draw: "x:y,x:y|x:y,..." with x the year offset (0-19)
+    and y scaled 0-15 on a shared scale. Empty when there is nothing to draw."""
+    pts = [[(y, v) for y, v in s if v is not None] for s in series]
+    ends = [s[-1][0] for s in pts if s]
+    if not ends:
+        return ""
+    first = max(ends) - years + 1
+    pts = [[(y, v) for y, v in s if y >= first] for s in pts]
+    vals = [v for s in pts for _, v in s]
+    if not vals or all(len(s) < 2 for s in pts):
+        return ""
+    lo, span = min(vals), (max(vals) - min(vals)) or 1
+    return "|".join(",".join(f"{y - first}:{round((v - lo) * 15 / span)}" for y, v in s) for s in pts)

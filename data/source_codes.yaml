@@ -1,0 +1,26 @@
+# Short codes for source badges ("WB · 2023"), one place for every page. The popover shows the full name.
+codes:
+  wb-wdi: WB
+  wb-wgi: WB WGI
+  un-wpp: UN
+  undp-hdr: UNDP
+  ti-cpi: TI
+  oecd: OECD
+  gdelt: GDELT
+  v-dem: V-Dem
+  ember: Ember
+  ilostat: ILO
+  faostat: FAO
+  factbook: CIA
+  ucdp: UCDP
+  unhcr: UNHCR
+  unvotes: UN votes
+  fas: FAS
+  ofac: OFAC
+  openalex: OpenAlex
+  ghsl: GHSL
+  datagovin: data.gov.in
+  wikidata: Wikidata
+  maddison: Maddison
+  cliopatria: Cliopatria
+  natural-earth: NE

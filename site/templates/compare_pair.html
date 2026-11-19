@@ -9,12 +9,12 @@
   <h1>{{ a.name }} vs {{ b.name }}</h1>
   <p class="lede">Side by side on every indicator, using each country’s latest available value. Where the data years differ, that is flagged.</p>
   {% if summary %}<p class="auto-summary">{{ summary|join(' ') }}</p>{% endif %}
-  <div class="btns"><a class="btn sm" href="/compare/#c={{ a.entity_id }},{{ b.entity_id }}">Add more countries</a><button class="btn ghost sm" data-csv="pair-table" data-csv-name="{{ a.slug }}-vs-{{ b.slug }}.csv">Download CSV</button><button class="btn ghost sm" data-share>Copy link</button></div>
+  <div class="btns"><a class="btn sm" href="/compare/#c={{ a.entity_id }},{{ b.entity_id }}">Add another country</a><button class="btn ghost sm" data-csv="pair-table" data-csv-name="{{ a.slug }}-vs-{{ b.slug }}.csv">Download CSV</button><button class="btn ghost sm" data-share>Copy link</button></div>
 </div>
 
 <h2>Rankings</h2>
 <div class="table-wrap">
-<table>
+<table class="cmp-ranks">
   <thead><tr><th>Ranking</th><th class="num">{{ flag(a.entity_id) }}{{ a.name }}</th><th class="num">{{ flag(b.entity_id) }}{{ b.name }}</th></tr></thead>
   <tbody>
   {% for rid, r in rankings.items() %}
@@ -34,41 +34,45 @@
 </details>
 {% for rid, r in rankings.items() if r.kind == 'original_composite' %}{{ m.method(r, indicators, title='How the ' ~ r.name ~ ' is calculated') }}{% endfor %}
 
-<h2>Trends</h2>
-<div class="grid g2">
-  {% for ind, chart in charts %}<div class="card"><h3><a href="/data/indicators/{{ ind.id }}/">{{ ind.name }}</a> <span class="muted small">{{ ind.unit }}</span></h3>{{ chart|safe }}</div>{% endfor %}
+<h2 id="indicators">All indicators</h2>
+{% set all_items = rows|sum(attribute='items', start=[]) %}
+<div class="cmp-sticky">
+  <div class="cmp-names" aria-hidden="true"><span class="c1">{{ flag(a.entity_id) }}{{ a.name }}</span><span class="vs">vs</span><span class="c2">{{ flag(b.entity_id) }}{{ b.name }}</span></div>
+  <div class="cmp-tabs" role="tablist" aria-label="Indicator sections" hidden>
+    <button type="button" role="tab" id="tab-overview" aria-selected="true" aria-controls="pair-panel" data-tab="overview">Overview</button>
+    {% for d in rows %}<button type="button" role="tab" id="tab-{{ d.dim.id }}" aria-selected="false" aria-controls="pair-panel" data-tab="{{ d.dim.id }}" tabindex="-1">{{ d.dim.name }}</button>{% endfor %}
+    <button type="button" role="tab" id="tab-all" aria-selected="false" aria-controls="pair-panel" data-tab="all" tabindex="-1">All</button>
+  </div>
 </div>
-
-<h2>All indicators</h2>
-{% set n_old = rows|sum(attribute='items', start=[])|selectattr('all_old')|list|length %}
-<p class="small"><label><input type="checkbox" data-trust-only> Only rows where every value is high-trust</label> · <a href="/methodology/trust/">How trust levels work</a></p>
-{% if n_old %}<p class="small muted old-toggle-row">{{ n_old }} indicator{{ 's' if n_old != 1 }} where every value is from before {{ old_before }} {{ 'are' if n_old != 1 else 'is' }} hidden. <button type="button" class="linklike" data-old-toggle aria-controls="pair-table" aria-expanded="false">Show older data</button></p>{% endif %}
-<div class="table-wrap hide-old">
-<table id="pair-table">
-  <thead><tr><th>Indicator</th><th class="num">{{ flag(a.entity_id) }}{{ a.name }}</th><th class="num">{{ flag(b.entity_id) }}{{ b.name }}</th><th>Source</th></tr></thead>
+<div class="cmp-tools">
+  <label class="field cmp-find">Find<input type="search" data-cmp-q placeholder="Indicator…" aria-label="Find an indicator" autocomplete="off"></label>
+  <label><input type="checkbox" data-cmp-big> Only big differences</label>
+  <label><input type="checkbox" data-cmp-stale checked> Hide stale data</label>
+  <label><input type="checkbox" data-cmp-trust> Only high-trust values</label>
+  <span class="small muted" data-cmp-count aria-live="polite"></span>
+</div>
+<p class="small muted cmp-legend">The country ahead on each indicator is in bold, by its own direction (higher or lower is better); neutral indicators have no leader. The bar shows the gap relative to the larger value. Trend lines cover up to 20 years: <span class="k1">■ {{ a.name }}</span> <span class="k2">■ {{ b.name }}</span>. Stale means older than {{ old_before }}. <a href="/methodology/trust/">Trust levels</a></p>
+<div class="table-wrap hide-old" id="pair-panel" role="tabpanel" aria-labelledby="tab-overview">
+<table id="pair-table" class="cmp-table">
+  <thead><tr><th scope="col">Indicator</th><th scope="col" class="num">{{ a.name }}</th><th scope="col" class="gapcol"><span class="sr-only">Gap</span></th><th scope="col" class="num">{{ b.name }}</th><th scope="col" class="sparkcol">Trend</th></tr></thead>
   {% for d in rows %}
-  <tbody>
-    <tr><th colspan="4" style="position:static">{{ d.dim.name }}</th></tr>
+  <tbody data-dim="{{ d.dim.id }}">
+    <tr class="dim-row"><th colspan="5" scope="rowgroup">{{ d.dim.name }}</th></tr>
     {% for it in d['items'] %}
-    {% set lv = [] %}{% for v in it.vals if v %}{% set _ = lv.append(trust_of(it.ind.source, v[0], v[2] if v|length > 2 else 'measured').level) %}{% endfor %}
-    <tr{% if it.all_old %} class="old-row"{% endif %} data-trust="{{ 'high' if lv and lv|reject('equalto', 'high')|list|length == 0 else 'mixed' }}">
-      <td><a href="/data/indicators/{{ it.ind.id }}/">{{ it.ind.name }}</a> <span class="muted small">{{ it.ind.unit|unit_short }}</span>{% if it.years_differ %} <span class="small stale" title="The two values are from different years">⚠ years differ</span>{% endif %}</td>
-      {% for v in it.vals %}<td class="num{% if it.old[loop.index0] %} old-val{% endif %}">{% if v %}{{ v[1]|fmt(it.ind.decimals, it.ind.unit) }} {% if it.old[loop.index0] %}<span class="old-badge" title="Older than {{ site.stale_after_years or 10 }} years">data from {{ v[0] }}</span>{% else %}<span class="muted small">{{ v[0] }}</span>{% endif %} {{ m.trust_badge(trust_of(it.ind.source, v[0], v[2] if v|length > 2 else 'measured')) }}{% else %}<span class="muted">—</span>{% endif %}</td>{% endfor %}
-      <td>{{ m.chip(it.chip) }}</td>
+    {% set lv = [] %}{% for v in it.vals if v %}{% set _ = lv.append(pv_level(pv(it.ind.id, v[0], v[2] if v|length > 2 else 'measured'))) %}{% endfor %}
+    <tr class="ind-row{% if it.all_old %} old-row{% endif %}" data-name="{{ it.ind.name|lower }}"{% if it.head %} data-head{% endif %}{% if it.big %} data-big{% endif %}{% if it.all_old %} data-stale{% endif %} data-trust="{{ 'high' if lv and lv|reject('equalto', 'high')|list|length == 0 else 'mixed' }}">
+      <td class="ind-name"><a href="/data/indicators/{{ it.ind.id }}/">{{ it.ind.name }}</a> <span class="muted small">{{ it.ind.unit|unit_short }}</span>{% if it.years_differ %} <span class="small stale yd-flag">⚠ years differ</span>{% endif %}</td>
+      {% for v in it.vals %}{% set k = loop.index0 %}<td class="num val v{{ k + 1 }}{% if it.lead == k %} lead{% endif %}{% if it.old[k] %} old-val{% endif %}" data-label="{{ ents[k].name }}">{% if v %}<span class="n">{{ v[1]|fmt(it.ind.decimals, it.ind.unit) }}</span>{% if it.lead == k %}<span class="sr-only"> (ahead)</span>{% endif %}{{ m.sb(it.ind, v[0], v[2] if v|length > 2 else 'measured', it.years_differ) }}{% else %}<span class="muted">—</span>{% endif %}</td>
+      {% if k == 0 %}<td class="gapcol">{% if it.gap is not none %}<span class="gapbar"><i class="{{ 'l' if it.lead == 0 else 'r' if it.lead == 1 else 'n' }}" style="width:{{ '%.0f'|format([it.gap, 1]|min * 50) }}%"></i></span>{% endif %}</td>{% endif %}{% endfor %}
+      <td class="sparkcol"{% if it.spark %} data-sp="{{ it.spark }}"{% endif %}></td>
     </tr>
     {% endfor %}
   </tbody>
   {% endfor %}
 </table>
 </div>
+<noscript><p class="small muted">Without JavaScript every section is shown; rows where every value is older than {{ old_before }} are hidden.</p></noscript>
 {% if related %}<div class="section-head"><h2>Related comparisons</h2><a href="/compare/popular/">All popular comparisons →</a></div>
 <div class="peers">{% for q in related %}<a href="{{ q.url }}">{{ q.a.name }} vs {{ q.b.name }}</a>{% endfor %}</div>{% endif %}
-<script>
-document.querySelector("[data-trust-only]")?.addEventListener("change", e => document.getElementById("pair-table").classList.toggle("trust-only", e.target.checked));
-document.querySelectorAll("[data-old-toggle]").forEach(b => b.addEventListener("click", () => {
-  const w = document.getElementById(b.getAttribute("aria-controls")).closest(".table-wrap");
-  const show = w.classList.toggle("hide-old") === false;
-  b.setAttribute("aria-expanded", show); b.textContent = show ? "Hide older data" : "Show older data";
-}));
-</script>
+<script src="/static/js/compare-pair.js?v={{ asset_v }}" defer></script>
 {% endblock %}

@@ -26,6 +26,10 @@ SOURCE_SHORT = {"un-wpp": "UN WPP", "wb-wgi": "World Bank WGI", "wb-wdi": "World
 NE_FIX = {"KOS": "XKX", "SDS": "SSD", "PSX": "PSE", "SAH": "ESH", "JEY": "CHI", "GGY": "CHI"}  # WB reports the Channel Islands as one
 
 
+# the comparison page's Overview tab: 12 headline indicators
+HEADLINE = ("gdp-per-capita-ppp", "gdp", "population", "life-expectancy", "hdi", "gdp-growth", "unemployment",
+            "internet-users", "co2-per-capita", "expected-schooling", "inflation", "urban-share")
+
 CSS_BUNDLE = ("fonts.css", "app.css", "atlas.css", "luxe.css")      # order matters: later files override
 
 
@@ -92,6 +96,42 @@ class Site:
         _ry = int(model.release[:4])
         self.env.globals["trust_of"] = lambda src, year, status="measured": trust.level(src, year, _ry, status)
         self.env.globals["trust_cfg"] = trust.cfg()
+        # Source badges: each page registers the values it shows (pv), and one compact provenance table is
+        # written at the end of the page (prov_json); prov.js builds the popover from it.
+        self.src_codes = load_yaml("source_codes.yaml")["codes"]
+        self.env.globals["SRC_CODE"] = self.src_codes
+        self.env.globals["IND"] = model.indicators
+        self._pv, self._pvl = {}, []
+
+        def pv(ind_id, year, status="measured"):
+            key = (ind_id, year, status or "measured")
+            if key not in self._pv:
+                ind = model.indicators[ind_id]
+                t = trust.level(ind["source"], year, _ry, status or "measured")
+                self._pv[key] = len(self._pvl)
+                self._pvl.append([ind_id, year, {"estimate": "e", "forecast": "f"}.get(status or "", "m"), t["level"][0], t["age"][0]])
+            return self._pv[key]
+        self.env.globals["pv"] = pv
+        self.env.globals["pv_level"] = lambda k: {"h": "high", "m": "medium", "l": "low"}[self._pvl[k][3]]
+
+        def prov_json():
+            if not self._pvl:
+                return ""
+            inds = sorted({v[0] for v in self._pvl})
+            used = {model.indicators[i]["source"] for i in inds}
+            tc = trust.cfg()
+            note = lambda ind: (ind["definition"][:160] if ind.get("status") == "estimate" or ind["source"] == "factbook" else "")
+            data = {
+                "i": {i: [model.indicators[i]["name"], model.indicators[i].get("code") or "", model.indicators[i]["source"],
+                          (model.indicators[i].get("_retrieved_at") or "")[:10], note(model.indicators[i])] for i in inds},
+                "s": {s: [model.sources[s]["publisher"] if s in model.sources else s, model.sources.get(s, {}).get("url", ""),
+                          model.sources.get(s, {}).get("licence", ""), model.sources.get(s, {}).get("licence_url", ""),
+                          tc["source_types"][(tc["sources"].get(s) or tc["sources"]["site"])["type"]]["label"],
+                          (tc["sources"].get(s) or {}).get("lag", tc["freshness"]["default_lag"]), self.src_codes.get(s, s)] for s in used},
+                "v": self._pvl, "r": int(_ry)}
+            self._pv, self._pvl = {}, []
+            return Markup('<script type="application/json" id="prov-data">' + json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c") + "</script>")
+        self.env.globals["prov_json"] = prov_json
         flags = {p.stem for p in (SITE / "static" / "flags").glob("*.svg")}
 
         def flag(iso3: str, eager: bool = False) -> Markup:
@@ -228,6 +268,7 @@ class Site:
 
     def render(self, url: str, template: str, sitemap: bool = True, **ctx) -> None:
         ctx.setdefault("og_image", "/og/default.png")
+        self._pv, self._pvl = {}, []
         html = self.env.get_template(template).render(url=url, **ctx)
         path = DIST / url.strip("/") / "index.html" if url.endswith("/") else DIST / url.lstrip("/")
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -245,7 +286,7 @@ class Site:
         s = self.src(ind_id)
         short = SOURCE_SHORT.get(s["source_id"], s["publisher"])
         return {"src": short, "year": year, "status": status, "licence": s["licence"],
-                "url": f"/data/sources/#{s['source_id']}"}
+                "url": f"/data/sources/#{s['source_id']}", "ind": ind_id}
 
     def ranking_rows(self, r: dict) -> list[dict]:
         rows = []
@@ -718,6 +759,9 @@ class Site:
                 chip = None
             self.ranking_extras(r, rows)
             why = self.why_data(r)
+            if why:
+                (DIST / "rankings" / r["ranking_id"]).mkdir(parents=True, exist_ok=True)
+                (DIST / "rankings" / r["ranking_id"] / "why.json").write_text(json.dumps(why, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
             self.render(f"/rankings/{r['ranking_id']}/", "ranking.html", og_image=f"/og/rankings/{r['ranking_id']}.png", r=r, rows=rows, pillars=pillars,
                         ind=ind_meta, chip=chip, regions=regions, incomes=incomes,
                         map_values=self.map_values(r), hdi_check=self.m.hdi_check,
@@ -753,6 +797,17 @@ class Site:
         n = sum(len(v) for v in moves.values())
         print(f"  rank changes since {prev.date}: {n} across {len(moves)} rankings")
         return moves, hist, prev.date
+
+    def world_rank(self, ind_id: str, eid: str):
+        """(rank, of) of a country's latest value among all countries with data; lower first if lower is better."""
+        if not hasattr(self, "_wr"):
+            self._wr = {}
+        if ind_id not in self._wr:
+            ind = self.m.indicators[ind_id]
+            vals = [(e["entity_id"], lt[1]) for e in self.countries if (lt := self.m.latest(e["entity_id"], ind_id))]
+            vals.sort(key=lambda x: x[1], reverse=ind["direction"] != "lower_better")
+            self._wr[ind_id] = {e: (i + 1, len(vals)) for i, (e, _) in enumerate(vals)}
+        return self._wr[ind_id].get(eid)
 
     def why_data(self, r: dict) -> dict:
         """Per-country explanations for a ranking page, read by why.js when a row's "Why" is opened."""
@@ -819,6 +874,7 @@ class Site:
                 items.append({"ind": ind, "value": v, "year": y, "status": s,
                               "spark": svg.sparkline(pts, label=ind["name"]),
                               "chip": self.chip(ind["id"], y, s), "stale": y < 2019, "very_old": y < self.old_before,
+                              "wr": self.world_rank(ind["id"], e["entity_id"]),
                               "pct": self.pct.get((e["entity_id"], ind["id"]))})
             if items:
                 out.append({"dim": d, "items": items})
@@ -1004,11 +1060,26 @@ class Site:
                     continue
                 years = {v[0] for v in vals if v}
                 old = [bool(v) and v[0] < self.old_before for v in vals]
+                lead = gap = None
+                if all(vals):
+                    a, b = vals[0][1], vals[1][1]
+                    top = max(abs(a), abs(b))
+                    gap = abs(a - b) / top if top else 0.0
+                    if a != b and ind["direction"] in ("higher_better", "lower_better"):
+                        lead = 0 if (a > b) == (ind["direction"] == "higher_better") else 1
                 items.append({"ind": ind, "vals": vals, "years_differ": len(years) > 1, "old": old,
-                              "all_old": all(o for v, o in zip(vals, old) if v),
-                              "chip": self.chip(ind["id"], None)})
+                              "all_old": all(o for v, o in zip(vals, old) if v), "lead": lead, "gap": gap,
+                              "head": ind["id"] in HEADLINE, "big": False,
+                              "spark": svg.pair_spark_data([[(y, v) for y, v, _ in self.m.series(e, ind["id"])] for e in ids])})
             if items:
                 out.append({"dim": d, "items": items})
+        # "big differences": the top quarter of rows by relative gap
+        gaps = sorted(it["gap"] for d in out for it in d["items"] if it["gap"] is not None)
+        if gaps:
+            cut = gaps[int(len(gaps) * 0.75)]
+            for d in out:
+                for it in d["items"]:
+                    it["big"] = it["gap"] is not None and it["gap"] >= cut and it["gap"] > 0
         return out
 
     def compare_pairs(self) -> list[dict]:
@@ -1071,11 +1142,6 @@ class Site:
             ea, eb = p["a"], p["b"]
             ids = [ea["entity_id"], eb["entity_id"]]
             charts = []
-            for ind_id in ("gdp-per-capita-ppp", "hdi", "life-expectancy", "internet-users"):
-                series = [{"label": self.by_id[e]["name"], "points": [(y, v) for y, v, _ in self.m.series(e, ind_id)],
-                           "cls": f"s{i+1}"} for i, e in enumerate(ids)]
-                charts.append((self.ind(ind_id), svg.line_chart(series, self.ind(ind_id)["unit"],
-                               decimals=self.ind(ind_id)["decimals"], title=self.ind(ind_id)["name"])))
             pos = [{p["r"]["ranking_id"]: p for p in self.positions(e)} for e in ids]
             self.render(f"/compare/{ea['slug']}-vs-{eb['slug']}/", "compare_pair.html", ents=[ea, eb],
                         rows=self.compare_rows(ids), charts=charts, pos=pos, rankings=self.rk, indicators=self.m.indicators,

@@ -116,7 +116,9 @@
     <p class="fine">Data release {{ release }} · Data {{ site.data_licence }} · Code {{ site.code_licence }} · Values carry their source’s licence. Boundaries: Natural Earth. Composite indices are the platform’s own and are not official statistics.</p>
   </div>
 </footer>
+{{ prov_json() }}
 <script src="/static/js/app.js?v={{ asset_v }}" defer></script>
+<script src="/static/js/prov.js?v={{ asset_v }}" defer></script>
 <script src="/static/js/motion.js?v={{ asset_v }}" defer></script>
 <script src="/static/js/i18n.js?v={{ asset_v }}" defer></script>
 {% if site.cloudflare_analytics_token %}<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "{{ site.cloudflare_analytics_token }}"}'></script>{% endif %}

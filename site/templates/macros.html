@@ -1,5 +1,5 @@
 {% macro chip(c) -%}
-<a class="chip" href="{{ c.url }}" title="Source: {{ c.src }} · licence {{ c.licence }}{% if c.year %} · data year {{ c.year }}{% endif %}">{{ c.src }}{% if c.year %} · {{ c.year }}{% endif %}{% if c.status and c.status != 'measured' %} · <span class="st">{{ 'EST' if c.status == 'estimate' else c.status|upper }}</span>{% endif %}</a>
+{% if c.ind and c.year and c.ind in IND %}{{ sb(IND[c.ind], c.year, c.status or 'measured') }}{% else %}<a class="chip" href="{{ c.url }}" title="Source: {{ c.src }} · licence {{ c.licence }}{% if c.year %} · data year {{ c.year }}{% endif %}">{{ c.src }}{% if c.year %} · {{ c.year }}{% endif %}{% if c.status and c.status != 'measured' %} · <span class="st">{{ 'EST' if c.status == 'estimate' else c.status|upper }}</span>{% endif %}</a>{% endif %}
 {%- endmacro %}
 
 {% macro kind_badge(r) -%}
@@ -69,4 +69,8 @@
 
 {% macro trust_badge(t) -%}
 <span class="trust t-{{ t.level }}" title="Trust: {{ t.label }}. {{ t.reasons|join('. ') }}."><span aria-hidden="true">{{ t.icon }}</span> {{ t.label }}<span class="sr-only"> trust: {{ t.reasons|join('; ') }}</span></span>
+{%- endmacro %}
+
+{% macro sb(ind, year, status='measured', differ=False) -%}
+{% if year %}{% set k = pv(ind.id, year, status) %}<button class="sb {{ pv_level(k)[0] }}{% if differ %} yd{% endif %}" data-p="{{ k }}">{{ SRC_CODE.get(ind.source, ind.source) }} · {{ year }}</button>{% endif %}
 {%- endmacro %}
