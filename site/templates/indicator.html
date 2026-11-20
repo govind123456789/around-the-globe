@@ -34,6 +34,17 @@
     <p class="small muted" style="display:flex;justify-content:space-between;margin:2px 0 0"><span>2000</span><span>{{ latest_year }}</span></p>
   </div>
 </div>
+{% if recon_rows %}
+<h2 id="sources-compared">Sources compared</h2>
+<div class="card">
+  <p class="small">{{ RECON_CFG.indicators[ind.id].why }}</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Country</th><th class="num">Year</th><th class="num">World Bank</th><th class="num">UN</th><th class="num">Difference</th></tr></thead>
+    <tbody>{% for r in recon_rows %}<tr><td>{{ flag(r.iso) }}{{ ename(r.iso) }}</td><td class="num">{{ r.year }}</td><td class="num">{{ r.primary|fmt(ind.decimals, ind.unit) }}</td><td class="num">{{ r.alt|fmt(ind.decimals, ind.unit) }}</td><td class="num">{{ '%+.1f'|format(r.diff) }}%{% if r.flag %} <span class="small stale">disagree</span>{% endif %}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  <p class="small muted">The ten largest differences. The site’s values stay the World Bank’s. UN: {{ alt_src.attribution_text }} ({{ alt_src.licence }}). <a href="/data/reconciliation/#{{ ind.id }}">All countries →</a></p>
+</div>
+{% endif %}
 <h2>Six most populous countries</h2>
 <div class="card">{{ chart|safe }}</div>
 <h2>Latest value by country</h2>

@@ -109,10 +109,35 @@
     for (const it of items) if (it.k === "Country") { const s = score(it, q); if (s > bs) { bs = s; best = it; } }
     return bs >= 30 ? best : null;
   }
+  // "#rankings gdp" filters to one type; the tag matches the type name or its plural
+  const TYPE_TAGS = { country: "Country", countries: "Country", ranking: "Ranking", rankings: "Ranking", indicator: "Indicator",
+    indicators: "Indicator", compare: "Compare", comparisons: "Compare", geopolitics: "Geopolitics", tools: "Tool", tool: "Tool",
+    reports: "Report", report: "Report", markets: "Market", market: "Market", cities: "City", city: "City" };
   function search(items, raw) {
-    const q = norm(raw.trim());
+    let q = norm(raw.trim());
     if (!q) return [];
+    const tag = /^#(\w+)\s*(.*)$/.exec(q);
+    if (tag && TYPE_TAGS[tag[1]]) {
+      const k = TYPE_TAGS[tag[1]], pool = items.filter(it => it.k === k);
+      if (!tag[2]) return pool.slice(0, 20);
+      items = pool; q = tag[2];
+    }
     const out = [];
+    // "gdp india": a ranking plus a country opens that ranking with the country highlighted
+    const words = q.split(/\s+/);
+    if (words.length >= 2 && !/\b(vs\.?|versus)\b/.test(q)) {
+      for (const cut of [1, words.length - 1]) {
+        const [a, b] = [words.slice(0, cut).join(" "), words.slice(cut).join(" ")];
+        for (const [cq, rq] of [[b, a], [a, b]]) {
+          const c = bestCountry(items, cq);
+          if (!c) continue;
+          let best = null, bs = 0;
+          for (const it of items) if (it.k === "Ranking") { const s = score(it, rq); if (s > bs) { bs = s; best = it; } }
+          if (best && bs >= 40) { out.push({ t: `${best.t}: where ${c.t} ranks`, u: `${best.u}?hl=${c.a}`, k: "Ranking", f: c.f, s: c.t }); break; }
+        }
+        if (out.length) break;
+      }
+    }
     // "india vs" (or "india vs ch"): that country's comparison pages first
     const half = /^(.+?)\s+(?:vs\.?|versus|v)(?:\s+(.*))?$/.exec(q);
     if (half && !half[2]?.includes(",")) {
@@ -141,23 +166,39 @@
     input.setAttribute("role", "combobox"); input.setAttribute("aria-autocomplete", "list");
     input.setAttribute("aria-controls", bid); input.setAttribute("aria-expanded", "false");
     let sel = -1, hits = [];
+    const palette = !!input.closest("#search-dialog");
+    const opt = (h, i) => `<a href="${h.u}" role="option" id="${bid}-${i}"${i === sel ? ' class="sel" aria-selected="true"' : ' aria-selected="false"'}><span>${h.f ? window.atlasFlag(h.f) : `<i class="ty ty-${esc((h.k || "").toLowerCase())}" aria-hidden="true"></i>`}${esc(h.t)}</span><span class="k">${esc(h.k)}${h.s ? " · " + esc(h.s) : ""}</span></a>`;
     const draw = () => {
-      box.innerHTML = hits.map((h, i) => `<a href="${h.u}" role="option" id="${bid}-${i}"${i === sel ? ' class="sel" aria-selected="true"' : ' aria-selected="false"'}><span>${h.f ? window.atlasFlag(h.f) : ""}${esc(h.t)}</span><span class="k">${esc(h.k)}${h.s ? " · " + esc(h.s) : ""}</span></a>`).join("")
-        || (input.value.trim() ? '<a aria-disabled="true"><span class="muted">No matches</span></a>' : "");
-      const open = !!input.value.trim();
+      if (palette && !input.value.trim()) hits = recent();
+      if (palette && hits.length) {
+        // grouped by type, in the order the types first appear
+        const groups = [], at = {};
+        hits.forEach((h, i) => { const k = !input.value.trim() ? "Recent" : h.k; if (!(k in at)) { at[k] = groups.length; groups.push([k, []]); } groups[at[k]][1].push([h, i]); });
+        box.innerHTML = groups.map(([k, list]) => `<div role="group" aria-label="${esc(k)}"><p class="sr-group" aria-hidden="true">${esc(k)}</p>${list.map(([h, i]) => opt(h, i)).join("")}</div>`).join("");
+      } else {
+        box.innerHTML = hits.map(opt).join("") || (input.value.trim() ? '<a aria-disabled="true"><span class="muted">No matches. Try “india vs china”, “gdp india” or “#rankings”.</span></a>' : "");
+      }
+      const open = !!input.value.trim() || (palette && hits.length > 0);
       box.classList.toggle("open", open);
       input.setAttribute("aria-expanded", open);
       if (sel >= 0) input.setAttribute("aria-activedescendant", `${bid}-${sel}`); else input.removeAttribute("aria-activedescendant");
     };
-    input.addEventListener("focus", loadIndex, { once: true });
+    input.addEventListener("focus", () => { loadIndex(); if (palette && !input.value.trim()) { sel = -1; draw(); } });
     input.addEventListener("input", async () => { hits = search(await loadIndex(), input.value); sel = -1; draw(); });
+    box.addEventListener("click", e => { const a = e.target.closest("a[href]"); if (a) remember(hits.find(h => h.u === a.getAttribute("href"))); });
     input.addEventListener("keydown", e => {
       if (e.key === "ArrowDown") { sel = Math.min(sel + 1, hits.length - 1); draw(); e.preventDefault(); }
       else if (e.key === "ArrowUp") { sel = Math.max(sel - 1, 0); draw(); e.preventDefault(); }
-      else if (e.key === "Enter") { const h = hits[sel] || hits[0]; if (h) location.href = h.u; }
+      else if (e.key === "Enter") { const h = hits[sel] || hits[0]; if (h) { remember(h); location.href = h.u; } }
       else if (e.key === "Escape") { if (box.classList.contains("open")) { box.classList.remove("open"); input.setAttribute("aria-expanded", "false"); } else { input.value = ""; } }
     });
     document.addEventListener("click", e => { if (!input.parentElement.contains(e.target)) box.classList.remove("open"); });
+  }
+  // recent destinations, in this browser only (storage can be unavailable: then there are simply none)
+  function recent() { try { return JSON.parse(localStorage.getItem("recent-search") || "[]"); } catch (e) { return []; } }
+  function remember(h) {
+    if (!h) return;
+    try { const r = [h, ...recent().filter(x => x.u !== h.u)].slice(0, 6); localStorage.setItem("recent-search", JSON.stringify(r.map(({ t, u, k, f, s }) => ({ t, u, k, f, s })))); } catch (e) {}
   }
   $$("[data-search]").forEach(wire);
   const dlg = $("#search-dialog");
@@ -166,7 +207,8 @@
   { const q = new URLSearchParams(location.search).get("q");
     if (q && dlg) { openSearch(); const i = $("input", dlg); i.value = q; i.dispatchEvent(new Event("input", { bubbles: true })); } }
   document.addEventListener("keydown", e => {
-    if (e.key === "/" && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { e.preventDefault(); openSearch(); }
+    if ((e.key === "/" && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && !document.activeElement.isContentEditable)
+        || (e.key.toLowerCase() === "k" && (e.metaKey || e.ctrlKey))) { e.preventDefault(); if (dlg && !dlg.open) openSearch(); }
   });
   dlg?.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
 
@@ -197,6 +239,11 @@
     th.addEventListener("keydown", e => { if (e.key === "Enter") sortTable(table, th); });
   });
   $$("table[data-sortable]").forEach(window.atlasSortable);
+  { const hl = new URLSearchParams(location.search).get("hl"), t = $("#ranking-table");
+    if (hl && t) {
+      const byLink = $$("tbody tr", t).find(r => r.dataset.iso === hl);
+      if (byLink) { byLink.hidden = false; byLink.removeAttribute("data-unranked"); byLink.classList.add("hl-row"); setTimeout(() => byLink.scrollIntoView({ block: "center" }), 50); byLink.setAttribute("aria-current", "true"); }
+    } }
 
   // ---------- ranking filters ----------
   $$("[data-filters]").forEach(bar => {

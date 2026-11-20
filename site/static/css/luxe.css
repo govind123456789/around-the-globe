@@ -859,3 +859,28 @@ table thead th, .table-wrap thead th, table th[scope=row] { color: var(--text-2)
   .rs-scale { margin-left: 0; }
   .compare-with select { max-width: 150px; }
 }
+
+/* command palette */
+.search-dialog .search-results.open { max-height: min(60vh, 520px); overflow-y: auto; }
+.search-results .sr-group { margin: 8px 12px 2px; font-size: .7rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.ty { display: inline-block; width: 18px; height: 14px; margin-right: 8px; vertical-align: -2px; border-radius: 3px; background: var(--surface-2); }
+.ty-ranking { background: linear-gradient(0deg, var(--map-5) 0 40%, transparent 40%), linear-gradient(90deg, transparent 30%, var(--map-3) 30% 50%, transparent 50%); }
+.ty-indicator { background: linear-gradient(135deg, transparent 45%, var(--map-5) 45% 55%, transparent 55%); }
+.ty-compare { background: linear-gradient(90deg, var(--series-1) 0 45%, transparent 45% 55%, var(--series-2) 55%); }
+.ty-geopolitics, .ty-crisis, .ty-bloc, .ty-relations, .ty-defence { background: radial-gradient(circle, var(--warn) 0 35%, transparent 36%); }
+.palette-help { margin: 8px 4px 0; }
+.hl-row { outline: 2px solid var(--champagne); outline-offset: -2px; background: color-mix(in srgb, var(--champagne) 12%, transparent); }
+
+/* multi-country compare */
+.cmp-bar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; margin-top: 14px; }
+.cmp-views { display: flex; gap: 6px; }
+.chip-btn .sw, th .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; }
+.sb-static { cursor: default; }
+.cmp-ind { max-width: 420px; margin-bottom: 12px; }
+.radar { width: 100%; max-width: 440px; display: block; margin: 0 auto; overflow: visible; }
+.radar .rg { fill: none; stroke: var(--border-strong); stroke-width: .8; }
+.radar .rl { font-size: 11px; fill: var(--text-2); }
+.radar .rp { fill-opacity: .12; stroke-width: 2; }
+.radar .rp.s2 { stroke-dasharray: 5 3; }
+.radar circle { stroke: none; }
+td.lead .n { font-weight: 700; }

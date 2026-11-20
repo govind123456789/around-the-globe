@@ -1,0 +1,31 @@
+# Sources compared: where major sources publish different numbers for the same thing.
+# The site's primary value (World Bank) is never changed; the alternative is shown beside it, with its own
+# source, year and licence. Countries where the two differ by more than threshold_pct are flagged.
+threshold_pct: 5
+
+indicators:
+  population:
+    alt_source: un-wpp
+    alt_field: TPopulation1July      # thousands of people, 1 July
+    alt_scale: 1000
+    estimates_until: 2023            # WPP 2024 estimates run to 2023; later years are its projections
+    why: >-
+      The World Bank's population series is built mostly from the UN's own estimates, but it is updated on a
+      different timetable and some countries use national figures instead. Differences come from census
+      rounds and post-census revisions, from how refugees and migrants are counted, from territory
+      definitions (for example whether a territory is counted with its sovereign state), and from the UN
+      revising its whole history in each two-yearly edition.
+  life-expectancy:
+    alt_source: un-wpp
+    alt_field: LEx                    # life expectancy at birth, both sexes, years
+    alt_scale: 1
+    estimates_until: 2023
+    why: >-
+      Life expectancy is modelled, not counted. The UN estimates it from mortality data and models, and the
+      World Bank publishes figures derived from the UN and from national statistics on a different revision
+      cycle. Differences grow where death registration is incomplete, after shocks such as COVID-19 whose
+      effect was estimated differently, and when one source has absorbed a newer revision than the other.
+
+not_compared:
+  gdp: "No second source of GDP with a licence that allows reuse here is included yet (IMF figures need permission)."
+  gdp-per-capita-ppp: "PPP figures come from the International Comparison Program through the World Bank; the IMF's need permission to reuse."

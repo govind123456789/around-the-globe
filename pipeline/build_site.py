@@ -11,7 +11,7 @@ import markdown
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
 
-from . import beyond, changes, numfmt, defence, explain, geopolitics, summaries, trust, history, india, lab, live, markets, og, reports, standout, stories, svg
+from . import beyond, changes, numfmt, reconcile, defence, explain, geopolitics, summaries, trust, history, india, lab, live, markets, og, reports, standout, stories, svg
 from .build_data import Model
 from .config import CONTENT, DIST, RAW, SITE, load_yaml, site_config
 
@@ -72,6 +72,7 @@ class Site:
         countries = model.countries()
         self.by_id = {e["entity_id"]: e for e in model.entities.values()}
         self.env.globals["ename"] = lambda e: self.by_id[e]["name"]
+        self.env.globals["eslug"] = lambda e: self.by_id[e]["slug"]
         # the 217 are World Bank economies: sovereign countries plus territories such as Hong Kong and Puerto Rico
         self.env.globals["n_places"] = sum(1 for e in model.entities.values() if e["type"] == "country")
         self.env.globals["places_label"] = "countries and territories"
@@ -153,6 +154,14 @@ class Site:
         self.dims = {d["id"]: d for d in model.dimensions}
         self.rk = model.rankings
         self.moves, self.rank_hist, self.prev_release = self.load_moves(model)
+        self.recon_cfg = reconcile.cfg()
+        _ids = [e for e, x in model.entities.items() if x["type"] == "country"]
+        _alt = reconcile.load_alt(self.recon_cfg, set(_ids))
+        self.recon = {ind: reconcile.table(model, ind, _alt, _ids, self.recon_cfg["threshold_pct"])
+                      for ind in self.recon_cfg["indicators"] if ind in model.indicators}
+        self.recon_by = {ind: {r["iso"]: r for r in rows} for ind, rows in self.recon.items()}
+        self.env.globals["RECON"] = self.recon_by
+        self.env.globals["RECON_CFG"] = self.recon_cfg
 
     # -- helpers ------------------------------------------------------------
     def live_context(self) -> dict | None:
@@ -814,8 +823,10 @@ class Site:
                         ind=ind_meta, chip=chip, regions=regions, incomes=incomes,
                         map_values=self.map_values(r), hdi_check=self.m.hdi_check,
                         indicators=self.m.indicators, why=why, moves=self.moves.get(r["ranking_id"], {}), prev_release=self.prev_release)
+            # the indicator's short id is an alias, so "gdp" finds the GDP ranking itself, not GDP per capita
             self.search.append({"t": r["name"], "u": f"/rankings/{r['ranking_id']}/", "k": "Ranking",
-                                "s": KIND_LABEL[r["kind"]]})
+                                "s": KIND_LABEL[r["kind"]],
+                                "o": [x.replace("-", " ") for x in {r.get("indicator") or "", r["ranking_id"]} if x]})
 
     def load_moves(self, model) -> tuple[dict, dict, str | None]:
         """Why it moved: rank changes since the previous release, each with its cause, and rank history
@@ -1045,6 +1056,12 @@ class Site:
             og.card(DIST / "og" / "countries" / f"{c['slug']}.png", self.cfg["name"], c["region"], c["name"], lines)
             self.render(f"/countries/{c['slug']}/", "country.html", og_image=f"/og/countries/{c['slug']}.png", c=c, key=key, dims=self.country_dims(c),
                         head=self.country_header(eid), countries=self.countries,
+                        recon=[(self.m.indicators[i], self.recon_by[i][eid], svg.line_chart(
+                            [{"label": "World Bank", "points": self.recon_by[i][eid]["series"][0], "cls": "s1"},
+                             {"label": "UN (WPP 2024)", "points": self.recon_by[i][eid]["series"][1], "cls": "s2"}],
+                            self.m.indicators[i]["unit"], decimals=self.m.indicators[i]["decimals"],
+                            title=f"{self.m.indicators[i]['name']}: World Bank and UN"))
+                               for i in self.recon_by if eid in self.recon_by[i]], alt_src=self.m.sources.get("un-wpp", {}),
                         positions=self.positions(eid), peers=peers, mk=self.mk.country_shares(eid), geo=self.geo.country(eid), dfc=self.defence.get(eid),
                         summary=summaries.country(c, self.rk, self.m.indicators, fmt),
                         rank_moves=[(self.rk[rid], ch[eid], self.rank_hist.get(rid, {}).get(eid, [])) for rid, ch in self.moves.items() if eid in ch],
@@ -1268,6 +1285,11 @@ class Site:
 
     def data_pages(self) -> None:
         inds = list(self.m.indicators.values())
+        alt_src = self.m.sources.get("un-wpp", {})
+        self.render("/data/reconciliation/", "reconciliation.html", recon=self.recon, alt_src=alt_src,
+                    indicators=self.m.indicators)
+        self.search.append({"t": "Why sources disagree", "u": "/data/reconciliation/", "k": "Data",
+                            "s": "World Bank and UN figures side by side"})
         self.render("/data/", "data_index.html", n_obs=sum(len(v) for v in self.m.obs.values()))
         self.render("/data/indicators/", "indicators_index.html", dims=self.m.dimensions, inds=inds,
                     sources=self.m.sources)
@@ -1301,6 +1323,7 @@ class Site:
             recent = sum(1 for x in latest if x["year"] >= 2019)
             wl = self.m.latest("WLD", ind["id"])
             self.render(f"/data/indicators/{ind['id']}/", "indicator.html", ind=ind, src=self.src(ind["id"]),
+                        recon_rows=self.recon.get(ind["id"], [])[:10], alt_src=self.m.sources.get("un-wpp", {}),
                         summary=summaries.indicator(ind, latest, fmt, world=(wl[0], wl[1]) if wl else None),
                         latest=latest, chart=chart, cov=sorted(cov.items()), latest_year=latest_year,
                         n_countries=len(countries), recent=recent, used_in=used_in.get(ind["id"], []),

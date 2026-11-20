@@ -271,6 +271,24 @@
 </table></div>
 {% endif %}
 
+{% if recon %}
+<div class="section-head" id="sources-compared"><h2>Sources compared</h2><a href="/data/reconciliation/">Why sources disagree →</a></div>
+<div class="grid g2">
+  {% for ind, r, chart in recon %}
+  <div class="card">
+    <h3>{{ ind.name }}, {{ r.year }}</h3>
+    <ol class="mk-list">
+      <li><span>World Bank (this site’s value)</span><span class="mono">{{ r.primary|fmt(ind.decimals, ind.unit) }}</span></li>
+      <li><span>UN, World Population Prospects 2024</span><span class="mono">{{ r.alt|fmt(ind.decimals, ind.unit) }}</span></li>
+      <li><span>Difference</span><span class="mono">{{ '%+.1f'|format(r.diff) }}%{% if r.flag %} · <span class="stale">sources disagree</span>{% endif %}</span></li>
+    </ol>
+    {{ chart|safe }}
+    <p class="small muted">UN: {{ alt_src.licence }}. {{ RECON_CFG.indicators[ind.id].why[:180] }}… <a href="/data/reconciliation/#{{ ind.id }}">More</a></p>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
 {% if charts %}
 <div class="section-head"><h2>Trends</h2></div>
 <div class="grid g2">

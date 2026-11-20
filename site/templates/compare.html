@@ -5,7 +5,7 @@
 {% block main %}
 <div class="page-head">
   <h1>Compare countries</h1>
-  <p class="lede">Choose 2 to 5 countries. The comparison is saved in the page address, so you can share it.</p>
+  <p class="lede">Choose 2 to 5 countries. Every view is saved in the page address, so you can share it.</p>
 </div>
 <div class="card">
   <div class="toolbar" style="margin:0">
@@ -13,7 +13,15 @@
       <input type="text" list="country-options" id="cmp-add" placeholder="Type a country name…" autocomplete="off">
       <datalist id="country-options">{% for c in countries %}<option value="{{ c.name }}" data-id="{{ c.entity_id }}"></option>{% endfor %}</datalist>
     </label>
-    <div id="cmp-chips" class="peers" style="flex:2 1 300px"></div>
+    <div id="cmp-chips" class="peers" style="flex:2 1 300px" aria-live="polite"></div>
+  </div>
+  <div class="cmp-bar">
+    <div class="cmp-views" role="group" aria-label="View">
+      <button type="button" class="chip-btn" data-view="table" aria-pressed="true">Table</button>
+      <button type="button" class="chip-btn" data-view="trends" aria-pressed="false">Trends</button>
+      <button type="button" class="chip-btn" data-view="profile" aria-pressed="false">Profile</button>
+    </div>
+    <button type="button" class="btn ghost sm" id="cmp-copy">Copy link</button>
   </div>
 </div>
 <div id="cmp-out" style="margin-top:20px"><p class="muted">Add at least two countries to start.</p></div>

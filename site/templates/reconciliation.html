@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Why sources disagree{% endblock %}
+{% block description %}World Bank and UN figures for population and life expectancy side by side, the biggest disagreements, and why the two differ.{% endblock %}
+{% block main %}
+<p class="crumbs"><a href="/data/">Data</a></p>
+<div class="page-head">
+  <h1>Why sources disagree</h1>
+  <p class="lede">Major sources publish different numbers for the same thing. This site keeps the World Bank as its primary source; here the UN’s figures sit beside it for the same countries and years, so you can see where they differ and why. Differences above {{ RECON_CFG.threshold_pct }}% are flagged across the site.</p>
+</div>
+{% for ind_id, rows in recon.items() %}{% set ind = indicators[ind_id] %}
+<div class="section-head" id="{{ ind_id }}"><h2>{{ ind.name }}</h2><span class="small muted">{{ rows|selectattr('flag')|list|length }} of {{ rows|length }} countries differ by more than {{ RECON_CFG.threshold_pct }}%</span></div>
+<p class="small">{{ RECON_CFG.indicators[ind_id].why }}</p>
+<div class="table-wrap"><table>
+  <thead><tr><th>Country</th><th class="num">Year</th><th class="num">World Bank</th><th class="num">UN (WPP 2024)</th><th class="num">Difference</th></tr></thead>
+  <tbody>{% for r in rows[:25] %}<tr id="{{ ind_id }}-{{ r.iso }}">
+    <td>{{ flag(r.iso) }}<a href="/countries/{{ eslug(r.iso) }}/">{{ ename(r.iso) }}</a></td>
+    <td class="num">{{ r.year }}</td><td class="num">{{ r.primary|fmt(ind.decimals, ind.unit) }}</td><td class="num">{{ r.alt|fmt(ind.decimals, ind.unit) }}</td>
+    <td class="num">{% if r.flag %}<b>{{ '%+.1f'|format(r.diff) }}%</b> <span class="small stale">sources disagree</span>{% else %}{{ '%+.1f'|format(r.diff) }}%{% endif %}</td>
+  </tr>{% endfor %}</tbody>
+</table></div>
+<p class="small muted">{{ rows|length }} countries with both sources; the 25 largest differences are shown. World Bank: CC BY 4.0. UN: {{ alt_src.attribution_text }} ({{ alt_src.licence }}).</p>
+{% endfor %}
+<div class="section-head"><h2>Not compared yet</h2></div>
+<ul class="small">{% for ind_id, note in RECON_CFG.not_compared.items() %}<li><b>{{ indicators[ind_id].name if ind_id in indicators else ind_id }}</b>: {{ note }}</li>{% endfor %}</ul>
+{% endblock %}

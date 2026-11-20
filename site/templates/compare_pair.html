@@ -9,7 +9,7 @@
   <h1>{{ a.name }} vs {{ b.name }}</h1>
   <p class="lede">Side by side on every indicator, using each country’s latest available value. Where the data years differ, that is flagged.</p>
   {% if summary %}<p class="auto-summary">{{ summary|join(' ') }}</p>{% endif %}
-  <div class="btns"><a class="btn sm" href="/compare/#c={{ a.entity_id }},{{ b.entity_id }}">Add another country</a><button class="btn ghost sm" data-csv="pair-table" data-csv-name="{{ a.slug }}-vs-{{ b.slug }}.csv">Download CSV</button><button class="btn ghost sm" data-share>Copy link</button></div>
+  <div class="btns"><a class="btn sm" href="/compare/?c={{ a.entity_id|lower }},{{ b.entity_id|lower }}">Add another country</a><button class="btn ghost sm" data-csv="pair-table" data-csv-name="{{ a.slug }}-vs-{{ b.slug }}.csv">Download CSV</button><button class="btn ghost sm" data-share>Copy link</button></div>
 </div>
 
 <h2>Rankings</h2>
@@ -61,7 +61,7 @@
     {% for it in d['items'] %}
     {% set lv = [] %}{% for v in it.vals if v %}{% set _ = lv.append(pv_level(pv(it.ind.id, v[0], v[2] if v|length > 2 else 'measured'))) %}{% endfor %}
     <tr class="ind-row{% if it.all_old %} old-row{% endif %}" data-name="{{ it.ind.name|lower }}"{% if it.head %} data-head{% endif %}{% if it.big %} data-big{% endif %}{% if it.all_old %} data-stale{% endif %} data-trust="{{ 'high' if lv and lv|reject('equalto', 'high')|list|length == 0 else 'mixed' }}">
-      <td class="ind-name"><a href="/data/indicators/{{ it.ind.id }}/">{{ it.ind.name }}</a> <span class="muted small">{{ it.ind.unit|unit_short }}</span>{% if it.years_differ %} <span class="small stale yd-flag">⚠ years differ</span>{% endif %}</td>
+      <td class="ind-name"><a href="/data/indicators/{{ it.ind.id }}/">{{ it.ind.name }}</a> <span class="muted small">{{ it.ind.unit|unit_short }}</span>{% if it.years_differ %} <span class="small stale yd-flag">⚠ years differ</span>{% endif %}{% if it.ind.id in RECON %}{% for e in ents if e.entity_id in RECON[it.ind.id] and RECON[it.ind.id][e.entity_id].flag %}{% if loop.first %} <a class="small stale" href="/data/reconciliation/#{{ it.ind.id }}">sources disagree ({{ e.name }})</a>{% endif %}{% endfor %}{% endif %}</td>
       {% for v in it.vals %}{% set k = loop.index0 %}<td class="num val v{{ k + 1 }}{% if it.lead == k %} lead{% endif %}{% if it.old[k] %} old-val{% endif %}" data-label="{{ ents[k].name }}">{% if v %}<span class="n">{{ v[1]|fmt(it.ind.decimals, it.ind.unit) }}</span>{% if it.lead == k %}<span class="sr-only"> (ahead)</span>{% endif %}{{ m.sb(it.ind, v[0], v[2] if v|length > 2 else 'measured', it.years_differ) }}{% else %}<span class="muted">—</span>{% endif %}</td>
       {% if k == 0 %}<td class="gapcol">{% if it.gap is not none %}<span class="gapbar"><i class="{{ 'l' if it.lead == 0 else 'r' if it.lead == 1 else 'n' }}" style="width:{{ '%.0f'|format([it.gap, 1]|min * 50) }}%"></i></span>{% endif %}</td>{% endif %}{% endfor %}
       <td class="sparkcol"{% if it.spark %} data-sp="{{ it.spark }}"{% endif %}></td>
