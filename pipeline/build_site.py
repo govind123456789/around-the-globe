@@ -899,7 +899,7 @@ class Site:
             url = pages.get((a["entity_id"], b["entity_id"])) or f"/compare/#c={eid},{x['entity_id']}"
             peers.append({"e": x, "url": url})
         return {"stats": stats, "strip": strip, "peers": peers, "popular": self.top_pairs(eid, 5),
-                "pop": self.m.latest(eid, "population")}
+                "people": self.m.latest(eid, "population")}
 
     def world_rank(self, ind_id: str, eid: str):
         """(rank, of) of a country's latest value among all countries with data; lower first if lower is better."""

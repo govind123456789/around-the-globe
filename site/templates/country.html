@@ -11,7 +11,7 @@
 <div class="page-head country-head">
   <div>
     <h1>{{ flag(c.entity_id, eager=True) }}{{ c.name }}</h1>
-    <p class="lede country-meta">{{ c.region }}{% if income %} · <a href="/regions/{{ income.slug }}/">{{ c.income }}</a>{% endif %}{% if c.capital %} · Capital {{ c.capital }}{% endif %}{% if head.pop %} · Population {{ head.pop[1]|short }} ({{ head.pop[0] }}){% endif %}</p>
+    <p class="lede country-meta">{{ c.region }}{% if income %} · <a href="/regions/{{ income.slug }}/">{{ c.income }}</a>{% endif %}{% if c.capital %} · Capital {{ c.capital }}{% endif %}{% if head.people %} · Population {{ head.people[1]|short }} ({{ head.people[0] }}){% endif %}</p>
   </div>
   <div class="btns">
     <button type="button" class="btn sm" data-watch="{{ c.entity_id }}">☆ Watch</button>
@@ -27,7 +27,6 @@
 </section>
 {% endblock %}
 {% block main %}
-{% if summary %}<p class="auto-summary">{{ summary|join(' ') }}</p>{% endif %}
 <div class="stats overlap head-stats">
   {% for st in head.stats %}
   <div class="card stat">
@@ -42,6 +41,8 @@
   </div>
   {% endfor %}
 </div>
+
+{% if summary %}<p class="auto-summary">{{ summary|join(' ') }}</p>{% endif %}
 
 {% if head.strip %}
 <section class="rank-strip" aria-labelledby="rs-h">
