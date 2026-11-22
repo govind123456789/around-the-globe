@@ -77,6 +77,7 @@
       <p class="footer-brand">{{ site.name }} <span class="small">· {{ site.tagline }} Free for everyone.</span></p>
       <nav class="foot-links" aria-label="Footer">{% for l, h in nav_foot %}<a href="{{ h }}">{{ l }}</a>{% endfor %}</nav>
     </div>
+    <p class="fine"><a href="{{ site.repo_url }}/issues/new?title={{ ('Data issue: ' ~ self.title()|striptags|trim)|urlencode }}&amp;body={{ ('Page: ' ~ site.base_url ~ url ~ '\n\nWhat looks wrong, and what should it say (with a source if you have one):\n')|urlencode }}" rel="noopener">Report a data issue on this page</a> · <a href="/about/errata/">Errata</a></p>
     <p class="fine">Data release {{ release }} · Data {{ site.data_licence }} · Code {{ site.code_licence }} · Values carry their source’s licence. Boundaries: Natural Earth. Composite indices are the platform’s own and are not official statistics.</p>
   </div>
 </footer>
