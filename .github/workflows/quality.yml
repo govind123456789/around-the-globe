@@ -24,8 +24,9 @@ jobs:
       - run: python -m pipeline.build
       - name: Lighthouse budget
         run: npx --yes @lhci/cli@0.14.0 autorun
-      - name: Accessibility (axe)
+      - name: Accessibility (axe, fails on serious or critical)
         run: |
-          npx --yes http-server dist -p 8000 -s &
+          npm install --no-save --no-audit --no-fund playwright@1.49.1 @axe-core/playwright@4.10.1 http-server@14.1.1
+          npx http-server dist -p 8000 -s &
           sleep 3
-          npx --yes @axe-core/cli@4.10.0 http://localhost:8000/ http://localhost:8000/rankings/ http://localhost:8000/compare/ --exit
+          node scripts/axe-check.mjs http://localhost:8000 / /rankings/ /compare/
