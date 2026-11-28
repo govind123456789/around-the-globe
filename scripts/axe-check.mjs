@@ -6,8 +6,9 @@ import { AxeBuilder } from "@axe-core/playwright";
 const [base, ...paths] = process.argv.slice(2);
 const browser = await chromium.launch({ channel: process.env.AXE_CHANNEL || "chrome" });
 let failed = 0;
+const context = await browser.newContext(); // axe-core/playwright requires a page from a context
 for (const p of paths) {
-  const page = await browser.newPage();
+  const page = await context.newPage();
   await page.goto(base + p, { waitUntil: "networkidle" });
   const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
   console.log(`${p}: ${violations.length} violation(s)`);
