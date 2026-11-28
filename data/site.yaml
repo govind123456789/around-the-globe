@@ -7,7 +7,7 @@ base_url: https://around-the-globe.round-the-globe.workers.dev
 contact_email: hello@zmetaboard.com
 repo_url: https://github.com/govind123456789/around-the-globe
 # Cookieless Cloudflare Web Analytics: paste the site token here to switch it on. Empty = no analytics.
-cloudflare_analytics_token: ""
+cloudflare_analytics_token: "2d317d1463ac443497aceab3295a0502"
 data_licence: CC BY 4.0
 code_licence: AGPL-3.0
 
