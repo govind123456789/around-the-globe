@@ -116,7 +116,7 @@ The build is well ahead of the dates. What remains is mostly launch work outside
 | OPS-02 🚀 | P0 | Licences | ✅ | `LICENSE` (AGPL-3.0), `LICENSE-DATA.md`. Data licence is CC BY 4.0 |
 | OPS-03 🚀 | P0 | Permission emails | ❓ | IMF, WHO and SIPRI are recorded as excluded until permission. No entries for Freedom House, RSF or UNSD |
 | OPS-04 🚀 | P0 | Employment terms check | ❓ | |
-| OPS-05 | P1 | Cloudflare Web Analytics | 🟡 | Code is in; off until `cloudflare_analytics_token` is set in `data/site.yaml` |
+| OPS-05 | P1 | Cloudflare Web Analytics | ✅ | Token set in `data/site.yaml` (live after the next deploy) |
 | OPS-06 🚀 | P3 | Editorial, errata and COI policies | ✅ | Published as pages |
 | OPS-07 🚀 | P3 | Five outside reviewers | ⬜ | |
 | OPS-08 🚀 | P3 | Launch post and three data stories | 🟡 | Stories set to `published` 2026-11-27; launch posts drafted in `docs/launch/launch-drafts.md`, not posted |
